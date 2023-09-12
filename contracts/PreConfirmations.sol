@@ -9,10 +9,20 @@ contract PreConfCommitmentStore {
         uint64 bid;
         uint64 blockNumber;
         string bidHash;
-        string bidSignature; 
+        string bidSignature;
+
+        string commitmentHash;
         string commitmentSignature;
     }
 
+    struct PreConfBid {
+        string txnHash;
+        uint64 bid;
+        uint64 blockNumber;
+
+        string bidHash;
+        string bidSignature;
+    }
 
     // EIP-712 Domain Separator
     bytes32 public DOMAIN_SEPARATOR;
@@ -23,7 +33,6 @@ contract PreConfCommitmentStore {
 
     // Event to log successful verifications
     event SignatureVerified(address indexed signer, string txnHash, uint64 bid, uint64 blockNumber);
-
 
     uint256 public commitmentCount;
     constructor() {
@@ -39,6 +48,9 @@ contract PreConfCommitmentStore {
     }
     mapping(uint256 => PreConfCommitment) public commitments;
 
+    mapping(address => PreConfBid[]) public bids;
+    mapping(address => PreConfCommitment[]) public commitmentss;
+
     function getDomainSeperator() public view returns (bytes32) {
         return DOMAIN_SEPARATOR;
     }
@@ -49,6 +61,8 @@ contract PreConfCommitmentStore {
     function typedDataHash() public view returns (bytes memory) {
         return abi.encode(EIP712_MESSAGE_TYPEHASH, keccak256("0xkartik"), uint64(2), uint64(2));
     }
+
+    // TODO(@ckartik): Update to not be view
     function hashMessage(string memory _txnHash, uint64 _bid, uint64 _blockNumber) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -62,6 +76,8 @@ contract PreConfCommitmentStore {
             )
         );
     }
+
+    
 
     // Add to your contract
     function recoverAddress(string memory _txnHash, uint64 _bid, uint64 _blockNumber, bytes memory signature) public view returns (address) {
@@ -110,12 +126,14 @@ contract PreConfCommitmentStore {
     }
 
     // Updated function signature to include bidSignature
+    // TODO(@ckartik): Verify the signature before storing, and store in address map
     function storeCommitment(
         string memory txnHash,
         uint64 bid,
         uint64 blockNumber,
         string memory bidHash,
         string memory bidSignature,
+        string memory commitmentHash,
         string memory commitmentSignature
     ) public returns (uint256) {
         // uint256 commitmentCount = uint256(keccak256(abi.encodePacked(txnHash, bid, blockNumber, bidHash, bidSignature, commitmentSignature)));
@@ -127,7 +145,7 @@ contract PreConfCommitmentStore {
         console.log("bidSignature: %s", bidSignature);
         console.log("commitmentSignature: %s", commitmentSignature);
         
-        commitments[commitmentCount] = PreConfCommitment(txnHash, bid, blockNumber, bidHash, bidSignature, commitmentSignature);
+        commitments[commitmentCount] = PreConfCommitment(txnHash, bid, blockNumber, bidHash, bidSignature, commitmentHash, commitmentSignature);
         commitmentCount++;
         return commitmentCount;
     }
