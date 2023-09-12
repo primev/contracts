@@ -20,8 +20,8 @@ contract PreConfCommitmentStore {
         uint64 bid;
         uint64 blockNumber;
 
-        string bidHash;
-        string bidSignature;
+        bytes32 bidHash;
+        bytes bidSignature;
     }
 
     // EIP-712 Domain Separator
@@ -51,19 +51,12 @@ contract PreConfCommitmentStore {
     mapping(address => PreConfBid[]) public bids;
     mapping(address => PreConfCommitment[]) public commitmentss;
 
-    function getDomainSeperator() public view returns (bytes32) {
-        return DOMAIN_SEPARATOR;
-    }
-
-    function getMessageTypeHash() public view returns (bytes32) {
-        return EIP712_MESSAGE_TYPEHASH;
-    }
-    function typedDataHash() public view returns (bytes memory) {
-        return abi.encode(EIP712_MESSAGE_TYPEHASH, keccak256("0xkartik"), uint64(2), uint64(2));
+    function getBidsFor(address adr) public view returns (PreConfBid[] memory) {
+        return bids[adr];
     }
 
     // TODO(@ckartik): Update to not be view
-    function hashMessage(string memory _txnHash, uint64 _bid, uint64 _blockNumber) public view returns (bytes32) {
+    function getBidHash(string memory _txnHash, uint64 _bid, uint64 _blockNumber) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -77,17 +70,17 @@ contract PreConfCommitmentStore {
         );
     }
 
-    
+
 
     // Add to your contract
-    function recoverAddress(string memory _txnHash, uint64 _bid, uint64 _blockNumber, bytes memory signature) public view returns (address) {
+    function recoverAddress(string memory _txnHash, uint64 _bid, uint64 _blockNumber, bytes memory signature) public view returns (address, bytes32) {
         bytes32 r;
         bytes32 s;
         uint8 v;
-        bytes32 messageDigest = hashMessage(_txnHash, _bid, _blockNumber);
+        bytes32 messageDigest = getBidHash(_txnHash, _bid, _blockNumber);
         // Check the signature length
         if (signature.length != 65) {
-            return address(0);
+            return (address(0), messageDigest);
         }
 
         // Divide the signature into r, s, and v variables with inline assembly.
@@ -104,11 +97,11 @@ contract PreConfCommitmentStore {
 
         // If the version is correct return the signer address
         if (v != 27 && v != 28) {
-            return address(0);
+            return (address(0), messageDigest);
         } else {
             // EIP-2 still allows for ecrecover precompile to return `0` on an invalid signature,
             // even if a regular contract would revert.
-            return ecrecover(messageDigest, v, r, s);
+            return (ecrecover(messageDigest, v, r, s), messageDigest);
         }
     }
 
@@ -124,7 +117,19 @@ contract PreConfCommitmentStore {
     function retreiveCommitment() public view returns (PreConfCommitment memory) {
         return commitments[0];
     }
-
+    
+    function storeBid(
+        string memory txnHash,
+        uint64 bid,
+        uint64 blockNumber,
+        bytes memory bidSignature
+    ) public returns (uint256) {
+        (address adr, bytes32 messageDigest) = recoverAddress(txnHash, bid, blockNumber, bidSignature);
+        // console.log(adr);
+        bids[adr].push(PreConfBid(txnHash, bid, blockNumber, messageDigest, bidSignature));
+        return bids[adr].length;
+    }
+     
     // Updated function signature to include bidSignature
     // TODO(@ckartik): Verify the signature before storing, and store in address map
     function storeCommitment(
