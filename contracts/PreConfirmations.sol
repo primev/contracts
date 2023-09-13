@@ -2,6 +2,8 @@
 pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
+import "./IBuilderRegistry.sol";
+
 
 contract PreConfCommitmentStore {
     struct PreConfCommitment {
@@ -44,7 +46,9 @@ contract PreConfCommitmentStore {
 
     uint256 public commitmentCount;
 
-    constructor() {
+    IBuilderRegistry public builderRegistry;
+
+    constructor(address _builderRegistry) {
         // EIP-712 domain separator
         DOMAIN_SEPARATOR_PRECONF = keccak256(
             abi.encode(
@@ -62,6 +66,7 @@ contract PreConfCommitmentStore {
             )
         );
         commitmentCount = 0;
+        builderRegistry = IBuilderRegistry(_builderRegistry);
     }
     mapping(uint256 => PreConfCommitment) public commitments;
 

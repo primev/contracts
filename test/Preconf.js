@@ -12,7 +12,11 @@ describe("Preconf", function () {
   describe("Deployment", function () {
     it("Should deploy the smart contract and store info", async function () {
       // We don't use the fixture here because we want a different deployment
-      const preconf = await ethers.deployContract("PreConfCommitmentStore");
+
+      const builderRegistry = await ethers.deployContract("BuilderRegistry");
+      await builderRegistry.waitForDeployment();
+
+      const preconf = await ethers.deployContract("PreConfCommitmentStore", [builderRegistry.target]);
       await preconf.waitForDeployment();
 
   
