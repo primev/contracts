@@ -33,7 +33,7 @@ contract PreConfCommitmentStore {
     bytes32 public DOMAIN_SEPARATOR_PRECONF;
 
     // EIP-712 Domain Separator
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public DOMAIN_SEPARATOR_BID;
 
     // EIP-712 Type Hash for the message
     // PreConfBid(string txnHash, uint64 bid, uint64 blockNumber)
@@ -54,7 +54,7 @@ contract PreConfCommitmentStore {
             )
         );
         // EIP-712 domain separator
-        DOMAIN_SEPARATOR = keccak256(
+        DOMAIN_SEPARATOR_BID = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version)"),
                 keccak256("PreConfBid"),
@@ -77,7 +77,7 @@ contract PreConfCommitmentStore {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                DOMAIN_SEPARATOR,
+                DOMAIN_SEPARATOR_BID,
                 keccak256(abi.encode(
                     EIP712_MESSAGE_TYPEHASH, 
                     keccak256(abi.encodePacked(_txnHash)),
