@@ -2,7 +2,9 @@
 pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
-import "./IBuilderRegistry.sol";
+import "./IProviderRegistry.sol";
+
+// L2 should have a mechanism to reach down to the L1 time/block
 
 
 contract PreConfCommitmentStore {
@@ -46,9 +48,9 @@ contract PreConfCommitmentStore {
 
     uint256 public commitmentCount;
 
-    IBuilderRegistry public builderRegistry;
+    IProviderRegistry public providerRegistry;
 
-    constructor(address _builderRegistry) {
+    constructor(address _providerRegistry) {
         // EIP-712 domain separator
         DOMAIN_SEPARATOR_PRECONF = keccak256(
             abi.encode(
@@ -66,7 +68,7 @@ contract PreConfCommitmentStore {
             )
         );
         commitmentCount = 0;
-        builderRegistry = IBuilderRegistry(_builderRegistry);
+        providerRegistry = IProviderRegistry(_providerRegistry);
     }
     mapping(uint256 => PreConfCommitment) public commitments;
 

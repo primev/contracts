@@ -10,13 +10,14 @@ const {ethers} = require("hardhat");
 describe("Preconf", function () {
 
   describe("Deployment", function () {
-    it("Should deploy the smart contract and store info", async function () {
+    it("Should deploy the smart contract and confirm preconf signature validity", async function () {
       // We don't use the fixture here because we want a different deployment
+      const [owner, addr1, addr2] = await ethers.getSigners();
 
-      const builderRegistry = await ethers.deployContract("BuilderRegistry");
-      await builderRegistry.waitForDeployment();
+      const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
+      await providerRegistry.waitForDeployment();
 
-      const preconf = await ethers.deployContract("PreConfCommitmentStore", [builderRegistry.target]);
+      const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target]);
       await preconf.waitForDeployment();
 
   
@@ -49,5 +50,38 @@ describe("Preconf", function () {
       const commiterAddress = await preconf.recoverAddress(contractCommitmentHash, commitmentSignature);
       expect(commiterAddress).to.equal(commitmentSigner);
     });
+  });
+
+  it("should allow a provider to sign up to the provider registry", async function () {
+    const [owner, addr1, addr2] = await ethers.getSigners();
+
+    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
+    await providerRegistry.waitForDeployment();
+
+    console.log("provider address: ", providerRegistry.target)
+
+
+    const txn = await providerRegistry.connect(addr1).RegisterAndStake({value: ethers.parseEther("2.0")})
+    await txn.wait();
+
+    const firstAddrStake = await providerRegistry.checkStake(addr1.address);
+    expect(ethers.formatEther(firstAddrStake)).to.equal("2.0");
+  });
+
+  it("should allow a user to sign up to the user registry", async function () {
+    const [owner, addr1, addr2] = await ethers.getSigners();
+
+    const providerRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0"), addr1]);
+    await providerRegistry.waitForDeployment();
+
+    console.log("provider address: ", providerRegistry.target)
+
+
+    const txn = await providerRegistry.connect(addr1).RegisterAndStake({value: ethers.parseEther("2.0")})
+    await txn.wait();
+
+    const firstAddrStake = await providerRegistry.checkStake(addr1.address);
+    expect(ethers.formatEther(firstAddrStake)).to.equal("2.0");
+  
   });
 });
