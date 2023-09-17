@@ -29,7 +29,7 @@ jobs:
     - run: npm install -g hardhat
 
     # Install project dependencies
-    - run: npm ci
+    - run: npm install
 
     # Build the project, if applicable
     - run: npm run build --if-present
