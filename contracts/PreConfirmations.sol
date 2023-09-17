@@ -229,6 +229,10 @@ contract PreConfCommitmentStore {
         address commiterAddress = recoverAddress(preConfHash, commitmentSignature);
         console.log("Commiter address: %s", commiterAddress);
 
+        uint256 stake = providerRegistry.checkStake(commiterAddress);
+
+        // This is curently abritrary.
+        assert(stake > 10*bid);
         commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature);
         commitmentCount++;
 

@@ -16,8 +16,11 @@ describe("Preconf", function () {
       const bidderWallet = new ethers.Wallet("7cea3c338ce48647725ca014a52a80b2a8eb71d184168c343150a98100439d1b", ethers.provider);
       const bidderAddress = bidderWallet.address;
 
+      const commiterWallet = new ethers.Wallet("3bd943ec681f4c2b472aefe2201f88f1ed79592d1202444560e89ad72b2c2665", ethers.provider);
 
+      
       await addr1.sendTransaction({to: bidderAddress, value: ethers.parseEther("20.0")});
+      await addr1.sendTransaction({to: commiterWallet.address, value: ethers.parseEther("20.0")});
 
       const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
       await providerRegistry.waitForDeployment();
@@ -28,6 +31,9 @@ describe("Preconf", function () {
 
       const txnReciept = await userRegistry.connect(bidderWallet).RegisterAndStake({value: ethers.parseEther("2.0")});
       await txnReciept.wait();
+
+      const commitRegTxn = await providerRegistry.connect(commiterWallet).RegisterAndStake({value: ethers.parseEther("5.0")});
+      await commitRegTxn.wait();
 
       const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target]);
       await preconf.waitForDeployment();
@@ -66,7 +72,6 @@ describe("Preconf", function () {
       await txnStoreCommitment.wait();
 
       
-
     });
   });
 
