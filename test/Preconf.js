@@ -10,7 +10,7 @@ const {ethers} = require("hardhat");
 describe("Preconf", function () {
 
   describe("Deployment", function () {
-    it("Should deploy the smart contract and confirm preconf signature validity", async function () {
+    it("Should deploy the smart contract and confirm preconf signature validity & bid validity & ensure both user and provider that are part of the preconf have staked eth", async function () {
       // We don't use the fixture here because we want a different deployment
       const [owner, addr1, oracle] = await ethers.getSigners();
       const bidderWallet = new ethers.Wallet("7cea3c338ce48647725ca014a52a80b2a8eb71d184168c343150a98100439d1b", ethers.provider);
@@ -107,10 +107,4 @@ describe("Preconf", function () {
     expect(ethers.formatEther(firstAddrStake)).to.equal("2.0");
   
   });
-
-  it("should allow a user to sign up to the user registry and have a relevant preconfirmation", async function () {
-    
-  
-  });
-
 });
