@@ -59,9 +59,11 @@ describe("Preconf", function () {
       
       const txn = await preconf.verifyBid(txnHash, 2, 2, signature);
       console.log("output: ", txn)
+      
       // const bids = await preconf.getBidsFor(address);
       // expect(bids[0][3]).to.equal(bHash);
       // return
+
       const contractCommitmentHash = await preconf.getPreConfHash(txnHash, 2, 2, bHash, signature.slice(2));
       expect(contractCommitmentHash).to.equal(commitmentHash);
 

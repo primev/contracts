@@ -8,6 +8,12 @@ contract UserRegistry {
     // Address of the oracle
     address public oracle;
 
+    address public owner;
+
+    address public preConfirmationsContract;
+
+    bool preConfirmationsContractSet; 
+
     // Mapping from user addresses to their staked amount
     mapping(address => uint256) public userStakes;
 
@@ -34,11 +40,30 @@ contract UserRegistry {
     constructor(uint256 _minStake, address _oracle) {
         minStake = _minStake;
         oracle = _oracle;
+        preConfirmationsContract = address(0);
+        owner = msg.sender;
+        preConfirmationsContractSet = false;
+    }
+
+    modifier onlyPreConfirmationEngine() {
+        require(msg.sender == preConfirmationsContract, "Only the pre-confirmations contract can call this funciton");
+        _;
     }
 
     modifier onlyOracle() {
         require(msg.sender == oracle, "Only the oracle can call this function");
         _;
+    }
+
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    function setPreconfirmationsContract(address contractAddress) public onlyOwner {
+        require(preConfirmationsContractSet == false, "Preconfirmations Contract is already set and cannot be changed.");
+        preConfirmationsContract = contractAddress;
     }
 
     // Register and stake function

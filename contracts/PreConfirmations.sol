@@ -18,6 +18,11 @@ contract PreConfCommitmentStore {
 
         string commitmentHash;
         bytes commitmentSignature;
+
+
+        address bidder;
+        address commiter;
+
     }
 
     struct PreConfBid {
@@ -167,7 +172,7 @@ contract PreConfCommitmentStore {
         uint64 bid,
         uint64 blockNumber,
         bytes memory bidSignature
-    ) public view returns (bool, bytes32) {
+    ) public view returns (bool, bytes32, address) {
         bytes32 messageDigest = getBidHash(txnHash, bid, blockNumber);
         address bidderAddress = recoverAddress(messageDigest, bidSignature);
         assert(bidderAddress != address(0));
@@ -176,7 +181,7 @@ contract PreConfCommitmentStore {
         console.log("Stake: %s", stake);
         console.log("Bid: %s", 10*bid);
         assert(stake > 10*bid);
-        return (true, messageDigest);
+        return (true, messageDigest, bidderAddress);
     }
     
     function bytes32ToHexString(bytes32 _bytes32) public pure returns (string memory) {
@@ -221,7 +226,7 @@ contract PreConfCommitmentStore {
         // console.logBytes("commitmentSignature: %s", commitmentSignature);
         
         // Verify the bid
-        (bool bidValidity, bytes32 bHash) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
+        (bool bidValidity, bytes32 bHash, address bidderAddress) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
         assert(bidValidity);
         bytes32 preConfHash = getPreConfHash(txnHash, bid, blockNumber, bHash, bytesToHexString(bidSignature));
         console.logBytes32(preConfHash);
@@ -233,7 +238,7 @@ contract PreConfCommitmentStore {
 
         // This is curently abritrary.
         assert(stake > 10*bid);
-        commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature);
+        commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature, bidderAddress, commiterAddress);
         commitmentCount++;
 
         return commitmentCount;
