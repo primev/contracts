@@ -17,7 +17,7 @@ contract PreConfCommitmentStore {
         string bidSignature;
 
         string commitmentHash;
-        string commitmentSignature;
+        bytes commitmentSignature;
     }
 
     struct PreConfBid {
@@ -73,7 +73,9 @@ contract PreConfCommitmentStore {
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
     }
-    mapping(uint256 => PreConfCommitment) public commitments;
+    // Commitment Hash -> Commitemnt
+    // Only stores valid commitments
+    mapping(bytes32 => PreConfCommitment) public commitments;
 
     mapping(address => PreConfBid[]) public bids;
     mapping(address => PreConfCommitment[]) public commitmentss;
@@ -97,7 +99,7 @@ contract PreConfCommitmentStore {
         );
     }
 
-    function getPreConfHash(string memory _txnHash, uint64 _bid, uint64 _blockNumber, string memory _bidHash, string memory _bidSignature) public view returns (bytes32) {
+    function getPreConfHash(string memory _txnHash, uint64 _bid, uint64 _blockNumber, bytes32 _bidHash, string memory _bidSignature) public view returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -107,7 +109,7 @@ contract PreConfCommitmentStore {
                     keccak256(abi.encodePacked(_txnHash)),
                      _bid,
                       _blockNumber,
-                      keccak256(abi.encodePacked(_bidHash)),
+                      keccak256(abi.encodePacked(bytes32ToHexString(_bidHash))),
                       keccak256(abi.encodePacked(_bidSignature))
                       ))
             )
@@ -165,7 +167,7 @@ contract PreConfCommitmentStore {
         uint64 bid,
         uint64 blockNumber,
         bytes memory bidSignature
-    ) public returns (bool, bytes32) {
+    ) public view returns (bool, bytes32) {
         bytes32 messageDigest = getBidHash(txnHash, bid, blockNumber);
         address bidderAddress = recoverAddress(messageDigest, bidSignature);
         assert(bidderAddress != address(0));
@@ -176,7 +178,28 @@ contract PreConfCommitmentStore {
         assert(stake > 10*bid);
         return (true, messageDigest);
     }
-     
+    
+    function bytes32ToHexString(bytes32 _bytes32) public pure returns (string memory) {
+        bytes memory HEXCHARS = "0123456789abcdef";
+        bytes memory _string = new bytes(64);
+        for (uint8 i = 0; i < 32; i++) {
+            _string[i*2] = HEXCHARS[uint8(_bytes32[i] >> 4)];
+            _string[1+i*2] = HEXCHARS[uint8(_bytes32[i] & 0x0f)];
+        }
+        return string(_string);
+    }
+    
+    function bytesToHexString(bytes memory _bytes) public pure returns (string memory) {
+        bytes memory HEXCHARS = "0123456789abcdef";
+        bytes memory _string = new bytes(_bytes.length * 2);
+        for (uint i = 0; i < _bytes.length; i++) {
+            _string[i * 2] = HEXCHARS[uint8(_bytes[i] >> 4)];
+            _string[1 + i * 2] = HEXCHARS[uint8(_bytes[i] & 0x0f)];
+        }
+        return string(_string);
+    }
+
+
     // Updated function signature to include bidSignature
     // TODO(@ckartik): Verify the signature before storing, and store in address map
     function storeCommitment(
@@ -186,7 +209,7 @@ contract PreConfCommitmentStore {
         string memory bidHash,
         bytes memory bidSignature,
         string memory commitmentHash,
-        string memory commitmentSignature
+        bytes memory commitmentSignature
     ) public returns (uint256) {
         // uint256 commitmentCount = uint256(keccak256(abi.encodePacked(txnHash, bid, blockNumber, bidHash, bidSignature, commitmentSignature)));
         console.log("Recieved commitment");
@@ -195,21 +218,24 @@ contract PreConfCommitmentStore {
         console.log("blockNumber: %s", blockNumber);
         console.log("bidHash: %s", bidHash);
         // console.log("bidSignature: %s", bidSignature);
-        console.log("commitmentSignature: %s", commitmentSignature);
+        // console.logBytes("commitmentSignature: %s", commitmentSignature);
         
         // Verify the bid
         (bool bidValidity, bytes32 bHash) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
         assert(bidValidity);
+        bytes32 preConfHash = getPreConfHash(txnHash, bid, blockNumber, bHash, bytesToHexString(bidSignature));
+        console.logBytes32(preConfHash);
+        console.log("commitmentHash: %s", commitmentHash);
+        address commiterAddress = recoverAddress(preConfHash, commitmentSignature);
+        console.log("Commiter address: %s", commiterAddress);
 
-        // getPreConfHash(txnHash, bid, blockNumber, bHash, commitmentSignature);
-
-        commitments[commitmentCount] = PreConfCommitment(txnHash, bid, blockNumber, bidHash, string(bidSignature), commitmentHash, commitmentSignature);
+        commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature);
         commitmentCount++;
 
         return commitmentCount;
     }
 
-    function getCommitment(uint256 id) public view returns (PreConfCommitment memory) {
-        return commitments[id];
+    function getCommitment(bytes32 commitemntHash) public view returns (PreConfCommitment memory) {
+        return commitments[commitemntHash];
     }
 }

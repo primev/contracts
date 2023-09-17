@@ -52,18 +52,17 @@ describe("Preconf", function () {
       expect(address).to.equal(signerAddress);
       
       const txn = await preconf.verifyBid(txnHash, 2, 2, signature);
-      const output = await txn.wait();
-      console.log("output: ", output)
+      console.log("output: ", txn)
       // const bids = await preconf.getBidsFor(address);
       // expect(bids[0][3]).to.equal(bHash);
       // return
-      const contractCommitmentHash = await preconf.getPreConfHash(txnHash, 2, 2, bHash.slice(2), signature.slice(2));
+      const contractCommitmentHash = await preconf.getPreConfHash(txnHash, 2, 2, bHash, signature.slice(2));
       expect(contractCommitmentHash).to.equal(commitmentHash);
 
       const commiterAddress = await preconf.recoverAddress(contractCommitmentHash, commitmentSignature);
       expect(commiterAddress).to.equal(commitmentSigner);
 
-      const txnStoreCommitment = await preconf.storeCommitment(txnHash, 2, 2, bHash.slice(2), signature, commitmentHash, commitmentSignature.slice(2));
+      const txnStoreCommitment = await preconf.storeCommitment(txnHash, 2, 2, bHash.slice(2), signature, commitmentHash.slice(2), commitmentSignature);
       await txnStoreCommitment.wait();
 
       
