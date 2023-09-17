@@ -54,6 +54,7 @@ contract UserRegistry {
     function checkStake(address user) external view returns (uint256) {
         return userStakes[user];
     }
+    
 
     // Retrieve funds (only callable by Oracle)
     function RetrieveFunds(address user, PreConfCommitment memory preConf) external onlyOracle {

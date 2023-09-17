@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "./IProviderRegistry.sol";
+import "./IUserRegistry.sol";
 
 // L2 should have a mechanism to reach down to the L1 time/block
 
@@ -49,8 +50,9 @@ contract PreConfCommitmentStore {
     uint256 public commitmentCount;
 
     IProviderRegistry public providerRegistry;
+    IUserRegistry public userRegistry;
 
-    constructor(address _providerRegistry) {
+    constructor(address _providerRegistry, address _userRegistry) {
         // EIP-712 domain separator
         DOMAIN_SEPARATOR_PRECONF = keccak256(
             abi.encode(
@@ -69,6 +71,7 @@ contract PreConfCommitmentStore {
         );
         commitmentCount = 0;
         providerRegistry = IProviderRegistry(_providerRegistry);
+        userRegistry = IUserRegistry(_userRegistry);
     }
     mapping(uint256 => PreConfCommitment) public commitments;
 
@@ -157,18 +160,21 @@ contract PreConfCommitmentStore {
         return commitments[0];
     }
     
-    function storeBid(
+    function verifyBid(
         string memory txnHash,
         uint64 bid,
         uint64 blockNumber,
         bytes memory bidSignature
-    ) public returns (uint256) {
+    ) public returns (bool, bytes32) {
         bytes32 messageDigest = getBidHash(txnHash, bid, blockNumber);
-        address adr = recoverAddress(messageDigest, bidSignature);
-        assert(adr != address(0));
-
-        bids[adr].push(PreConfBid(txnHash, bid, blockNumber, messageDigest, bidSignature));
-        return bids[adr].length;
+        address bidderAddress = recoverAddress(messageDigest, bidSignature);
+        assert(bidderAddress != address(0));
+        uint256 stake = userRegistry.checkStake(bidderAddress);
+        // TODO(@ckartik): Do in a safe context
+        console.log("Stake: %s", stake);
+        console.log("Bid: %s", 10*bid);
+        assert(stake > 10*bid);
+        return (true, messageDigest);
     }
      
     // Updated function signature to include bidSignature
@@ -178,7 +184,7 @@ contract PreConfCommitmentStore {
         uint64 bid,
         uint64 blockNumber,
         string memory bidHash,
-        string memory bidSignature,
+        bytes memory bidSignature,
         string memory commitmentHash,
         string memory commitmentSignature
     ) public returns (uint256) {
@@ -188,11 +194,18 @@ contract PreConfCommitmentStore {
         console.log("bid: %s", bid);
         console.log("blockNumber: %s", blockNumber);
         console.log("bidHash: %s", bidHash);
-        console.log("bidSignature: %s", bidSignature);
+        // console.log("bidSignature: %s", bidSignature);
         console.log("commitmentSignature: %s", commitmentSignature);
         
-        commitments[commitmentCount] = PreConfCommitment(txnHash, bid, blockNumber, bidHash, bidSignature, commitmentHash, commitmentSignature);
+        // Verify the bid
+        (bool bidValidity, bytes32 bHash) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
+        assert(bidValidity);
+
+        // getPreConfHash(txnHash, bid, blockNumber, bHash, commitmentSignature);
+
+        commitments[commitmentCount] = PreConfCommitment(txnHash, bid, blockNumber, bidHash, string(bidSignature), commitmentHash, commitmentSignature);
         commitmentCount++;
+
         return commitmentCount;
     }
 
