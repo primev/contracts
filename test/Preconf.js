@@ -22,11 +22,11 @@ describe("Preconf", function () {
       await addr1.sendTransaction({to: bidderAddress, value: ethers.parseEther("20.0")});
       await addr1.sendTransaction({to: commiterWallet.address, value: ethers.parseEther("20.0")});
 
-      const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
+      const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0")]);
       await providerRegistry.waitForDeployment();
 
 
-      const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0"), oracle]);
+      const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0")]);
       await userRegistry.waitForDeployment();      
 
       const txnReciept = await userRegistry.connect(bidderWallet).RegisterAndStake({value: ethers.parseEther("2.0")});
@@ -35,7 +35,7 @@ describe("Preconf", function () {
       const commitRegTxn = await providerRegistry.connect(commiterWallet).RegisterAndStake({value: ethers.parseEther("5.0")});
       await commitRegTxn.wait();
 
-      const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target]);
+      const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target, oracle]);
       await preconf.waitForDeployment();
 
   
@@ -78,9 +78,9 @@ describe("Preconf", function () {
   });
 
   it("should allow a provider to sign up to the provider registry", async function () {
-    const [owner, addr1, addr2] = await ethers.getSigners();
+    const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
+    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0")]);
     await providerRegistry.waitForDeployment();
 
     console.log("provider address: ", providerRegistry.target)
@@ -94,9 +94,9 @@ describe("Preconf", function () {
   });
 
   it("should allow a user to sign up to the user registry", async function () {
-    const [owner, addr1, addr2] = await ethers.getSigners();
+    const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0"), addr1]);
+    const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0")]);
     await userRegistry.waitForDeployment();
 
     console.log("provider address: ", userRegistry.target)
@@ -110,22 +110,21 @@ describe("Preconf", function () {
   
   });
 
-  it.only("should allow a contract deployer to deploy all 3 contracts and set the preconfirmations contract in the registries", async function () {
-    const [owner, addr1, addr2] = await ethers.getSigners();
+  it("should allow a contract deployer to deploy all 3 contracts and set the preconfirmations contract in the registries", async function () {
+    const [owner, addr1, oracle] = await ethers.getSigners();
 
     
-    const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0"), addr1]);
-    await userRegistry.waitForDeployment();
-
-    console.log("user reg address: ", userRegistry.target)
+    const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0")]);
 
   
-    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0"), addr1]);
+    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0")]);
+   
+    await userRegistry.waitForDeployment();
     await providerRegistry.waitForDeployment();
-
+    console.log("user reg address: ", userRegistry.target)
     console.log("provider reg address: ", providerRegistry.target)
 
-    const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target]);
+    const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target, oracle]);
     await preconf.waitForDeployment();
 
     console.log("preconf address: ", preconf.target)
@@ -140,10 +139,36 @@ describe("Preconf", function () {
     await expect(userRegistry.connect(owner).setPreconfirmationsContract(preconf.target)).
     to.be.revertedWith("Preconfirmations Contract is already set and cannot be changed.");
 
-
     await expect(providerRegistry.connect(owner).setPreconfirmationsContract(preconf.target)).
     to.be.revertedWith("Preconfirmations Contract is already set and cannot be changed.");
 
-
   });
+
+
+  it("Slash a provider via the oracle into the preconf contract", async function () {
+    const [owner, addr1, oracle] = await ethers.getSigners();
+
+    
+    const userRegistry = await ethers.deployContract("UserRegistry", [ethers.parseEther("2.0")]);
+
+  
+    const providerRegistry = await ethers.deployContract("ProviderRegistry", [ethers.parseEther("2.0")]);
+   
+    await userRegistry.waitForDeployment();
+    await providerRegistry.waitForDeployment();
+    console.log("user reg address: ", userRegistry.target)
+    console.log("provider reg address: ", providerRegistry.target)
+
+    const preconf = await ethers.deployContract("PreConfCommitmentStore", [providerRegistry.target, userRegistry.target, oracle]);
+    await preconf.waitForDeployment();
+
+    console.log("preconf address: ", preconf.target)
+
+
+    const setPreConfOnUserRegTxn = await userRegistry.connect(owner).setPreconfirmationsContract(preconf.target);
+    await setPreConfOnUserRegTxn.wait();
+
+    const setPreConfOnProviderRegTxn = await providerRegistry.connect(owner).setPreconfirmationsContract(preconf.target);
+    await setPreConfOnProviderRegTxn.wait();
+  });  
 });

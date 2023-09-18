@@ -5,9 +5,6 @@ contract UserRegistry {
     // Minimum stake required for registration
     uint256 public minStake;
 
-    // Address of the oracle
-    address public oracle;
-
     address public owner;
 
     address public preConfirmationsContract;
@@ -17,16 +14,13 @@ contract UserRegistry {
     // Mapping from user addresses to their staked amount
     mapping(address => uint256) public userStakes;
 
-    // Mapping to keep track of used PreConfCommitments
-    mapping(bytes32 => bool) public usedCommitments;
-
     // Event for registration
     event UserRegistered(address indexed user, uint256 stakedAmount);
 
     // TODO(ckartik): Remove any concept of a preconfimration from UserRegistry
     
     // Event for retrieving funds
-    event FundsRetrieved(address indexed user, uint256 amount, string txnHash);
+    event FundsRetrieved(address indexed user, uint256 amount);
 
     struct PreConfCommitment {
         string txnHash;
@@ -39,9 +33,8 @@ contract UserRegistry {
         string commitmentSignature;
     }
 
-    constructor(uint256 _minStake, address _oracle) {
+    constructor(uint256 _minStake) {
         minStake = _minStake;
-        oracle = _oracle;
         preConfirmationsContract = address(0);
         owner = msg.sender;
         preConfirmationsContractSet = false;
@@ -51,12 +44,6 @@ contract UserRegistry {
         require(msg.sender == preConfirmationsContract, "Only the pre-confirmations contract can call this funciton");
         _;
     }
-
-    modifier onlyOracle() {
-        require(msg.sender == oracle, "Only the oracle can call this function");
-        _;
-    }
-
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can call this function");
@@ -85,24 +72,14 @@ contract UserRegistry {
     
 
     // Retrieve funds (only callable by Oracle)
-    function RetrieveFunds(address user, PreConfCommitment memory preConf) external onlyPreConfirmationEngine {
+    function RetrieveFunds(address user, uint256 amt, address payable provider) external onlyPreConfirmationEngine {
         uint256 amount = userStakes[user];
-        require(amount > 0, "No funds available for retrieval");
+        require(amount >= amt, "No funds available for retrieval");
 
-        // Calculate the hash of the PreConfCommitment to check for replays
-        bytes32 commitmentHash = keccak256(abi.encode(preConf));
-        require(!usedCommitments[commitmentHash], "Commitment already used");
+        provider.transfer(amt);
 
-        // Mark this commitment as used to prevent replays
-        usedCommitments[commitmentHash] = true;
+        userStakes[user] -= amt;
 
-        // Logic for validating PreConfCommitment (omitted for simplicity)
-        // ...
-
-        // Transfer funds to Oracle
-        payable(oracle).transfer(amount);
-        userStakes[user] = 0;
-
-        emit FundsRetrieved(user, amount, preConf.txnHash);
+        emit FundsRetrieved(user, amount);
     }
 }

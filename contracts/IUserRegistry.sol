@@ -15,5 +15,6 @@ interface IUserRegistry {
 
     function RegisterAndStake() external payable;
     function checkStake(address user) external view returns (uint256);
-    function RetrieveFunds(address user, PreConfCommitment memory preConf) external;
+    function RetrieveFunds(address user, bytes32 commitmentHash, uint256 amt, address payable provider) external;
+
 }
