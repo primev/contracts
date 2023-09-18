@@ -55,6 +55,8 @@ contract ProviderRegistry {
     function setPreconfirmationsContract(address contractAddress) public onlyOwner {
         require(preConfirmationsContractSet == false, "Preconfirmations Contract is already set and cannot be changed.");
         preConfirmationsContract = contractAddress;
+        preConfirmationsContractSet = true;
+
     }
 
     // Register and stake function
@@ -79,7 +81,7 @@ contract ProviderRegistry {
     }
 
     // Slash funds
-    function slash(uint256 amt, address provider) external onlyOracle {
+    function slash(uint256 amt, address provider) external onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
         payable(oracle).transfer(amt);
@@ -87,7 +89,7 @@ contract ProviderRegistry {
     }
 
     // Reward funds
-    function reward(uint256 amt, address provider) external onlyOracle {
+    function reward(uint256 amt, address provider) external onlyPreConfirmationEngine {
         require(address(this).balance >= amt, "Insufficient contract balance");
         providerStakes[provider] += amt;
         emit FundsRewarded(provider, amt);

@@ -23,6 +23,8 @@ contract UserRegistry {
     // Event for registration
     event UserRegistered(address indexed user, uint256 stakedAmount);
 
+    // TODO(ckartik): Remove any concept of a preconfimration from UserRegistry
+    
     // Event for retrieving funds
     event FundsRetrieved(address indexed user, uint256 amount, string txnHash);
 
@@ -64,6 +66,7 @@ contract UserRegistry {
     function setPreconfirmationsContract(address contractAddress) public onlyOwner {
         require(preConfirmationsContractSet == false, "Preconfirmations Contract is already set and cannot be changed.");
         preConfirmationsContract = contractAddress;
+        preConfirmationsContractSet = true;
     }
 
     // Register and stake function
@@ -82,7 +85,7 @@ contract UserRegistry {
     
 
     // Retrieve funds (only callable by Oracle)
-    function RetrieveFunds(address user, PreConfCommitment memory preConf) external onlyOracle {
+    function RetrieveFunds(address user, PreConfCommitment memory preConf) external onlyPreConfirmationEngine {
         uint256 amount = userStakes[user];
         require(amount > 0, "No funds available for retrieval");
 
