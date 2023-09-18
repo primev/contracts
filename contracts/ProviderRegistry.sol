@@ -5,8 +5,11 @@ contract ProviderRegistry {
     // Minimum stake required for registration
     uint256 public minStake;
 
-    // Address of the oracle
-    address public oracle;
+    address public owner;
+
+    address public preConfirmationsContract;
+
+    bool preConfirmationsContractSet; 
 
     // Mapping from provider addresses to their staked amount
     mapping(address => uint256) public providerStakes;
@@ -23,14 +26,28 @@ contract ProviderRegistry {
     // Event for rewarding funds
     event FundsRewarded(address indexed provider, uint256 amount);
 
-    constructor(uint256 _minStake, address _oracle) {
+    constructor(uint256 _minStake) {
         minStake = _minStake;
-        oracle = _oracle;
+        preConfirmationsContract = address(0);
+        owner = msg.sender;
+        preConfirmationsContractSet = false;
     }
 
-    modifier onlyOracle() {
-        require(msg.sender == oracle, "Only the oracle can call this function");
+    modifier onlyPreConfirmationEngine() {
+        require(msg.sender == preConfirmationsContract, "Only the pre-confirmations contract can call this funciton");
         _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    function setPreconfirmationsContract(address contractAddress) public onlyOwner {
+        require(preConfirmationsContractSet == false, "Preconfirmations Contract is already set and cannot be changed.");
+        preConfirmationsContract = contractAddress;
+        preConfirmationsContractSet = true;
+
     }
 
     // Register and stake function
@@ -55,17 +72,11 @@ contract ProviderRegistry {
     }
 
     // Slash funds
-    function slash(uint256 amt, address provider) external onlyOracle {
+    function Slash(uint256 amt, address provider, address payable user) external onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
-        payable(oracle).transfer(amt);
+        user.transfer(amt);
         emit FundsSlashed(provider, amt);
     }
 
-    // Reward funds
-    function reward(uint256 amt, address provider) external onlyOracle {
-        require(address(this).balance >= amt, "Insufficient contract balance");
-        providerStakes[provider] += amt;
-        emit FundsRewarded(provider, amt);
-    }
 }

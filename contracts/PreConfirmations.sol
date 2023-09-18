@@ -18,6 +18,11 @@ contract PreConfCommitmentStore {
 
         string commitmentHash;
         bytes commitmentSignature;
+
+
+        address bidder;
+        address commiter;
+
     }
 
     struct PreConfBid {
@@ -28,6 +33,10 @@ contract PreConfCommitmentStore {
         bytes32 bidHash;
         bytes bidSignature;
     }
+
+
+    // Address of the oracle
+    address public oracle;
 
     // EIP-712 Type Hash for the message
     bytes32 public constant EIP712_COMMITMENT_TYPEHASH = keccak256(
@@ -52,7 +61,7 @@ contract PreConfCommitmentStore {
     IProviderRegistry public providerRegistry;
     IUserRegistry public userRegistry;
 
-    constructor(address _providerRegistry, address _userRegistry) {
+    constructor(address _providerRegistry, address _userRegistry, address _oracle) {
         // EIP-712 domain separator
         DOMAIN_SEPARATOR_PRECONF = keccak256(
             abi.encode(
@@ -69,13 +78,24 @@ contract PreConfCommitmentStore {
                 keccak256("1")
             )
         );
+
+        oracle = _oracle;
         commitmentCount = 0;
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
     }
+
+    modifier onlyOracle() {
+        require(msg.sender == oracle, "Only the oracle can call this function");
+        _;
+    }
+
     // Commitment Hash -> Commitemnt
     // Only stores valid commitments
     mapping(bytes32 => PreConfCommitment) public commitments;
+
+    // Mapping to keep track of used PreConfCommitments
+    mapping(bytes32 => bool) public usedCommitments;
 
     mapping(address => PreConfBid[]) public bids;
     mapping(address => PreConfCommitment[]) public commitmentss;
@@ -167,7 +187,7 @@ contract PreConfCommitmentStore {
         uint64 bid,
         uint64 blockNumber,
         bytes memory bidSignature
-    ) public view returns (bool, bytes32) {
+    ) public view returns (bool, bytes32, address) {
         bytes32 messageDigest = getBidHash(txnHash, bid, blockNumber);
         address bidderAddress = recoverAddress(messageDigest, bidSignature);
         assert(bidderAddress != address(0));
@@ -176,7 +196,7 @@ contract PreConfCommitmentStore {
         console.log("Stake: %s", stake);
         console.log("Bid: %s", 10*bid);
         assert(stake > 10*bid);
-        return (true, messageDigest);
+        return (true, messageDigest, bidderAddress);
     }
     
     function bytes32ToHexString(bytes32 _bytes32) public pure returns (string memory) {
@@ -199,7 +219,6 @@ contract PreConfCommitmentStore {
         return string(_string);
     }
 
-
     // Updated function signature to include bidSignature
     // TODO(@ckartik): Verify the signature before storing, and store in address map
     function storeCommitment(
@@ -221,7 +240,7 @@ contract PreConfCommitmentStore {
         // console.logBytes("commitmentSignature: %s", commitmentSignature);
         
         // Verify the bid
-        (bool bidValidity, bytes32 bHash) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
+        (bool bidValidity, bytes32 bHash, address bidderAddress) = verifyBid(txnHash, bid, blockNumber, bytes(bidSignature));
         assert(bidValidity);
         bytes32 preConfHash = getPreConfHash(txnHash, bid, blockNumber, bHash, bytesToHexString(bidSignature));
         console.logBytes32(preConfHash);
@@ -233,7 +252,7 @@ contract PreConfCommitmentStore {
 
         // This is curently abritrary.
         assert(stake > 10*bid);
-        commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature);
+        commitments[preConfHash] = PreConfCommitment(txnHash, bid, blockNumber, bytes32ToHexString(bHash), string(bidSignature), commitmentHash, commitmentSignature, bidderAddress, commiterAddress);
         commitmentCount++;
 
         return commitmentCount;
@@ -241,5 +260,25 @@ contract PreConfCommitmentStore {
 
     function getCommitment(bytes32 commitemntHash) public view returns (PreConfCommitment memory) {
         return commitments[commitemntHash];
+    }
+
+    function initiateSlash(bytes32 commitmentHash) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentHash];
+
+        require(!usedCommitments[commitmentHash], "Commitment already used");
+        providerRegistry.Slash( commitment.bid, commitment.commiter, payable(commitment.bidder));
+
+        // Mark this commitment as used to prevent replays
+        usedCommitments[commitmentHash] = true;
+    }
+
+    function initateReward(bytes32 commitmentHash) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentHash];
+
+        require(!usedCommitments[commitmentHash], "Commitment already used");
+        userRegistry.RetrieveFunds( commitment.bidder, commitmentHash, commitment.bid, payable(commitment.commiter));
+
+        // Mark this commitment as used to prevent replays
+        usedCommitments[commitmentHash] = true;
     }
 }
