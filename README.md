@@ -81,7 +81,12 @@ sequenceDiagram
     ProviderRegistry-->>PreConf: stake
     deactivate ProviderRegistry
 
-    PreConf->>PreConf: verifyBid()
+    PreConf->>UserRegistry: checkStake(User)
+    activate UserRegistry
+    UserRegistry-->>PreConf: stake
+    deactivate UserRegistry
+
+    PreConf->>PreConf: verifyBidAndCommitment()
     PreConf-->>Provider: SignatureVerified event
     deactivate PreConf
 
