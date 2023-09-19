@@ -17,24 +17,31 @@ This is the core contract that handles pre-confirmation commitments. It uses EIP
 - `recoverAddress`: Recovers the signer's address from a message digest and a signature.
 - `verifyBid`: Verifies a bid's validity by checking the signer's stake and the bid amount.
 - `storeCommitment`: Stores a valid commitment in the contract.
-
+- 
 ### IUserRegistry
 
-This is an interface that must be implemented by the user registry contract. It contains methods for registering and staking users.
+This is an interface that must be implemented by the user registry contract. It contains methods for registering, staking, and retrieving funds.
 
 #### Functions
 
 - `RegisterAndStake`: Registers a user and stakes ETH.
 - `checkStake`: Checks the staked amount for a given user.
+- `depositFunds`: Deposits additional funds into the contract.
+- `RetrieveFunds`: Retrieves a specific amount of funds for a user and sends them to a provider.
 
 ### IProviderRegistry
 
-This is an interface that must be implemented by the provider registry contract. It contains methods for registering and staking providers.
+This is an interface that must be implemented by the provider registry contract. It contains methods for registering, depositing funds, slashing, and rewarding.
 
 #### Functions
 
 - `RegisterAndStake`: Registers a provider and stakes ETH.
 - `checkStake`: Checks the staked amount for a given provider.
+- `depositFunds`: Deposits additional funds into the contract.
+- `Slash`: Slashes a specific amount of staked ETH from a provider and sends it to a user.
+- `reward`: Rewards a specific amount of ETH to a provider.
+
+Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
 
 ## Tests
 
