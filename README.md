@@ -56,7 +56,7 @@ npx hardhat test
 ## Flow of Actors
 
 ### Happy path - commitment is satisfied
-```
+```mermaid
 sequenceDiagram
     participant User
     participant Provider
