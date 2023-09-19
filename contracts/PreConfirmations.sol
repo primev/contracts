@@ -276,7 +276,7 @@ contract PreConfCommitmentStore {
         PreConfCommitment memory commitment = commitments[commitmentHash];
 
         require(!usedCommitments[commitmentHash], "Commitment already used");
-        userRegistry.RetrieveFunds( commitment.bidder, commitmentHash, commitment.bid, payable(commitment.commiter));
+        userRegistry.RetrieveFunds(commitment.bidder, commitment.bid, payable(commitment.commiter));
 
         // Mark this commitment as used to prevent replays
         usedCommitments[commitmentHash] = true;
