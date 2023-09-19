@@ -55,7 +55,6 @@ npx hardhat test
 
 ## Flow of Actors
 
-### Happy path - commitment is satisfied
 ```mermaid
 sequenceDiagram
     participant User
@@ -86,14 +85,27 @@ sequenceDiagram
     PreConf-->>Provider: SignatureVerified event
     deactivate PreConf
 
-    Oracle->>PreConf: initateReward(commitmentHash)
-    activate PreConf
-    PreConf->>UserRegistry: RetrieveFunds(User, amt, Provider)
-    activate UserRegistry
-    UserRegistry-->>PreConf: FundsRetrieved event
-    deactivate UserRegistry
+    alt Reward Case
+        Oracle->>PreConf: initateReward(commitmentHash)
+        activate PreConf
+        PreConf->>UserRegistry: RetrieveFunds(User, amt, Provider)
+        activate UserRegistry
+        UserRegistry-->>PreConf: FundsRetrieved event
+        deactivate UserRegistry
 
-    PreConf-->>Oracle: CommitmentUsed event
-    deactivate PreConf
+        PreConf-->>Oracle: CommitmentUsed event
+        deactivate PreConf
+
+    else Slashing Case
+        Oracle->>PreConf: initiateSlash(commitmentHash)
+        activate PreConf
+        PreConf->>ProviderRegistry: Slash(amt, Provider, User)
+        activate ProviderRegistry
+        ProviderRegistry-->>PreConf: FundsSlashed event
+        deactivate ProviderRegistry
+
+        PreConf-->>Oracle: CommitmentUsed event
+        deactivate PreConf
+    end
 
 ```

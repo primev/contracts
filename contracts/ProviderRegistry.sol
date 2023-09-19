@@ -71,7 +71,7 @@ contract ProviderRegistry {
         emit FundsDeposited(msg.sender, msg.value);
     }
 
-    // Slash funds
+    // Slash funds from provider and send the bid amount to the user.
     function Slash(uint256 amt, address provider, address payable user) external onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
