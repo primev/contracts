@@ -51,3 +51,49 @@ To run the tests, use the following command:
 ```bash
 npx hardhat test
 ```
+
+
+## Flow of Actors
+
+### Happy path - commitment is satisfied
+```
+sequenceDiagram
+    participant User
+    participant Provider
+    participant PreConf
+    participant UserRegistry
+    participant ProviderRegistry
+    participant Oracle
+
+    User->>UserRegistry: RegisterAndStake()
+    activate UserRegistry
+    UserRegistry-->>User: UserRegistered event
+    deactivate UserRegistry
+
+    Provider->>ProviderRegistry: RegisterAndStake()
+    activate ProviderRegistry
+    ProviderRegistry-->>Provider: ProviderRegistered event
+    deactivate ProviderRegistry
+
+    Provider->>PreConf: storeCommitment()
+    activate PreConf
+    PreConf->>ProviderRegistry: checkStake(Provider)
+    activate ProviderRegistry
+    ProviderRegistry-->>PreConf: stake
+    deactivate ProviderRegistry
+
+    PreConf->>PreConf: verifyBid()
+    PreConf-->>Provider: SignatureVerified event
+    deactivate PreConf
+
+    Oracle->>PreConf: initateReward(commitmentHash)
+    activate PreConf
+    PreConf->>UserRegistry: RetrieveFunds(User, amt, Provider)
+    activate UserRegistry
+    UserRegistry-->>PreConf: FundsRetrieved event
+    deactivate UserRegistry
+
+    PreConf-->>Oracle: CommitmentUsed event
+    deactivate PreConf
+
+```
