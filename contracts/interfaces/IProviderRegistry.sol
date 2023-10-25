@@ -8,6 +8,9 @@ interface IProviderRegistry {
 
     function depositFunds() external payable;
 
-    function slash(uint256 amt, address provider, address payable user)
-        external;
+    function slash(
+        uint256 amt,
+        address provider,
+        address payable user
+    ) external;
 }

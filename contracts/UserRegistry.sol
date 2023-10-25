@@ -2,8 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from
-    "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title User Registry
 /// @author Kartik Chopra
@@ -75,10 +74,9 @@ contract UserRegistry is Ownable, ReentrancyGuard {
      * @dev Sets the pre-confirmations contract address. Can only be called by the owner.
      * @param contractAddress The address of the pre-confirmations contract.
      */
-    function setPreconfirmationsContract(address contractAddress)
-        public
-        onlyOwner
-    {
+    function setPreconfirmationsContract(
+        address contractAddress
+    ) public onlyOwner {
         require(
             preConfirmationsContract == address(0),
             "Preconfirmations Contract is already set and cannot be changed."
@@ -115,16 +113,19 @@ contract UserRegistry is Ownable, ReentrancyGuard {
      * @param amt The amount to retrieve from the user's stake.
      * @param provider The address to transfer the retrieved funds to.
      */
-    function retrieveFunds(address user, uint256 amt, address payable provider)
-        external
-        nonReentrant
-        onlyPreConfirmationEngine
-    {
+    function retrieveFunds(
+        address user,
+        uint256 amt,
+        address payable provider
+    ) external nonReentrant onlyPreConfirmationEngine {
         uint256 amount = userStakes[user];
-        require(amount >= amt, "Amount to retrieve bigger than available funds");
+        require(
+            amount >= amt,
+            "Amount to retrieve bigger than available funds"
+        );
         userStakes[user] -= amt;
 
-        (bool success,) = provider.call{value: amt}("");
+        (bool success, ) = provider.call{value: amt}("");
         require(success, "couldn't transfer to user");
 
         emit FundsRetrieved(user, amount);

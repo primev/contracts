@@ -6,8 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
-import {MessageHashUtils} from
-    "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
@@ -18,9 +17,10 @@ contract PreConfCommitmentStore is Ownable {
     using ECDSA for bytes32;
 
     /// @dev EIP-712 Type Hash for preconfirmation commitment
-    bytes32 public constant EIP712_COMMITMENT_TYPEHASH = keccak256(
-        "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,string bidHash,string signature)"
-    );
+    bytes32 public constant EIP712_COMMITMENT_TYPEHASH =
+        keccak256(
+            "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,string bidHash,string signature)"
+        );
 
     /// @dev EIP-712 Type Hash for preconfirmation bid
     bytes32 public constant EIP712_MESSAGE_TYPEHASH =
@@ -119,9 +119,7 @@ contract PreConfCommitmentStore is Ownable {
         address _providerRegistry,
         address _userRegistry,
         address _oracle
-    )
-        Ownable(msg.sender)
-    {
+    ) Ownable(msg.sender) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
@@ -149,11 +147,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param adr The address for which to retrieve bids.
      * @return An array of PreConfBid structures representing the bids made by the address.
      */
-    function getBidsFor(address adr)
-        public
-        view
-        returns (PreConfBid[] memory)
-    {
+    function getBidsFor(address adr) public view returns (PreConfBid[] memory) {
         return bids[adr];
     }
 
@@ -168,14 +162,9 @@ contract PreConfCommitmentStore is Ownable {
         string memory _txnHash,
         uint64 _bid,
         uint64 _blockNumber
-    )
-        public
-        view
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                "\x19\x01",
+    ) public view returns (bytes32) {
+        return
+            MessageHashUtils.toTypedDataHash(
                 DOMAIN_SEPARATOR_BID,
                 keccak256(
                     abi.encode(
@@ -185,8 +174,7 @@ contract PreConfCommitmentStore is Ownable {
                         _blockNumber
                     )
                 )
-            )
-        );
+            );
     }
 
     /**
@@ -203,14 +191,9 @@ contract PreConfCommitmentStore is Ownable {
         uint64 _blockNumber,
         bytes32 _bidHash,
         string memory _bidSignature
-    )
-        public
-        view
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                "\x19\x01",
+    ) public view returns (bytes32) {
+        return
+            MessageHashUtils.toTypedDataHash(
                 DOMAIN_SEPARATOR_PRECONF,
                 keccak256(
                     abi.encode(
@@ -218,12 +201,13 @@ contract PreConfCommitmentStore is Ownable {
                         keccak256(abi.encodePacked(_txnHash)),
                         _bid,
                         _blockNumber,
-                        keccak256(abi.encodePacked(bytes32ToHexString(_bidHash))),
+                        keccak256(
+                            abi.encodePacked(bytes32ToHexString(_bidHash))
+                        ),
                         keccak256(abi.encodePacked(_bidSignature))
                     )
                 )
-            )
-        );
+            );
     }
 
     /**
@@ -296,19 +280,24 @@ contract PreConfCommitmentStore is Ownable {
         string memory commitmentHash,
         bytes calldata bidSignature,
         bytes memory commitmentSignature
-    )
-        public
-        returns (uint256)
-    {
+    ) public returns (uint256) {
         // Fixing stack too deep
 
-        (bytes32 bHash, address bidderAddress, uint256 stake) =
-            verifyBid(bid, blockNumber, txnHash, bidSignature);
+        (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
+            bid,
+            blockNumber,
+            txnHash,
+            bidSignature
+        );
 
         // This helps in avoiding stack too deep
         {
             bytes32 preConfHash = getPreConfHash(
-                txnHash, bid, blockNumber, bHash, bytesToHexString(bidSignature)
+                txnHash,
+                bid,
+                blockNumber,
+                bHash,
+                bytesToHexString(bidSignature)
             );
             address commiterAddress = preConfHash.recover(commitmentSignature);
 
@@ -336,11 +325,9 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentHash The hash of the commitment.
      * @return A PreConfCommitment structure representing the commitment.
      */
-    function getCommitment(bytes32 commitmentHash)
-        public
-        view
-        returns (PreConfCommitment memory)
-    {
+    function getCommitment(
+        bytes32 commitmentHash
+    ) public view returns (PreConfCommitment memory) {
         return commitments[commitmentHash];
     }
 
@@ -355,7 +342,9 @@ contract PreConfCommitmentStore is Ownable {
         usedCommitments[commitmentHash] = true;
 
         providerRegistry.slash(
-            commitment.bid, commitment.commiter, payable(commitment.bidder)
+            commitment.bid,
+            commitment.commiter,
+            payable(commitment.bidder)
         );
     }
 
@@ -370,7 +359,9 @@ contract PreConfCommitmentStore is Ownable {
         usedCommitments[commitmentHash] = true;
 
         userRegistry.retrieveFunds(
-            commitment.bidder, commitment.bid, payable(commitment.commiter)
+            commitment.bidder,
+            commitment.bid,
+            payable(commitment.commiter)
         );
     }
 
@@ -386,10 +377,9 @@ contract PreConfCommitmentStore is Ownable {
      * @dev Updates the address of the provider registry.
      * @param newProviderRegistry The new provider registry address.
      */
-    function updateProviderRegistry(address newProviderRegistry)
-        public
-        onlyOwner
-    {
+    function updateProviderRegistry(
+        address newProviderRegistry
+    ) public onlyOwner {
         providerRegistry = IProviderRegistry(newProviderRegistry);
     }
 
@@ -401,11 +391,9 @@ contract PreConfCommitmentStore is Ownable {
         userRegistry = IUserRegistry(newUserRegistry);
     }
 
-    function bytes32ToHexString(bytes32 _bytes32)
-        public
-        pure
-        returns (string memory)
-    {
+    function bytes32ToHexString(
+        bytes32 _bytes32
+    ) public pure returns (string memory) {
         bytes memory HEXCHARS = "0123456789abcdef";
         bytes memory _string = new bytes(64);
         for (uint8 i = 0; i < 32; i++) {
@@ -415,11 +403,9 @@ contract PreConfCommitmentStore is Ownable {
         return string(_string);
     }
 
-    function bytesToHexString(bytes memory _bytes)
-        public
-        pure
-        returns (string memory)
-    {
+    function bytesToHexString(
+        bytes memory _bytes
+    ) public pure returns (string memory) {
         bytes memory HEXCHARS = "0123456789abcdef";
         bytes memory _string = new bytes(_bytes.length * 2);
         for (uint256 i = 0; i < _bytes.length; i++) {
@@ -430,11 +416,10 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     // Add to your contract
-    function recoverAddress(bytes32 messageDigest, bytes memory signature)
-        public
-        pure
-        returns (address)
-    {
+    function recoverAddress(
+        bytes32 messageDigest,
+        bytes memory signature
+    ) public pure returns (address) {
         return messageDigest.recover(signature);
     }
 }

@@ -16,6 +16,9 @@ interface IUserRegistry {
 
     function checkStake(address user) external view returns (uint256);
 
-    function retrieveFunds(address user, uint256 amt, address payable provider)
-        external;
+    function retrieveFunds(
+        address user,
+        uint256 amt,
+        address payable provider
+    ) external;
 }

@@ -2,8 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from
-    "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Provider Registry
 /// @author Kartik Chopra
@@ -71,10 +70,9 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
      * @dev Sets the pre-confirmations contract address. Can only be called by the owner.
      * @param contractAddress The address of the pre-confirmations contract.
      */
-    function setPreconfirmationsContract(address contractAddress)
-        external
-        onlyOwner
-    {
+    function setPreconfirmationsContract(
+        address contractAddress
+    ) external onlyOwner {
         require(
             preConfirmationsContract == address(0),
             "Preconfirmations Contract is already set and cannot be changed."
@@ -120,15 +118,15 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
      * @param provider The address of the provider.
      * @param user The address to transfer the slashed funds to.
      */
-    function slash(uint256 amt, address provider, address payable user)
-        external
-        nonReentrant
-        onlyPreConfirmationEngine
-    {
+    function slash(
+        uint256 amt,
+        address provider,
+        address payable user
+    ) external nonReentrant onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
 
-        (bool success,) = user.call{value: amt}("");
+        (bool success, ) = user.call{value: amt}("");
         require(success, "Couldn't transfer to provider");
 
         emit FundsSlashed(provider, amt);
