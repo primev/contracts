@@ -17,17 +17,18 @@ This is the core contract that handles pre-confirmation commitments. It uses EIP
 - `recoverAddress`: Recovers the signer's address from a message digest and a signature.
 - `verifyBid`: Verifies a bid's validity by checking the signer's stake and the bid amount.
 - `storeCommitment`: Stores a valid commitment in the contract.
-- 
+-
+
 ### IUserRegistry
 
 This is an interface that must be implemented by the user registry contract. It contains methods for registering, staking, and retrieving funds.
 
 #### Functions
 
-- `RegisterAndStake`: Registers a user and stakes ETH.
+- `registerAndStake`: Registers a user and stakes ETH.
 - `checkStake`: Checks the staked amount for a given user.
 - `depositFunds`: Deposits additional funds into the contract.
-- `RetrieveFunds`: Retrieves a specific amount of funds for a user and sends them to a provider.
+- `retrieveFunds`: Retrieves a specific amount of funds for a user and sends them to a provider.
 
 ### IProviderRegistry
 
@@ -35,10 +36,10 @@ This is an interface that must be implemented by the provider registry contract.
 
 #### Functions
 
-- `RegisterAndStake`: Registers a provider and stakes ETH.
+- `registerAndStake`: Registers a provider and stakes ETH.
 - `checkStake`: Checks the staked amount for a given provider.
 - `depositFunds`: Deposits additional funds into the contract.
-- `Slash`: Slashes a specific amount of staked ETH from a provider and sends it to a user.
+- `slash`: Slashes a specific amount of staked ETH from a provider and sends it to a user.
 - `reward`: Rewards a specific amount of ETH to a provider.
 
 Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
@@ -59,7 +60,6 @@ To run the tests, use the following command:
 npx hardhat test
 ```
 
-
 ## Flow of Actors
 
 ```mermaid
@@ -71,12 +71,12 @@ sequenceDiagram
     participant ProviderRegistry
     participant Oracle
 
-    User->>UserRegistry: RegisterAndStake()
+    User->>UserRegistry: registerAndStake()
     activate UserRegistry
     UserRegistry-->>User: UserRegistered event
     deactivate UserRegistry
 
-    Provider->>ProviderRegistry: RegisterAndStake()
+    Provider->>ProviderRegistry: registerAndStake()
     activate ProviderRegistry
     ProviderRegistry-->>Provider: ProviderRegistered event
     deactivate ProviderRegistry
@@ -100,7 +100,7 @@ sequenceDiagram
     alt Reward Case
         Oracle->>PreConf: initateReward(commitmentHash)
         activate PreConf
-        PreConf->>UserRegistry: RetrieveFunds(User, amt, Provider)
+        PreConf->>UserRegistry: retrieveFunds(User, amt, Provider)
         activate UserRegistry
         UserRegistry-->>PreConf: FundsRetrieved event
         deactivate UserRegistry
@@ -111,7 +111,7 @@ sequenceDiagram
     else Slashing Case
         Oracle->>PreConf: initiateSlash(commitmentHash)
         activate PreConf
-        PreConf->>ProviderRegistry: Slash(amt, Provider, User)
+        PreConf->>ProviderRegistry: slash(amt, Provider, User)
         activate ProviderRegistry
         ProviderRegistry-->>PreConf: FundsSlashed event
         deactivate ProviderRegistry
