@@ -11,4 +11,8 @@ module.exports = {
     },
     hardhat: {},
   },
+  docgen: {
+    pages: "files",
+    exclude: ["contracts/interfaces", "lib"],
+  },
 };

@@ -2,13 +2,32 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build:
+  check:
+    name: Foundry Things
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test -vvv
+
+      - name: Run snapshot
+        run: forge snapshot
+
+      - name: Run coverage
+        run: forge coverage
+
+  build:
     runs-on: ubuntu-latest
 
     strategy:
@@ -17,22 +36,22 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
 
-    # Install Hardhat globally
-    - run: npm install -g hardhat
+      # Install Hardhat globally
+      - run: npm install -g hardhat
 
-    # Install project dependencies
-    - run: npm install
+      # Install project dependencies
+      - run: npm install
 
-    # Build the project, if applicable
-    - run: npm run build --if-present
+      # Build the project, if applicable
+      - run: npm run build --if-present
 
-    # Run Hardhat tests
-    - run: npx hardhat test
+      # Run Hardhat tests
+      - run: npx hardhat test
