@@ -260,7 +260,7 @@ contract PreConfCommitmentStore is Ownable {
         messageDigest = getBidHash(txnHash, bid, blockNumber);
         recoveredAddress = messageDigest.recover(bidSignature);
         stake = userRegistry.checkStake(recoveredAddress);
-        require(stake > 10 * bid, "Invalid bid");
+        require(stake > (10 * bid), "Invalid bid");
     }
 
     /**
