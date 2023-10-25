@@ -6,6 +6,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
+import {MessageHashUtils} from
+    "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
