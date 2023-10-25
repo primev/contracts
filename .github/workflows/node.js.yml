@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Smart Contracts Actions
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   check:
-    name: Foundry Things
+    name: Foundry Checks and Reports
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,6 +28,7 @@ jobs:
         run: forge coverage
 
   build:
+    name: Hardhat Checks and Scripts
     runs-on: ubuntu-latest
 
     strategy:
@@ -43,6 +44,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
       # Install Hardhat globally
       - run: npm install -g hardhat
