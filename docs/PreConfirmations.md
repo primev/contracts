@@ -413,21 +413,64 @@ _Updates the address of the user registry._
 | ---- | ---- | ----------- |
 | newUserRegistry | address | The new user registry address. |
 
-### bytes32ToHexString
+### _bytes32ToHexString
 
 ```solidity
-function bytes32ToHexString(bytes32 _bytes32) public pure returns (string)
+function _bytes32ToHexString(bytes32 _bytes32) internal pure returns (string)
 ```
 
-### bytesToHexString
+_Internal Function to convert bytes32 to hex string without 0x_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _bytes32 | bytes32 | the byte array to convert to string |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | string | hex string from the byte 32 array |
+
+### _bytesToHexString
 
 ```solidity
-function bytesToHexString(bytes _bytes) public pure returns (string)
+function _bytesToHexString(bytes _bytes) public pure returns (string)
 ```
+
+_Internal Function to convert bytes array to hex string without 0x_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _bytes | bytes | the byte array to convert to string |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | string | hex string from the bytes array |
 
 ### recoverAddress
 
 ```solidity
 function recoverAddress(bytes32 messageDigest, bytes signature) public pure returns (address)
 ```
+
+_Wrapper around Openzeppelin recover function for frontend purposes_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| messageDigest | bytes32 | the signature payload hash to check |
+| signature | bytes | the signature hash |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | the address of the signing address |
 

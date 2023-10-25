@@ -202,7 +202,7 @@ contract PreConfCommitmentStore is Ownable {
                         _bid,
                         _blockNumber,
                         keccak256(
-                            abi.encodePacked(bytes32ToHexString(_bidHash))
+                            abi.encodePacked(_bytes32ToHexString(_bidHash))
                         ),
                         keccak256(abi.encodePacked(_bidSignature))
                     )
@@ -297,7 +297,7 @@ contract PreConfCommitmentStore is Ownable {
                 bid,
                 blockNumber,
                 bHash,
-                bytesToHexString(bidSignature)
+                _bytesToHexString(bidSignature)
             );
             address commiterAddress = preConfHash.recover(commitmentSignature);
 
@@ -391,9 +391,14 @@ contract PreConfCommitmentStore is Ownable {
         userRegistry = IUserRegistry(newUserRegistry);
     }
 
-    function bytes32ToHexString(
+    /**
+     * @dev Internal Function to convert bytes32 to hex string without 0x
+     * @param _bytes32 the byte array to convert to string
+     * @return hex string from the byte 32 array
+     */
+    function _bytes32ToHexString(
         bytes32 _bytes32
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         bytes memory HEXCHARS = "0123456789abcdef";
         bytes memory _string = new bytes(64);
         for (uint8 i = 0; i < 32; i++) {
@@ -403,7 +408,12 @@ contract PreConfCommitmentStore is Ownable {
         return string(_string);
     }
 
-    function bytesToHexString(
+    /**
+     * @dev Internal Function to convert bytes array to hex string without 0x
+     * @param _bytes the byte array to convert to string
+     * @return hex string from the bytes array
+     */
+    function _bytesToHexString(
         bytes memory _bytes
     ) public pure returns (string memory) {
         bytes memory HEXCHARS = "0123456789abcdef";
@@ -415,7 +425,12 @@ contract PreConfCommitmentStore is Ownable {
         return string(_string);
     }
 
-    // Add to your contract
+    /**
+     * @dev Wrapper around Openzeppelin recover function for frontend purposes
+     * @param messageDigest the signature payload hash to check
+     * @param signature the signature hash
+     * @return the address of the signing address
+     */
     function recoverAddress(
         bytes32 messageDigest,
         bytes memory signature
