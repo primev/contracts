@@ -8,11 +8,21 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// @author Kartik Chopra
 /// @notice This contract is for provider registry and staking.
 contract ProviderRegistry is Ownable, ReentrancyGuard {
+    /// @dev For improved precision
+    uint256 constant PRECISION = 10 ** 25;
+    uint256 constant PERCENT = 100 * PRECISION;
+
     /// @dev Minimum stake required for registration
     uint256 public minStake;
 
+    /// @dev Fee percent that would be taken by protocol when provider is slashed
+    uint16 public feePercent;
+
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
+
+    /// @dev Fee recipient
+    address public feeRecipient;
 
     /// @dev Mapping from provider address to whether they are registered or not
     mapping(address => bool) public providerRegistered;
@@ -50,9 +60,17 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
     /**
      * @dev Constructor to initialize the contract with a minimum stake requirement.
      * @param _minStake The minimum stake required for provider registration.
+     * @param _feeRecipient The address that receives fee
+     * @param _feePercent The fee percentage for protocol
      */
-    constructor(uint256 _minStake) Ownable(msg.sender) {
+    constructor(
+        uint256 _minStake,
+        address _feeRecipient,
+        uint16 _feePercent
+    ) Ownable(msg.sender) {
         minStake = _minStake;
+        feeRecipient = _feeRecipient;
+        feePercent = _feePercent;
     }
 
     /**
@@ -126,9 +144,35 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
 
-        (bool success, ) = user.call{value: amt}("");
+        uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
+        uint256 amtMinusFee = amt - feeAmt;
+
+        if (feeRecipient != address(0)) {
+            (bool successFee, ) = feeRecipient.call{value: feeAmt}("");
+            require(successFee, "Couldn't transfer to fee Recipient");
+        }
+
+        (bool success, ) = user.call{value: amtMinusFee}("");
         require(success, "Couldn't transfer to provider");
 
-        emit FundsSlashed(provider, amt);
+        emit FundsSlashed(provider, amtMinusFee);
+    }
+
+    /**
+     * @notice Sets the new fee recipient
+     * @dev onlyOwner restriction
+     * @param newFeeRecipient The address to transfer the slashed funds to.
+     */
+    function setNewFeeRecipient(address newFeeRecipient) external onlyOwner {
+        feeRecipient = newFeeRecipient;
+    }
+
+    /**
+     * @notice Sets the new fee recipient
+     * @dev onlyOwner restriction
+     * @param newFeePercent this is the new fee percent
+     */
+    function setNewFeePercent(uint16 newFeePercent) external onlyOwner {
+        feePercent = newFeePercent;
     }
 }
