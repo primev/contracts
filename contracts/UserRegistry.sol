@@ -18,6 +18,9 @@ contract UserRegistry is Ownable, ReentrancyGuard {
     /// @dev Minimum stake required for registration
     uint256 public minStake;
 
+    /// @dev Amount assigned to feeRecipient
+    uint256 public feeRecipientAmount;
+
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
@@ -29,6 +32,9 @@ contract UserRegistry is Ownable, ReentrancyGuard {
 
     /// @dev Mapping from user addresses to their staked amount
     mapping(address => uint256) public userStakes;
+
+    /// @dev Amount assigned to users
+    mapping(address => uint256) public providerAmount;
 
     /// @dev Event emitted when a user is registered with their staked amount
     event UserRegistered(address indexed user, uint256 stakedAmount);
@@ -94,7 +100,7 @@ contract UserRegistry is Ownable, ReentrancyGuard {
      */
     function setPreconfirmationsContract(
         address contractAddress
-    ) public onlyOwner {
+    ) external onlyOwner {
         require(
             preConfirmationsContract == address(0),
             "Preconfirmations Contract is already set and cannot be changed."
@@ -147,12 +153,10 @@ contract UserRegistry is Ownable, ReentrancyGuard {
         uint256 amtMinusFee = amt - feeAmt;
 
         if (feeRecipient != address(0)) {
-            (bool successFee, ) = feeRecipient.call{value: feeAmt}("");
-            require(successFee, "Couldn't transfer to fee Recipient");
+            feeRecipientAmount += feeAmt;
         }
 
-        (bool success, ) = provider.call{value: amtMinusFee}("");
-        require(success, "couldn't transfer to user");
+        providerAmount[provider] += amtMinusFee;
 
         emit FundsRetrieved(user, amount);
     }
@@ -173,5 +177,30 @@ contract UserRegistry is Ownable, ReentrancyGuard {
      */
     function setNewFeePercent(uint16 newFeePercent) external onlyOwner {
         feePercent = newFeePercent;
+    }
+
+    function withdrawFeeRecipientAmount() external nonReentrant {
+        feeRecipientAmount = 0;
+        (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
+        require(successFee, "Couldn't transfer to fee Recipient");
+    }
+
+    function withdrawProviderAmount(address provider) external nonReentrant {
+        require(providerAmount[provider] > 0, "provider Amount is zero");
+
+        providerAmount[provider] = 0;
+
+        (bool success, ) = provider.call{value: providerAmount[provider]}("");
+        require(success, "Couldn't transfer to provider");
+    }
+
+    function withdrawStakedAmount(address user) external nonReentrant {
+        require(msg.sender == user, "Only user can unstake");
+        require(userStakes[user] > 0, "Provider Staked Amount is zero");
+
+        userStakes[user] = 0;
+
+        (bool success, ) = user.call{value: userStakes[user]}("");
+        require(success, "Couldn't transfer stake to user");
     }
 }

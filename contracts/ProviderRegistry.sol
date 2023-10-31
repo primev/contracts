@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 
 /// @title Provider Registry
 /// @author Kartik Chopra
@@ -18,6 +19,9 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
     /// @dev Fee percent that would be taken by protocol when provider is slashed
     uint16 public feePercent;
 
+    /// @dev Amount assigned to feeRecipient
+    uint256 public feeRecipientAmount;
+
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
@@ -29,6 +33,9 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
 
     /// @dev Mapping from provider addresses to their staked amount
     mapping(address => uint256) public providerStakes;
+
+    /// @dev Amount assigned to users
+    mapping(address => uint256) public userAmount;
 
     /// @dev Event for provider registration
     event ProviderRegistered(address indexed provider, uint256 stakedAmount);
@@ -148,12 +155,10 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
         uint256 amtMinusFee = amt - feeAmt;
 
         if (feeRecipient != address(0)) {
-            (bool successFee, ) = feeRecipient.call{value: feeAmt}("");
-            require(successFee, "Couldn't transfer to fee Recipient");
+            feeRecipientAmount += feeAmt;
         }
 
-        (bool success, ) = user.call{value: amtMinusFee}("");
-        require(success, "Couldn't transfer to provider");
+        userAmount[user] += amtMinusFee;
 
         emit FundsSlashed(provider, amtMinusFee);
     }
@@ -174,5 +179,42 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
      */
     function setNewFeePercent(uint16 newFeePercent) external onlyOwner {
         feePercent = newFeePercent;
+    }
+
+    function withdrawFeeRecipientAmount() external nonReentrant {
+        feeRecipientAmount = 0;
+        (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
+        require(successFee, "Couldn't transfer to fee Recipient");
+    }
+
+    function withdrawUserAmount(address user) external nonReentrant {
+        require(userAmount[user] > 0, "User Amount is zero");
+
+        userAmount[user] = 0;
+
+        (bool success, ) = user.call{value: userAmount[user]}("");
+        require(success, "Couldn't transfer to user");
+    }
+
+    function withdrawStakedAmount(address provider) external nonReentrant {
+        require(msg.sender == provider, "Only provider can unstake");
+        require(providerStakes[provider] > 0, "Provider Staked Amount is zero");
+        require(
+            preConfirmationsContract != address(0),
+            "Pre Confirmations Contract not set"
+        );
+
+        uint256 providerPendingCommitmentsCount = PreConfCommitmentStore(
+            payable(preConfirmationsContract)
+        ).commitmentsCount(provider);
+        require(
+            providerPendingCommitmentsCount > 0,
+            "Provider Commitments still pending"
+        );
+
+        providerStakes[provider] = 0;
+
+        (bool success, ) = provider.call{value: providerStakes[provider]}("");
+        require(success, "Couldn't transfer stake to provider");
     }
 }
