@@ -198,7 +198,9 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
 
     function withdrawStakedAmount(address provider) external nonReentrant {
         require(msg.sender == provider, "Only provider can unstake");
-        require(providerStakes[provider] > 0, "Provider Staked Amount is zero");
+        uint256 stake = providerStakes[provider];
+        providerStakes[provider] = 0;
+        require(stake > 0, "Provider Staked Amount is zero");
         require(
             preConfirmationsContract != address(0),
             "Pre Confirmations Contract not set"
@@ -208,13 +210,10 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
             payable(preConfirmationsContract)
         ).commitmentsCount(provider);
         require(
-            providerPendingCommitmentsCount > 0,
+            providerPendingCommitmentsCount == 0,
             "Provider Commitments still pending"
         );
-
-        providerStakes[provider] = 0;
-
-        (bool success, ) = provider.call{value: providerStakes[provider]}("");
+        (bool success, ) = provider.call{value: stake}("");
         require(success, "Couldn't transfer stake to provider");
     }
 }

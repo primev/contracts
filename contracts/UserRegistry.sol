@@ -21,6 +21,9 @@ contract UserRegistry is Ownable, ReentrancyGuard {
     /// @dev Amount assigned to feeRecipient
     uint256 public feeRecipientAmount;
 
+    /// @dev protocol fee, left over amount when there is no fee recipient assigned
+    uint256 public protocolFeeAmount;
+
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
@@ -154,6 +157,8 @@ contract UserRegistry is Ownable, ReentrancyGuard {
 
         if (feeRecipient != address(0)) {
             feeRecipientAmount += feeAmt;
+        } else {
+            protocolFeeAmount += feeAmt;
         }
 
         providerAmount[provider] += amtMinusFee;
@@ -180,27 +185,44 @@ contract UserRegistry is Ownable, ReentrancyGuard {
     }
 
     function withdrawFeeRecipientAmount() external nonReentrant {
+        uint256 amount = feeRecipientAmount;
         feeRecipientAmount = 0;
-        (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
+        (bool successFee, ) = feeRecipient.call{value: amount}("");
         require(successFee, "Couldn't transfer to fee Recipient");
     }
 
     function withdrawProviderAmount(address provider) external nonReentrant {
-        require(providerAmount[provider] > 0, "provider Amount is zero");
-
+        uint256 amount = providerAmount[provider];
         providerAmount[provider] = 0;
 
-        (bool success, ) = provider.call{value: providerAmount[provider]}("");
+        require(amount > 0, "provider Amount is zero");
+
+        (bool success, ) = provider.call{value: amount}("");
         require(success, "Couldn't transfer to provider");
     }
 
     function withdrawStakedAmount(address user) external nonReentrant {
-        require(msg.sender == user, "Only user can unstake");
-        require(userStakes[user] > 0, "Provider Staked Amount is zero");
-
+        uint256 stake = userStakes[user];
         userStakes[user] = 0;
+        require(msg.sender == user, "Only user can unstake");
+        require(stake > 0, "Provider Staked Amount is zero");
 
-        (bool success, ) = user.call{value: userStakes[user]}("");
+        (bool success, ) = user.call{value: stake}("");
+        require(success, "Couldn't transfer stake to user");
+    }
+
+    function withdrawProtocolFee(
+        address user,
+        uint256 amount
+    ) external onlyOwner nonReentrant {
+        uint256 _protocolFeeAmount = protocolFeeAmount;
+        require(
+            _protocolFeeAmount >= amount,
+            "In sufficient protocol fee amount"
+        );
+        protocolFeeAmount = protocolFeeAmount - amount;
+
+        (bool success, ) = user.call{value: amount}("");
         require(success, "Couldn't transfer stake to user");
     }
 }

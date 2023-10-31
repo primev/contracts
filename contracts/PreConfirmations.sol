@@ -372,6 +372,7 @@ contract PreConfCommitmentStore is Ownable {
 
         // Mark this commitment as used to prevent replays
         commitments[commitmentHash].commitmentUsed = true;
+        commitmentsCount[commitment.commiter] -= 1;
 
         userRegistry.retrieveFunds(
             commitment.bidder,
