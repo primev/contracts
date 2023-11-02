@@ -1,3 +1,5 @@
+cache_forge
+cache_hardhat
 node_modules
 .env
 coverage
@@ -9,3 +11,4 @@ typechain-types
 cache
 artifacts
 
+out

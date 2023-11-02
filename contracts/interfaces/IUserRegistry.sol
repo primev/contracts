@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 interface IUserRegistry {
     struct PreConfCommitment {
@@ -8,13 +8,17 @@ interface IUserRegistry {
         uint64 blockNumber;
         string bidHash;
         string bidSignature;
-
         string commitmentHash;
         string commitmentSignature;
     }
 
-    function RegisterAndStake() external payable;
-    function checkStake(address user) external view returns (uint256);
-    function RetrieveFunds(address user, uint256 amt, address payable provider) external;
+    function registerAndStake() external payable;
 
+    function checkStake(address user) external view returns (uint256);
+
+    function retrieveFunds(
+        address user,
+        uint256 amt,
+        address payable provider
+    ) external;
 }
