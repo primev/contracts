@@ -48,8 +48,11 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Only stores valid commitments
     mapping(bytes32 => PreConfCommitment) public commitments;
 
-    /// @dev Mapping to keep track of used PreConfCommitments
-    mapping(bytes32 => bool) public usedCommitments;
+    // /// @dev Mapping to keep track of used PreConfCommitments
+    // mapping(bytes32 => bool) public usedCommitments;
+
+    /// @dev Mapping from provider to commitments count
+    mapping(address => uint256) public commitmentsCount;
 
     /// @dev Mapping from address to preconfbid list
     mapping(address => PreConfBid[]) public bids;
@@ -59,6 +62,7 @@ contract PreConfCommitmentStore is Ownable {
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
+        bool commitmentUsed;
         address bidder;
         address commiter;
         uint64 bid;
@@ -304,6 +308,7 @@ contract PreConfCommitmentStore is Ownable {
             require(stake > (10 * bid), "Stake too low");
 
             commitments[preConfHash] = PreConfCommitment(
+                false,
                 commiterAddress,
                 bidderAddress,
                 bid,
@@ -315,6 +320,7 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentSignature
             );
             commitmentCount++;
+            commitmentsCount[commiterAddress] += 1;
         }
 
         return commitmentCount;
@@ -337,9 +343,14 @@ contract PreConfCommitmentStore is Ownable {
      */
     function initiateSlash(bytes32 commitmentHash) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentHash];
-        require(!usedCommitments[commitmentHash], "Commitment already used");
+        require(
+            !commitments[commitmentHash].commitmentUsed,
+            "Commitment already used"
+        );
+
         // Mark this commitment as used to prevent replays
-        usedCommitments[commitmentHash] = true;
+        commitments[commitmentHash].commitmentUsed = true;
+        commitmentsCount[commitment.commiter] -= 1;
 
         providerRegistry.slash(
             commitment.bid,
@@ -354,9 +365,14 @@ contract PreConfCommitmentStore is Ownable {
      */
     function initateReward(bytes32 commitmentHash) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentHash];
-        require(!usedCommitments[commitmentHash], "Commitment already used");
+        require(
+            !commitments[commitmentHash].commitmentUsed,
+            "Commitment already used"
+        );
+
         // Mark this commitment as used to prevent replays
-        usedCommitments[commitmentHash] = true;
+        commitments[commitmentHash].commitmentUsed = true;
+        commitmentsCount[commitment.commiter] -= 1;
 
         userRegistry.retrieveFunds(
             commitment.bidder,
