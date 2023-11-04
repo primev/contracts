@@ -127,3 +127,15 @@ sequenceDiagram
 ```
 npx hardhat run scripts/deploy.js
 ```
+
+#### Test Contracts
+
+```
+forge test
+```
+
+#### Check Coverage
+
+```
+forge coverage
+```
