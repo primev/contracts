@@ -3,11 +3,12 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
 
 /// @title User Registry
 /// @author Kartik Chopra
 /// @notice This contract is for user registry and staking.
-contract UserRegistry is Ownable, ReentrancyGuard {
+contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     /// @dev For improved precision
     uint256 constant PRECISION = 10 ** 25;
     uint256 constant PERCENT = 100 * PRECISION;
@@ -44,16 +45,6 @@ contract UserRegistry is Ownable, ReentrancyGuard {
 
     /// @dev Event emitted when funds are retrieved from a user's stake
     event FundsRetrieved(address indexed user, uint256 amount);
-
-    struct PreConfCommitment {
-        string txnHash;
-        uint64 bid;
-        uint64 blockNumber;
-        string bidHash;
-        string bidSignature;
-        string commitmentHash;
-        string commitmentSignature;
-    }
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -187,21 +178,23 @@ contract UserRegistry is Ownable, ReentrancyGuard {
     function withdrawFeeRecipientAmount() external nonReentrant {
         uint256 amount = feeRecipientAmount;
         feeRecipientAmount = 0;
+        require(amount > 0, "fee recipient amount Amount is zero");
         (bool successFee, ) = feeRecipient.call{value: amount}("");
         require(successFee, "Couldn't transfer to fee Recipient");
     }
 
-    function withdrawProviderAmount(address provider) external nonReentrant {
+    function withdrawProviderAmount(
+        address payable provider
+    ) external nonReentrant {
         uint256 amount = providerAmount[provider];
         providerAmount[provider] = 0;
 
         require(amount > 0, "provider Amount is zero");
-
         (bool success, ) = provider.call{value: amount}("");
         require(success, "Couldn't transfer to provider");
     }
 
-    function withdrawStakedAmount(address user) external nonReentrant {
+    function withdrawStakedAmount(address payable user) external nonReentrant {
         uint256 stake = userStakes[user];
         userStakes[user] = 0;
         require(msg.sender == user, "Only user can unstake");
@@ -212,17 +205,13 @@ contract UserRegistry is Ownable, ReentrancyGuard {
     }
 
     function withdrawProtocolFee(
-        address user,
-        uint256 amount
+        address payable user
     ) external onlyOwner nonReentrant {
         uint256 _protocolFeeAmount = protocolFeeAmount;
-        require(
-            _protocolFeeAmount >= amount,
-            "In sufficient protocol fee amount"
-        );
-        protocolFeeAmount = protocolFeeAmount - amount;
+        protocolFeeAmount = 0;
+        require(_protocolFeeAmount > 0, "In sufficient protocol fee amount");
 
-        (bool success, ) = user.call{value: amount}("");
+        (bool success, ) = user.call{value: _protocolFeeAmount}("");
         require(success, "Couldn't transfer stake to user");
     }
 }
