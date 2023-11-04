@@ -75,21 +75,13 @@ mapping(bytes32 => struct PreConfCommitmentStore.PreConfCommitment) commitments
 _Commitment Hash -> Commitemnt
 Only stores valid commitments_
 
-### usedCommitments
+### commitmentsCount
 
 ```solidity
-mapping(bytes32 => bool) usedCommitments
+mapping(address => uint256) commitmentsCount
 ```
 
-_Mapping to keep track of used PreConfCommitments_
-
-### bids
-
-```solidity
-mapping(address => struct PreConfCommitmentStore.PreConfBid[]) bids
-```
-
-_Mapping from address to preconfbid list_
+_Mapping from provider to commitments count_
 
 ### commitmentss
 
@@ -105,6 +97,7 @@ _Struct for all the information around preconfirmations commitment_
 
 ```solidity
 struct PreConfCommitment {
+  bool commitmentUsed;
   address bidder;
   address commiter;
   uint64 bid;
@@ -114,20 +107,6 @@ struct PreConfCommitment {
   string commitmentHash;
   bytes bidSignature;
   bytes commitmentSignature;
-}
-```
-
-### PreConfBid
-
-_Struct for pre confirmation bid_
-
-```solidity
-struct PreConfBid {
-  uint64 bid;
-  uint64 blockNumber;
-  bytes32 bidHash;
-  string txnHash;
-  bytes bidSignature;
 }
 ```
 
@@ -178,26 +157,6 @@ _Initializes the contract with the specified registry addresses, oracle, name, a
 | _providerRegistry | address | The address of the provider registry. |
 | _userRegistry | address | The address of the user registry. |
 | _oracle | address | The address of the oracle. |
-
-### getBidsFor
-
-```solidity
-function getBidsFor(address adr) public view returns (struct PreConfCommitmentStore.PreConfBid[])
-```
-
-_Get the bids for a specific address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| adr | address | The address for which to retrieve bids. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | struct PreConfCommitmentStore.PreConfBid[] | An array of PreConfBid structures representing the bids made by the address. |
 
 ### getBidHash
 
@@ -452,25 +411,4 @@ _Internal Function to convert bytes array to hex string without 0x_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | string | hex string from the bytes array |
-
-### recoverAddress
-
-```solidity
-function recoverAddress(bytes32 messageDigest, bytes signature) public pure returns (address)
-```
-
-_Wrapper around Openzeppelin recover function for frontend purposes_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| messageDigest | bytes32 | the signature payload hash to check |
-| signature | bytes | the signature hash |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | the address of the signing address |
 

@@ -4,6 +4,20 @@
 
 This contract is for provider registry and staking.
 
+### PRECISION
+
+```solidity
+uint256 PRECISION
+```
+
+_For improved precision_
+
+### PERCENT
+
+```solidity
+uint256 PERCENT
+```
+
 ### minStake
 
 ```solidity
@@ -12,6 +26,22 @@ uint256 minStake
 
 _Minimum stake required for registration_
 
+### feePercent
+
+```solidity
+uint16 feePercent
+```
+
+_Fee percent that would be taken by protocol when provider is slashed_
+
+### feeRecipientAmount
+
+```solidity
+uint256 feeRecipientAmount
+```
+
+_Amount assigned to feeRecipient_
+
 ### preConfirmationsContract
 
 ```solidity
@@ -19,6 +49,14 @@ address preConfirmationsContract
 ```
 
 _Address of the pre-confirmations contract_
+
+### feeRecipient
+
+```solidity
+address feeRecipient
+```
+
+_Fee recipient_
 
 ### providerRegistered
 
@@ -35,6 +73,14 @@ mapping(address => uint256) providerStakes
 ```
 
 _Mapping from provider addresses to their staked amount_
+
+### userAmount
+
+```solidity
+mapping(address => uint256) userAmount
+```
+
+_Amount assigned to users_
 
 ### ProviderRegistered
 
@@ -88,7 +134,7 @@ Should be removed from here in case the registerAndStake function becomes more c
 ### constructor
 
 ```solidity
-constructor(uint256 _minStake) public
+constructor(uint256 _minStake, address _feeRecipient, uint16 _feePercent) public
 ```
 
 _Constructor to initialize the contract with a minimum stake requirement._
@@ -98,6 +144,8 @@ _Constructor to initialize the contract with a minimum stake requirement._
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _minStake | uint256 | The minimum stake required for provider registration. |
+| _feeRecipient | address | The address that receives fee |
+| _feePercent | uint16 | The fee percentage for protocol |
 
 ### onlyPreConfirmationEngine
 
@@ -173,4 +221,54 @@ reenterancy not necessary but still putting here for precaution_
 | amt | uint256 | The amount to slash from the provider's stake. |
 | provider | address | The address of the provider. |
 | user | address payable | The address to transfer the slashed funds to. |
+
+### setNewFeeRecipient
+
+```solidity
+function setNewFeeRecipient(address newFeeRecipient) external
+```
+
+Sets the new fee recipient
+
+_onlyOwner restriction_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newFeeRecipient | address | The address to transfer the slashed funds to. |
+
+### setNewFeePercent
+
+```solidity
+function setNewFeePercent(uint16 newFeePercent) external
+```
+
+Sets the new fee recipient
+
+_onlyOwner restriction_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newFeePercent | uint16 | this is the new fee percent |
+
+### withdrawFeeRecipientAmount
+
+```solidity
+function withdrawFeeRecipientAmount() external
+```
+
+### withdrawUserAmount
+
+```solidity
+function withdrawUserAmount(address user) external
+```
+
+### withdrawStakedAmount
+
+```solidity
+function withdrawStakedAmount(address payable provider) external
+```
 
