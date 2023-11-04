@@ -121,3 +121,9 @@ sequenceDiagram
     end
 
 ```
+
+#### Deploy Scripts
+
+```
+npx hardhat run scripts/deploy.js
+```
