@@ -54,9 +54,6 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
 
-    /// @dev Mapping from address to preconfbid list
-    mapping(address => PreConfBid[]) public bids;
-
     /// @dev Mapping from address to commitmentss list
     mapping(address => PreConfCommitment[]) public commitmentss;
 
@@ -72,15 +69,6 @@ contract PreConfCommitmentStore is Ownable {
         string commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
-    }
-
-    /// @dev Struct for pre confirmation bid
-    struct PreConfBid {
-        uint64 bid;
-        uint64 blockNumber;
-        bytes32 bidHash;
-        string txnHash;
-        bytes bidSignature;
     }
 
     /// @dev Event to log successful verifications
@@ -144,15 +132,6 @@ contract PreConfCommitmentStore is Ownable {
                 keccak256("1")
             )
         );
-    }
-
-    /**
-     * @dev Get the bids for a specific address.
-     * @param adr The address for which to retrieve bids.
-     * @return An array of PreConfBid structures representing the bids made by the address.
-     */
-    function getBidsFor(address adr) public view returns (PreConfBid[] memory) {
-        return bids[adr];
     }
 
     /**
@@ -285,8 +264,6 @@ contract PreConfCommitmentStore is Ownable {
         bytes calldata bidSignature,
         bytes memory commitmentSignature
     ) public returns (uint256) {
-        // Fixing stack too deep
-
         (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
             bid,
             blockNumber,
@@ -303,14 +280,15 @@ contract PreConfCommitmentStore is Ownable {
                 bHash,
                 _bytesToHexString(bidSignature)
             );
+
             address commiterAddress = preConfHash.recover(commitmentSignature);
 
             require(stake > (10 * bid), "Stake too low");
 
             commitments[preConfHash] = PreConfCommitment(
                 false,
-                commiterAddress,
                 bidderAddress,
+                commiterAddress,
                 bid,
                 blockNumber,
                 bHash,
@@ -439,18 +417,5 @@ contract PreConfCommitmentStore is Ownable {
             _string[1 + i * 2] = HEXCHARS[uint8(_bytes[i] & 0x0f)];
         }
         return string(_string);
-    }
-
-    /**
-     * @dev Wrapper around Openzeppelin recover function for frontend purposes
-     * @param messageDigest the signature payload hash to check
-     * @param signature the signature hash
-     * @return the address of the signing address
-     */
-    function recoverAddress(
-        bytes32 messageDigest,
-        bytes memory signature
-    ) public pure returns (address) {
-        return messageDigest.recover(signature);
     }
 }

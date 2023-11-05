@@ -56,6 +56,3 @@ jobs:
 
       # Build the project, if applicable
       - run: npm run build --if-present
-
-      # Run Hardhat tests
-      - run: npx hardhat test

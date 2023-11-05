@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
+import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 
 /// @title Provider Registry
 /// @author Kartik Chopra
 /// @notice This contract is for provider registry and staking.
-contract ProviderRegistry is Ownable, ReentrancyGuard {
+contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     /// @dev For improved precision
     uint256 constant PRECISION = 10 ** 25;
     uint256 constant PERCENT = 100 * PRECISION;
@@ -196,7 +197,9 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
         require(success, "Couldn't transfer to user");
     }
 
-    function withdrawStakedAmount(address provider) external nonReentrant {
+    function withdrawStakedAmount(
+        address payable provider
+    ) external nonReentrant {
         require(msg.sender == provider, "Only provider can unstake");
         uint256 stake = providerStakes[provider];
         providerStakes[provider] = 0;
@@ -209,10 +212,12 @@ contract ProviderRegistry is Ownable, ReentrancyGuard {
         uint256 providerPendingCommitmentsCount = PreConfCommitmentStore(
             payable(preConfirmationsContract)
         ).commitmentsCount(provider);
+
         require(
             providerPendingCommitmentsCount == 0,
             "Provider Commitments still pending"
         );
+
         (bool success, ) = provider.call{value: stake}("");
         require(success, "Couldn't transfer stake to provider");
     }
