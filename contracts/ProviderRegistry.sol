@@ -1,82 +1,224 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-contract ProviderRegistry {
-    // Minimum stake required for registration
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {PreConfCommitmentStore} from "./PreConfirmations.sol";
+import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
+
+/// @title Provider Registry
+/// @author Kartik Chopra
+/// @notice This contract is for provider registry and staking.
+contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
+    /// @dev For improved precision
+    uint256 constant PRECISION = 10 ** 25;
+    uint256 constant PERCENT = 100 * PRECISION;
+
+    /// @dev Minimum stake required for registration
     uint256 public minStake;
 
-    address public owner;
+    /// @dev Fee percent that would be taken by protocol when provider is slashed
+    uint16 public feePercent;
 
+    /// @dev Amount assigned to feeRecipient
+    uint256 public feeRecipientAmount;
+
+    /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
-    bool preConfirmationsContractSet; 
+    /// @dev Fee recipient
+    address public feeRecipient;
 
-    // Mapping from provider addresses to their staked amount
+    /// @dev Mapping from provider address to whether they are registered or not
+    mapping(address => bool) public providerRegistered;
+
+    /// @dev Mapping from provider addresses to their staked amount
     mapping(address => uint256) public providerStakes;
 
-    // Event for registration
+    /// @dev Amount assigned to users
+    mapping(address => uint256) public userAmount;
+
+    /// @dev Event for provider registration
     event ProviderRegistered(address indexed provider, uint256 stakedAmount);
 
-    // Event for depositing funds
+    /// @dev Event for depositing funds
     event FundsDeposited(address indexed provider, uint256 amount);
 
-    // Event for slashing funds
+    /// @dev Event for slashing funds
     event FundsSlashed(address indexed provider, uint256 amount);
 
-    // Event for rewarding funds
+    /// @dev Event for rewarding funds
     event FundsRewarded(address indexed provider, uint256 amount);
 
-    constructor(uint256 _minStake) {
+    /**
+     * @dev Fallback function to revert all calls, ensuring no unintended interactions.
+     */
+    fallback() external payable {
+        revert("Invalid call");
+    }
+
+    /**
+     * @dev Receive function is disabled for this contract to prevent unintended interactions.
+     * Should be removed from here in case the registerAndStake function becomes more complex
+     */
+    receive() external payable {
+        revert("Invalid call");
+    }
+
+    /**
+     * @dev Constructor to initialize the contract with a minimum stake requirement.
+     * @param _minStake The minimum stake required for provider registration.
+     * @param _feeRecipient The address that receives fee
+     * @param _feePercent The fee percentage for protocol
+     */
+    constructor(
+        uint256 _minStake,
+        address _feeRecipient,
+        uint16 _feePercent
+    ) Ownable(msg.sender) {
         minStake = _minStake;
-        preConfirmationsContract = address(0);
-        owner = msg.sender;
-        preConfirmationsContractSet = false;
+        feeRecipient = _feeRecipient;
+        feePercent = _feePercent;
     }
 
+    /**
+     * @dev Modifier to restrict a function to only be callable by the pre-confirmations contract.
+     */
     modifier onlyPreConfirmationEngine() {
-        require(msg.sender == preConfirmationsContract, "Only the pre-confirmations contract can call this funciton");
+        require(
+            msg.sender == preConfirmationsContract,
+            "Only the pre-confirmations contract can call this function"
+        );
         _;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can call this function");
-        _;
-    }
-
-    function setPreconfirmationsContract(address contractAddress) public onlyOwner {
-        require(preConfirmationsContractSet == false, "Preconfirmations Contract is already set and cannot be changed.");
+    /**
+     * @dev Sets the pre-confirmations contract address. Can only be called by the owner.
+     * @param contractAddress The address of the pre-confirmations contract.
+     */
+    function setPreconfirmationsContract(
+        address contractAddress
+    ) external onlyOwner {
+        require(
+            preConfirmationsContract == address(0),
+            "Preconfirmations Contract is already set and cannot be changed."
+        );
         preConfirmationsContract = contractAddress;
-        preConfirmationsContractSet = true;
-
     }
 
-    // Register and stake function
-    function RegisterAndStake() external payable {
-        require(providerStakes[msg.sender] == 0, "Provider already registered");
+    /**
+     * @dev Register and stake function for providers.
+     */
+    function registerAndStake() public payable {
+        require(!providerRegistered[msg.sender], "Provider already registered");
         require(msg.value >= minStake, "Insufficient stake");
 
         providerStakes[msg.sender] = msg.value;
+        providerRegistered[msg.sender] = true;
+
         emit ProviderRegistered(msg.sender, msg.value);
     }
 
-    // Check stake function
+    /**
+     * @dev Check the stake of a provider.
+     * @param provider The address of the provider.
+     * @return The staked amount for the provider.
+     */
     function checkStake(address provider) external view returns (uint256) {
         return providerStakes[provider];
     }
 
-    // Deposit more funds
+    /**
+     * @dev Deposit more funds into the provider's stake.
+     */
     function depositFunds() external payable {
-        require(providerStakes[msg.sender] > 0, "Provider not registered");
+        require(providerRegistered[msg.sender], "Provider not registered");
         providerStakes[msg.sender] += msg.value;
         emit FundsDeposited(msg.sender, msg.value);
     }
 
-    // Slash funds from provider and send the bid amount to the user.
-    function Slash(uint256 amt, address provider, address payable user) external onlyPreConfirmationEngine {
+    /**
+     * @dev Slash funds from the provider and send the slashed amount to the user.
+     * @dev reenterancy not necessary but still putting here for precaution
+     * @param amt The amount to slash from the provider's stake.
+     * @param provider The address of the provider.
+     * @param user The address to transfer the slashed funds to.
+     */
+    function slash(
+        uint256 amt,
+        address provider,
+        address payable user
+    ) external nonReentrant onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
-        user.transfer(amt);
-        emit FundsSlashed(provider, amt);
+
+        uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
+        uint256 amtMinusFee = amt - feeAmt;
+
+        if (feeRecipient != address(0)) {
+            feeRecipientAmount += feeAmt;
+        }
+
+        userAmount[user] += amtMinusFee;
+
+        emit FundsSlashed(provider, amtMinusFee);
     }
 
+    /**
+     * @notice Sets the new fee recipient
+     * @dev onlyOwner restriction
+     * @param newFeeRecipient The address to transfer the slashed funds to.
+     */
+    function setNewFeeRecipient(address newFeeRecipient) external onlyOwner {
+        feeRecipient = newFeeRecipient;
+    }
+
+    /**
+     * @notice Sets the new fee recipient
+     * @dev onlyOwner restriction
+     * @param newFeePercent this is the new fee percent
+     */
+    function setNewFeePercent(uint16 newFeePercent) external onlyOwner {
+        feePercent = newFeePercent;
+    }
+
+    function withdrawFeeRecipientAmount() external nonReentrant {
+        feeRecipientAmount = 0;
+        (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
+        require(successFee, "Couldn't transfer to fee Recipient");
+    }
+
+    function withdrawUserAmount(address user) external nonReentrant {
+        require(userAmount[user] > 0, "User Amount is zero");
+
+        userAmount[user] = 0;
+
+        (bool success, ) = user.call{value: userAmount[user]}("");
+        require(success, "Couldn't transfer to user");
+    }
+
+    function withdrawStakedAmount(
+        address payable provider
+    ) external nonReentrant {
+        require(msg.sender == provider, "Only provider can unstake");
+        uint256 stake = providerStakes[provider];
+        providerStakes[provider] = 0;
+        require(stake > 0, "Provider Staked Amount is zero");
+        require(
+            preConfirmationsContract != address(0),
+            "Pre Confirmations Contract not set"
+        );
+
+        uint256 providerPendingCommitmentsCount = PreConfCommitmentStore(
+            payable(preConfirmationsContract)
+        ).commitmentsCount(provider);
+
+        require(
+            providerPendingCommitmentsCount == 0,
+            "Provider Commitments still pending"
+        );
+
+        (bool success, ) = provider.call{value: stake}("");
+        require(success, "Couldn't transfer stake to provider");
+    }
 }
