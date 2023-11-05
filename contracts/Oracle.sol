@@ -2,10 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/caontracts/utils/ReentrancyGuard.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-
+import {IPreConfCommitmentStore} from './interfaces/IPreConfirmations.sol';
 /// @title Oracle Contract
 /// @author Kartik Chopra
 /// @notice This contract is for fetching L1 Ethereum Block Data
@@ -22,10 +21,7 @@ contract Oracle is Ownable {
         revert("Invalid call");
     }
 
-    IPreConfirmations private preConfContract;
-
-    // Address of the PreConfirmations contract
-    address public preConfirmationsContract;
+    IPreConfCommitmentStore private preConfContract;
 
     /**
      * @dev Constructor to initialize the contract with a a preconf contract.
@@ -34,7 +30,7 @@ contract Oracle is Ownable {
     constructor(
     address _preConfContract
     ) Ownable(msg.sender) {
-        preConfContract = IPreConfirmations(_preConfContract);
+        preConfContract = IPreConfCommitmentStore(_preConfContract);
     }
 
 
