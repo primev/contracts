@@ -11,9 +11,7 @@ import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 /// @notice This contract is for fetching L1 Ethereum Block Data
 
 /**
- * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
- * @notice This contract allows users to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
- * @dev This contract should not be used in production as it is for demonstration purposes.
+ * @title Oracle - A contract for Fetching L1 Block Builder Info and Block Data.
  */
 contract Oracle is Ownable {
     
