@@ -343,6 +343,20 @@ contract PreConfCommitmentStore is Ownable {
         return commitmentCount;
     }
 
+        /**
+     * @dev Retrieves the list of commitments for a given committer.
+     * @param commiter The address of the committer.
+     * @return A list of PreConfCommitment structures for the specified committer.
+     */
+    function getCommitmentsByCommitter(address commiter)
+        public
+        view
+        returns (PreConfCommitment[] memory)
+    {
+        return providerCommitments[commiter];
+    }
+
+
     /**
      * @dev Get a commitment by its hash.
      * @param commitmentHash The hash of the commitment.

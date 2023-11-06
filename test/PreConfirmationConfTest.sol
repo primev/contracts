@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
+
 
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
@@ -367,6 +369,7 @@ contract TestPreConfCommitmentStore is Test {
             providerRegistry.setPreconfirmationsContract(
                 address(preConfCommitmentStore)
             );
+
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
@@ -375,8 +378,10 @@ contract TestPreConfCommitmentStore is Test {
 
             (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
+            PreConfCommitmentStore.PreConfCommitment[] memory commitments  = preConfCommitmentStore.getCommitmentsByCommitter(commiter);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
+            assert(commitments.length == 1);
         }
     }
 
