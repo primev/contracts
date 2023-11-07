@@ -15,7 +15,7 @@ async function main() {
 
   let signer;
 
-  if (process.env.PRIVATE_KEY) {
+  if (process.env.SIGNER_PRIVATE_KEY) {
     const wallet = new hre.ethers.Wallet(process.env.PRIVATE_KEY, hre.ethers.provider);
     signer = wallet;
   } else {
