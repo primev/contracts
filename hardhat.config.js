@@ -10,6 +10,9 @@ module.exports = {
       url: "http://127.0.0.1:8545", // Ganache default port
     },
     hardhat: {},
+    op_docker: {
+      url: "http://op-geth:8545", 
+    },
   },
   docgen: {
     pages: "files",
