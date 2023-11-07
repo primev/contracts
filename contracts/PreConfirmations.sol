@@ -54,7 +54,7 @@ contract PreConfCommitmentStore is Ownable {
     mapping(address => uint256) public commitmentsCount;
 
     /// @dev Mapping from address to commitmentss list
-    mapping(address => PreConfCommitment[]) public commitmentss;
+    mapping(address => PreConfCommitment[]) public providerCommitments;
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
@@ -192,32 +192,32 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
-    /**
-     * @dev Retrieve a list of commitments.
-     * @return An array of PreConfCommitment structures representing the commitments made.
-     */
-    function retreiveCommitments()
-        public
-        view
-        returns (PreConfCommitment[] memory)
-    {
-        PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
-        commitmentsList[0] = commitments[0];
-        // Get keys from
-        return commitmentsList;
-    }
+    // /**
+    //  * @dev Retrieve a list of commitments.
+    //  * @return An array of PreConfCommitment structures representing the commitments made.
+    //  */
+    // function retreiveCommitments()
+    //     public
+    //     view
+    //     returns (PreConfCommitment[] memory)
+    // {
+    //     PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
+    //     commitmentsList[0] = commitments[0];
+    //     // Get keys from
+    //     return commitmentsList;
+    // }
 
-    /**
-     * @dev Retrieve a commitment.
-     * @return A PreConfCommitment structure representing the specified commitment.
-     */
-    function retreiveCommitment()
-        public
-        view
-        returns (PreConfCommitment memory)
-    {
-        return commitments[0];
-    }
+    // /**
+    //  * @dev Retrieve a commitment.
+    //  * @return A PreConfCommitment structure representing the specified commitment.
+    //  */
+    // function retreiveCommitments()
+    //     public
+    //     view
+    //     returns (PreConfCommitment[] memory)
+    // {
+    //     return commitments;
+    // }
 
     /**
      * @dev Internal function to verify a bid
@@ -244,6 +244,41 @@ contract PreConfCommitmentStore is Ownable {
         stake = userRegistry.checkStake(recoveredAddress);
         require(stake > (10 * bid), "Invalid bid");
     }
+
+    /**
+     * @dev Verifies a pre-confirmation commitment by computing the hash and recovering the committer's address.
+     * @param txnHash The transaction hash associated with the commitment.
+     * @param bid The bid amount.
+     * @param blockNumber The block number at the time of the bid.
+     * @param bidHash The hash of the bid details.
+     * @param bidSignature The signature of the bid.
+     * @param commitmentSignature The signature of the commitment.
+     * @return preConfHash The hash of the pre-confirmation commitment.
+     * @return commiterAddress The address of the committer recovered from the commitment signature.
+     */
+    function verifyPreConfCommitment(
+        string memory txnHash,
+        uint64 bid,
+        uint64 blockNumber,
+        bytes32 bidHash,
+        bytes memory bidSignature,
+        bytes memory commitmentSignature
+    )
+        public
+        view
+        returns (bytes32 preConfHash, address commiterAddress)
+    {
+        preConfHash = getPreConfHash(
+            txnHash,
+            bid,
+            blockNumber,
+            bidHash,
+            _bytesToHexString(bidSignature)
+        );
+
+        commiterAddress = preConfHash.recover(commitmentSignature);
+    }
+
 
     /**
      * @dev Store a commitment.
@@ -284,7 +319,7 @@ contract PreConfCommitmentStore is Ownable {
 
             require(stake > (10 * bid), "Stake too low");
 
-            commitments[preConfHash] = PreConfCommitment(
+            PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,
                 bidderAddress,
                 commiterAddress,
@@ -296,12 +331,30 @@ contract PreConfCommitmentStore is Ownable {
                 bidSignature,
                 commitmentSignature
             );
+
+            commitments[preConfHash] = newCommitment;
+            providerCommitments[commiterAddress].push(newCommitment);
+            
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
         }
 
         return commitmentCount;
     }
+
+        /**
+     * @dev Retrieves the list of commitments for a given committer.
+     * @param commiter The address of the committer.
+     * @return A list of PreConfCommitment structures for the specified committer.
+     */
+    function getCommitmentsByCommitter(address commiter)
+        public
+        view
+        returns (PreConfCommitment[] memory)
+    {
+        return providerCommitments[commiter];
+    }
+
 
     /**
      * @dev Get a commitment by its hash.

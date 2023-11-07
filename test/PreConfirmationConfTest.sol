@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
+
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
@@ -225,47 +226,55 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory bidSignature,
         bytes memory commitmentSignature
     ) public {
-        (
-            bool commitmentUsed,
-            ,
-            ,
-            uint64 _bid,
-            uint64 _blockNumber,
-            ,
-            string memory _txnHash,
-            string memory _commitmentHash,
-            bytes memory _bidSignature,
-            bytes memory _commitmentSignature
-        ) = preConfCommitmentStore.commitments(preConfHash);
+        (PreConfCommitmentStore.PreConfCommitment memory commitment) = preConfCommitmentStore
+            .getCommitment(preConfHash);
+
+        (bytes32 returnedHash, address commiterAddress) = preConfCommitmentStore.verifyPreConfCommitment(
+            txnHash,
+            bid,
+            blockNumber,
+            commitment.bidHash,
+            bidSignature,
+            commitmentSignature
+        );
+
+        PreConfCommitmentStore.PreConfCommitment[] memory commitments = preConfCommitmentStore.getCommitmentsByCommitter(commiterAddress);
+        
+        assert(commitments.length >= 1);
 
         assertEq(
-            commitmentUsed,
+            returnedHash,
+            preConfHash,
+            "Returned hash should match the preConfHash"
+        );
+        assertEq(
+            commitment.commitmentUsed,
             false,
             "Commitment should have been marked as used"
         );
-        assertEq(_bid, bid, "Stored bid should match input bid");
+        assertEq(commitment.bid, bid, "Stored bid should match input bid");
         assertEq(
-            _blockNumber,
+            commitment.blockNumber,
             blockNumber,
             "Stored blockNumber should match input blockNumber"
         );
         assertEq(
-            _txnHash,
+            commitment.txnHash,
             txnHash,
             "Stored txnHash should match input txnHash"
         );
         assertEq(
-            _commitmentHash,
+            commitment.commitmentHash,
             commitmentHash,
             "Stored commitmentHash should match input commitmentHash"
         );
         assertEq(
-            _bidSignature,
+            commitment.bidSignature,
             bidSignature,
             "Stored bidSignature should match input bidSignature"
         );
         assertEq(
-            _commitmentSignature,
+            commitment.commitmentSignature,
             commitmentSignature,
             "Stored commitmentSignature should match input commitmentSignature"
         );
@@ -305,11 +314,7 @@ contract TestPreConfCommitmentStore is Test {
             memory storedCommitment = preConfCommitmentStore.getCommitment(
                 preConfHash
             );
-        preConfCommitmentStore.retreiveCommitment();
-        PreConfCommitmentStore.PreConfCommitment[]
-            memory arr = preConfCommitmentStore.retreiveCommitments();
-        console.log(arr.length);
-
+        
         assertEq(storedCommitment.bid, bid);
         assertEq(storedCommitment.blockNumber, blockNumber);
         assertEq(storedCommitment.txnHash, txnHash);
@@ -367,6 +372,7 @@ contract TestPreConfCommitmentStore is Test {
             providerRegistry.setPreconfirmationsContract(
                 address(preConfCommitmentStore)
             );
+
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
