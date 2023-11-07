@@ -193,32 +193,32 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
-    /**
-     * @dev Retrieve a list of commitments.
-     * @return An array of PreConfCommitment structures representing the commitments made.
-     */
-    function retreiveCommitments()
-        public
-        view
-        returns (PreConfCommitment[] memory)
-    {
-        PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
-        commitmentsList[0] = commitments[0];
-        // Get keys from
-        return commitmentsList;
-    }
+    // /**
+    //  * @dev Retrieve a list of commitments.
+    //  * @return An array of PreConfCommitment structures representing the commitments made.
+    //  */
+    // function retreiveCommitments()
+    //     public
+    //     view
+    //     returns (PreConfCommitment[] memory)
+    // {
+    //     PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
+    //     commitmentsList[0] = commitments[0];
+    //     // Get keys from
+    //     return commitmentsList;
+    // }
 
-    /**
-     * @dev Retrieve a commitment.
-     * @return A PreConfCommitment structure representing the specified commitment.
-     */
-    function retreiveCommitment()
-        public
-        view
-        returns (PreConfCommitment memory)
-    {
-        return commitments[0];
-    }
+    // /**
+    //  * @dev Retrieve a commitment.
+    //  * @return A PreConfCommitment structure representing the specified commitment.
+    //  */
+    // function retreiveCommitments()
+    //     public
+    //     view
+    //     returns (PreConfCommitment[] memory)
+    // {
+    //     return commitments;
+    // }
 
     /**
      * @dev Internal function to verify a bid
