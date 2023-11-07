@@ -16,7 +16,7 @@ async function main() {
   let signer;
 
   if (process.env.SIGNER_PRIVATE_KEY) {
-    const wallet = new hre.ethers.Wallet(process.env.PRIVATE_KEY, hre.ethers.provider);
+    const wallet = new hre.ethers.Wallet(process.env.SIGNER_PRIVATE_KEY, hre.ethers.provider);
     signer = wallet;
   } else {
     // Use default Hardhat signer if PRIVATE_KEY not set
