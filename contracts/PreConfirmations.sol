@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.15;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
@@ -110,7 +110,7 @@ contract PreConfCommitmentStore is Ownable {
         address _providerRegistry,
         address _userRegistry,
         address _oracle
-    ) Ownable(msg.sender) {
+    ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
@@ -146,7 +146,7 @@ contract PreConfCommitmentStore is Ownable {
         uint64 _blockNumber
     ) public view returns (bytes32) {
         return
-            MessageHashUtils.toTypedDataHash(
+            ECDSA.toTypedDataHash(
                 DOMAIN_SEPARATOR_BID,
                 keccak256(
                     abi.encode(
@@ -175,7 +175,7 @@ contract PreConfCommitmentStore is Ownable {
         string memory _bidSignature
     ) public view returns (bytes32) {
         return
-            MessageHashUtils.toTypedDataHash(
+            ECDSA.toTypedDataHash(
                 DOMAIN_SEPARATOR_PRECONF,
                 keccak256(
                     abi.encode(
