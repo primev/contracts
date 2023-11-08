@@ -46,9 +46,6 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of userRegistry
     IUserRegistry public userRegistry;
 
-    /// @dev Commitment Hash -> Commitemnt
-    /// @dev Only stores valid commitments
-    mapping(bytes32 => PreConfCommitment) public commitments;
 
     // /// @dev Mapping to keep track of used PreConfCommitments
     // mapping(bytes32 => bool) public usedCommitments;
@@ -57,7 +54,14 @@ contract PreConfCommitmentStore is Ownable {
     mapping(address => uint256) public commitmentsCount;
 
     /// @dev Mapping from address to commitmentss list
-    mapping(address => PreConfCommitment[]) public providerCommitments;
+    mapping(address => bytes32[]) public providerCommitments;
+
+    /// @dev Mapping for blocknumber to list of hash of commitments
+    mapping(uint256 => bytes32[]) public blockCommitments;
+
+    /// @dev Commitment Hash -> Commitemnt
+    /// @dev Only stores valid commitments
+    mapping(bytes32 => PreConfCommitment) public commitments;
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
@@ -310,7 +314,7 @@ contract PreConfCommitmentStore is Ownable {
             );
 
             commitments[preConfHash] = newCommitment;
-            providerCommitments[commiterAddress].push(newCommitment);
+            providerCommitments[commiterAddress].push(preConfHash);
             
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
@@ -327,7 +331,7 @@ contract PreConfCommitmentStore is Ownable {
     function getCommitmentsByCommitter(address commiter)
         public
         view
-        returns (PreConfCommitment[] memory)
+        returns (bytes32[] memory)
     {
         return providerCommitments[commiter];
     }

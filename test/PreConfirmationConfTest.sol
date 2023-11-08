@@ -74,6 +74,7 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(digest, bidHash);
 
         preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", "0xkartik", signature, signature);
+
     }
 
     function test_UpdateOracle() public {
@@ -261,7 +262,7 @@ contract TestPreConfCommitmentStore is Test {
             commitmentSignature
         );
 
-        PreConfCommitmentStore.PreConfCommitment[] memory commitments = preConfCommitmentStore.getCommitmentsByCommitter(commiterAddress);
+        bytes32[] memory commitments = preConfCommitmentStore.getCommitmentsByCommitter(commiterAddress);
         
         assert(commitments.length >= 1);
 
