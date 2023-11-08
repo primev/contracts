@@ -64,12 +64,12 @@ contract TestPreConfCommitmentStore is Test {
         (uint8 v,bytes32 r, bytes32 s) = vm.sign(userPk, bidHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        bytes32 preconfhash = preConfCommitmentStore.getPreConfHash("0xkartik", 200 wei, 3000, bidHash, string(signature));
         vm.deal(user, 200000 ether);
         vm.prank(user);
         userRegistry.registerAndStake{value: 1e18 wei}();
         (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
         
+        assertEq(stake, 1e18 wei);
         assertEq(user, recoveredAddress);
         assertEq(digest, bidHash);
 
@@ -160,7 +160,7 @@ contract TestPreConfCommitmentStore is Test {
         verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
 
         // Step 2: Store the commitment
-        bytes32 preConfHash = storeCommitment(
+        bytes32 index = storeCommitment(
             bid,
             blockNumber,
             txnHash,
@@ -171,7 +171,7 @@ contract TestPreConfCommitmentStore is Test {
 
         // Step 3: Verify the stored commitment
         verifyStoredCommitment(
-            preConfHash,
+            index,
             bid,
             blockNumber,
             txnHash,
@@ -215,21 +215,7 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory bidSignature,
         bytes memory commitmentSignature
     ) internal returns (bytes32) {
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnHash,
-            bid,
-            blockNumber
-        );
-
-        bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            bidHash,
-            _bytesToHexString(bidSignature)
-        );
-
-        preConfCommitmentStore.storeCommitment(
+        bytes32 commitmentIndex = preConfCommitmentStore.storeCommitment(
             bid,
             blockNumber,
             txnHash,
@@ -238,11 +224,11 @@ contract TestPreConfCommitmentStore is Test {
             commitmentSignature
         );
 
-        return preConfHash;
+        return commitmentIndex;
     }
 
     function verifyStoredCommitment(
-        bytes32 preConfHash,
+        bytes32 index,
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
@@ -250,10 +236,18 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory bidSignature,
         bytes memory commitmentSignature
     ) public {
-        (PreConfCommitmentStore.PreConfCommitment memory commitment) = preConfCommitmentStore
-            .getCommitment(preConfHash);
 
-        (bytes32 returnedHash, address commiterAddress) = preConfCommitmentStore.verifyPreConfCommitment(
+        bytes32 reconstructedIndex = keccak256(
+            abi.encodePacked(
+                commitmentHash,
+                commitmentSignature
+            )
+        );
+
+        (PreConfCommitmentStore.PreConfCommitment memory commitment) = preConfCommitmentStore
+            .getCommitment(index);
+
+        (, address commiterAddress) = preConfCommitmentStore.verifyPreConfCommitment(
             txnHash,
             bid,
             blockNumber,
@@ -267,8 +261,8 @@ contract TestPreConfCommitmentStore is Test {
         assert(commitments.length >= 1);
 
         assertEq(
-            returnedHash,
-            preConfHash,
+            index,
+            reconstructedIndex,
             "Returned hash should match the preConfHash"
         );
         assertEq(
@@ -385,7 +379,7 @@ contract TestPreConfCommitmentStore is Test {
             (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
-            preConfCommitmentStore.storeCommitment(
+            bytes32 index = preConfCommitmentStore.storeCommitment(
                 bid,
                 blockNumber,
                 txnHash,
@@ -401,10 +395,10 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initiateSlash(preConfHash);
+            preConfCommitmentStore.initiateSlash(index);
 
             (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-                .commitments(preConfHash);
+                .commitments(index);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
         }
@@ -451,7 +445,7 @@ contract TestPreConfCommitmentStore is Test {
             (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
-            preConfCommitmentStore.storeCommitment(
+            bytes32 index = preConfCommitmentStore.storeCommitment(
                 bid,
                 blockNumber,
                 txnHash,
@@ -467,10 +461,10 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initateReward(preConfHash);
+            preConfCommitmentStore.initateReward(index);
 
             (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-                .commitments(preConfHash);
+                .commitments(index);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
         }

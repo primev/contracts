@@ -73,14 +73,14 @@ contract Oracle is Ownable {
     }
 
     // Function to simulate the processing of a commitment (initiate a slash or a reward)
-    function processCommitment(bytes32 commitmentHash, bool isSlash) external {
+    function processCommitment(bytes32 commitmentIndex, bool isSlash) external {
         if (isSlash) {
-            preConfContract.initiateSlash(commitmentHash);
+            preConfContract.initiateSlash(commitmentIndex);
         } else {
-            preConfContract.initateReward(commitmentHash);
+            preConfContract.initateReward(commitmentIndex);
         }
         // Emit an event that a commitment has been processed
-        emit CommitmentProcessed(commitmentHash, isSlash);
+        emit CommitmentProcessed(commitmentIndex, isSlash);
     }
 
 }
