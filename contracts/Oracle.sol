@@ -13,7 +13,13 @@ import {IPreConfCommitmentStore} from './interfaces/IPreConfirmations.sol';
  * @title Oracle - A contract for Fetching L1 Block Builder Info and Block Data.
  */
 contract Oracle is Ownable {
-    
+
+    // To shutup the compiler
+    // TODO(@ckartik): remove or make Oracle non-payable
+    receive() external payable {
+    // Empty receive function
+    }
+
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
      */
