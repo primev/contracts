@@ -60,58 +60,6 @@ contract OracleTest is Test {
 
     }
 
-
-    // // The constructCommitment function
-    // function storeCommitment(
-    //     string memory _txnHash,
-    //     uint64 _bid,
-    //     uint64 _blockNumber,
-    //     uint256 _bidderPk,
-    //     uint256 _committerPk
-    // )
-    //     public view
-    //     returns (
-            
-    //     )
-    //     {
-    //         address bidder,
-    //         address committer,
-    //         uint64 bid,
-    //         uint64 blockNumber,
-    //         bytes32 bidHash,
-    //         string memory txnHash,
-    //         bytes32 commitmentHash,
-    //         bytes memory bidSignature,
-    //         bytes memory commitmentSignature
-    //         // Generate the bid hash
-    //         bidHash = preConfCommitmentStore.getBidHash(_txnHash, _bid, _blockNumber);
-    //         {
-    //             // Sign the bid hash with the bidder's private key
-    //             (uint8 vBid, bytes32 rBid, bytes32 sBid) = vm.sign(_bidderPk, bidHash);
-    //             bidSignature = abi.encodePacked(rBid, sBid, vBid);
-    //             bidder = ecrecover(bidHash, vBid, rBid, sBid);
-
-    //         }
-    //         // Generate the pre-confirmation hash
-    //         commitmentHash = preConfCommitmentStore.getPreConfHash(
-    //             _txnHash,
-    //             _bid,
-    //             _blockNumber,
-    //             bidHash,
-    //             _bytesToHexString(bidSignature)
-    //         );
-    //         {
-                
-    //         // Sign the pre-confirmation hash with the committer's private key
-    //         (uint8 vCommitment, bytes32 rCommitment, bytes32 sCommitment) = vm.sign(_committerPk, commitmentHash);
-    //         commitmentSignature = abi.encodePacked(rCommitment, sCommitment, vCommitment);
-    //         committer = ecrecover(commitmentHash, vCommitment, rCommitment, sCommitment);
-
-    //         }
-
-    //         preConfCommitmentStore.storeCommitment(_bid, _blockNumber, _txnHash, commitmentHash, bidSignature, commitmentSignature);
-    //     }   
-
     function test_RequestBlockData() public {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
