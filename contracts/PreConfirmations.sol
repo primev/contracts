@@ -31,6 +31,9 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of the oracle
     address public oracle;
 
+    /// @dev The last block that was processed by the Oracle
+    uint256 public lastProcessedBlock;
+
     // EIP-712 Domain Separator
     bytes32 public DOMAIN_SEPARATOR_PRECONF;
 
