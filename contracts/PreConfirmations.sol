@@ -31,6 +31,9 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of the oracle
     address public oracle;
 
+    /// @dev The last block that was processed by the Oracle
+    uint256 public lastProcessedBlock;
+
     // EIP-712 Domain Separator
     bytes32 public DOMAIN_SEPARATOR_PRECONF;
 
@@ -192,32 +195,6 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
-    // /**
-    //  * @dev Retrieve a list of commitments.
-    //  * @return An array of PreConfCommitment structures representing the commitments made.
-    //  */
-    // function retreiveCommitments()
-    //     public
-    //     view
-    //     returns (PreConfCommitment[] memory)
-    // {
-    //     PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
-    //     commitmentsList[0] = commitments[0];
-    //     // Get keys from
-    //     return commitmentsList;
-    // }
-
-    // /**
-    //  * @dev Retrieve a commitment.
-    //  * @return A PreConfCommitment structure representing the specified commitment.
-    //  */
-    // function retreiveCommitments()
-    //     public
-    //     view
-    //     returns (PreConfCommitment[] memory)
-    // {
-    //     return commitments;
-    // }
 
     /**
      * @dev Internal function to verify a bid

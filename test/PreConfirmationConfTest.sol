@@ -53,6 +53,29 @@ contract TestPreConfCommitmentStore is Test {
         );
     }
 
+    function test_CreateCommitment() public {
+        bytes32 bidHash = preConfCommitmentStore.getBidHash(
+            "0xkartik",
+            200 wei,
+            3000
+        );
+        (address user, uint256 userPk) = makeAddrAndKey("alice");
+        // Wallet memory kartik = vm.createWallet('test wallet');
+        (uint8 v,bytes32 r, bytes32 s) = vm.sign(userPk, bidHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        bytes32 preconfhash = preConfCommitmentStore.getPreConfHash("0xkartik", 200 wei, 3000, bidHash, string(signature));
+        vm.deal(user, 200000 ether);
+        vm.prank(user);
+        userRegistry.registerAndStake{value: 1e18 wei}();
+        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
+        
+        assertEq(user, recoveredAddress);
+        assertEq(digest, bidHash);
+
+        preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", "0xkartik", signature, signature);
+    }
+
     function test_UpdateOracle() public {
         preConfCommitmentStore.updateOracle(feeRecipient);
         assertEq(preConfCommitmentStore.oracle(), feeRecipient);
