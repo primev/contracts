@@ -11,7 +11,6 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
  * @notice This contract allows users to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
- * @dev This contract should not be used in production as it is for demonstration purposes.
  */
 contract PreConfCommitmentStore is Ownable {
     using ECDSA for bytes32;
@@ -32,6 +31,9 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of the oracle
     address public oracle;
 
+    /// @dev The last block that was processed by the Oracle
+    uint256 public lastProcessedBlock;
+
     // EIP-712 Domain Separator
     bytes32 public DOMAIN_SEPARATOR_PRECONF;
 
@@ -44,18 +46,18 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of userRegistry
     IUserRegistry public userRegistry;
 
-    /// @dev Commitment Hash -> Commitemnt
-    /// @dev Only stores valid commitments
-    mapping(bytes32 => PreConfCommitment) public commitments;
-
-    // /// @dev Mapping to keep track of used PreConfCommitments
-    // mapping(bytes32 => bool) public usedCommitments;
-
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
 
     /// @dev Mapping from address to commitmentss list
-    mapping(address => PreConfCommitment[]) public commitmentss;
+    mapping(address => bytes32[]) public providerCommitments;
+
+    /// @dev Mapping for blocknumber to list of hash of commitments
+    mapping(uint256 => bytes32[]) public blockCommitments;
+
+    /// @dev Commitment Hash -> Commitemnt
+    /// @dev Only stores valid commitments
+    mapping(bytes32 => PreConfCommitment) public commitments;
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
@@ -193,32 +195,6 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
-    /**
-     * @dev Retrieve a list of commitments.
-     * @return An array of PreConfCommitment structures representing the commitments made.
-     */
-    function retreiveCommitments()
-        public
-        view
-        returns (PreConfCommitment[] memory)
-    {
-        PreConfCommitment[] memory commitmentsList = new PreConfCommitment[](1);
-        commitmentsList[0] = commitments[0];
-        // Get keys from
-        return commitmentsList;
-    }
-
-    /**
-     * @dev Retrieve a commitment.
-     * @return A PreConfCommitment structure representing the specified commitment.
-     */
-    function retreiveCommitment()
-        public
-        view
-        returns (PreConfCommitment memory)
-    {
-        return commitments[0];
-    }
 
     /**
      * @dev Internal function to verify a bid
@@ -247,6 +223,51 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
+     * @dev Verifies a pre-confirmation commitment by computing the hash and recovering the committer's address.
+     * @param txnHash The transaction hash associated with the commitment.
+     * @param bid The bid amount.
+     * @param blockNumber The block number at the time of the bid.
+     * @param bidHash The hash of the bid details.
+     * @param bidSignature The signature of the bid.
+     * @param commitmentSignature The signature of the commitment.
+     * @return preConfHash The hash of the pre-confirmation commitment.
+     * @return commiterAddress The address of the committer recovered from the commitment signature.
+     */
+    function verifyPreConfCommitment(
+        string memory txnHash,
+        uint64 bid,
+        uint64 blockNumber,
+        bytes32 bidHash,
+        bytes memory bidSignature,
+        bytes memory commitmentSignature
+    )
+        public
+        view
+        returns (bytes32 preConfHash, address commiterAddress)
+    {
+        preConfHash = getPreConfHash(
+            txnHash,
+            bid,
+            blockNumber,
+            bidHash,
+            _bytesToHexString(bidSignature)
+        );
+
+        commiterAddress = preConfHash.recover(commitmentSignature);
+    }
+
+    function getCommitmentIndex(
+        PreConfCommitment memory commitment
+    )  public pure returns (bytes32){
+        return keccak256(
+            abi.encodePacked(
+                commitment.commitmentHash,
+                commitment.commitmentSignature
+            )
+        );
+    }
+
+    /**
      * @dev Store a commitment.
      * @param bid The bid amount.
      * @param blockNumber The block number.
@@ -254,7 +275,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentHash The commitment hash.
      * @param bidSignature The signature of the bid.
      * @param commitmentSignature The signature of the commitment.
-     * @return The new commitment count.
+     * @return commitmentIndex The index of the stored commitment
      */
     function storeCommitment(
         uint64 bid,
@@ -263,14 +284,13 @@ contract PreConfCommitmentStore is Ownable {
         string memory commitmentHash,
         bytes calldata bidSignature,
         bytes memory commitmentSignature
-    ) public returns (uint256) {
+    ) public returns (bytes32 commitmentIndex) {
         (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
             bid,
             blockNumber,
             txnHash,
             bidSignature
         );
-
         // This helps in avoiding stack too deep
         {
             bytes32 preConfHash = getPreConfHash(
@@ -285,7 +305,7 @@ contract PreConfCommitmentStore is Ownable {
 
             require(stake > (10 * bid), "Stake too low");
 
-            commitments[preConfHash] = PreConfCommitment(
+            PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,
                 bidderAddress,
                 commiterAddress,
@@ -297,12 +317,37 @@ contract PreConfCommitmentStore is Ownable {
                 bidSignature,
                 commitmentSignature
             );
+
+            commitmentIndex = getCommitmentIndex(newCommitment);
+
+
+            // Store commitment
+            commitments[commitmentIndex] = newCommitment;
+
+            // Push pointers to other mappings
+            providerCommitments[commiterAddress].push(commitmentIndex);
+            blockCommitments[blockNumber].push(commitmentIndex);
+            
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
         }
 
-        return commitmentCount;
+        return commitmentIndex;
     }
+
+        /**
+     * @dev Retrieves the list of commitments for a given committer.
+     * @param commiter The address of the committer.
+     * @return A list of PreConfCommitment structures for the specified committer.
+     */
+    function getCommitmentsByCommitter(address commiter)
+        public
+        view
+        returns (bytes32[] memory)
+    {
+        return providerCommitments[commiter];
+    }
+
 
     /**
      * @dev Get a commitment by its hash.
@@ -317,17 +362,17 @@ contract PreConfCommitmentStore is Ownable {
 
     /**
      * @dev Initiate a slash for a commitment.
-     * @param commitmentHash The hash of the commitment to be slashed.
+     * @param commitmentIndex The hash of the commitment to be slashed.
      */
-    function initiateSlash(bytes32 commitmentHash) public onlyOracle {
-        PreConfCommitment memory commitment = commitments[commitmentHash];
+    function initiateSlash(bytes32 commitmentIndex) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentHash].commitmentUsed,
+            !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
 
         // Mark this commitment as used to prevent replays
-        commitments[commitmentHash].commitmentUsed = true;
+        commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
         providerRegistry.slash(
@@ -339,17 +384,17 @@ contract PreConfCommitmentStore is Ownable {
 
     /**
      * @dev Initiate a reward for a commitment.
-     * @param commitmentHash The hash of the commitment to be rewarded.
+     * @param commitmentIndex The hash of the commitment to be rewarded.
      */
-    function initateReward(bytes32 commitmentHash) public onlyOracle {
-        PreConfCommitment memory commitment = commitments[commitmentHash];
+    function initateReward(bytes32 commitmentIndex) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentHash].commitmentUsed,
+            !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
 
         // Mark this commitment as used to prevent replays
-        commitments[commitmentHash].commitmentUsed = true;
+        commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
         userRegistry.retrieveFunds(

@@ -35,9 +35,8 @@ jobs:
         with:
           source: ./docs
           destination: ./docs
-    # Uncomment this to upload to github pages
-    #   - name: Upload artifact
-    #     uses: actions/upload-pages-artifact@v2
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
 
   # Deployment job
   deploy:
