@@ -98,7 +98,7 @@ contract OracleTest is Test {
         );
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
-        preConfCommitmentStore.storeCommitment(bid, blockNumber, txnHash, cHash, bidSignature, commitmentSignature);
+        bytes32 commitmentIndex = preConfCommitmentStore.storeCommitment(bid, blockNumber, txnHash, cHash, bidSignature, commitmentSignature);
 
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
             txnHash,
@@ -116,8 +116,8 @@ contract OracleTest is Test {
 
         bool isSlash = false;
         vm.expectEmit(true, false, false, true);
-        emit CommitmentProcessed(commitmentHash, isSlash);
-        oracle.processCommitment(commitmentHash, isSlash);
+        emit CommitmentProcessed(commitmentIndex, isSlash);
+        oracle.processCommitment(commitmentIndex, isSlash);
     }
 
     function _bytesToHexString(

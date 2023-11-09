@@ -46,18 +46,18 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of userRegistry
     IUserRegistry public userRegistry;
 
-    /// @dev Commitment Hash -> Commitemnt
-    /// @dev Only stores valid commitments
-    mapping(bytes32 => PreConfCommitment) public commitments;
-
-    // /// @dev Mapping to keep track of used PreConfCommitments
-    // mapping(bytes32 => bool) public usedCommitments;
-
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
 
     /// @dev Mapping from address to commitmentss list
-    mapping(address => PreConfCommitment[]) public providerCommitments;
+    mapping(address => bytes32[]) public providerCommitments;
+
+    /// @dev Mapping for blocknumber to list of hash of commitments
+    mapping(uint256 => bytes32[]) public blockCommitments;
+
+    /// @dev Commitment Hash -> Commitemnt
+    /// @dev Only stores valid commitments
+    mapping(bytes32 => PreConfCommitment) public commitments;
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
@@ -256,6 +256,16 @@ contract PreConfCommitmentStore is Ownable {
         commiterAddress = preConfHash.recover(commitmentSignature);
     }
 
+    function getCommitmentIndex(
+        PreConfCommitment memory commitment
+    )  public pure returns (bytes32){
+        return keccak256(
+            abi.encodePacked(
+                commitment.commitmentHash,
+                commitment.commitmentSignature
+            )
+        );
+    }
 
     /**
      * @dev Store a commitment.
@@ -265,7 +275,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentHash The commitment hash.
      * @param bidSignature The signature of the bid.
      * @param commitmentSignature The signature of the commitment.
-     * @return The new commitment count.
+     * @return commitmentIndex The index of the stored commitment
      */
     function storeCommitment(
         uint64 bid,
@@ -274,14 +284,13 @@ contract PreConfCommitmentStore is Ownable {
         string memory commitmentHash,
         bytes calldata bidSignature,
         bytes memory commitmentSignature
-    ) public returns (uint256) {
+    ) public returns (bytes32 commitmentIndex) {
         (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
             bid,
             blockNumber,
             txnHash,
             bidSignature
         );
-
         // This helps in avoiding stack too deep
         {
             bytes32 preConfHash = getPreConfHash(
@@ -309,14 +318,21 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentSignature
             );
 
-            commitments[preConfHash] = newCommitment;
-            providerCommitments[commiterAddress].push(newCommitment);
+            commitmentIndex = getCommitmentIndex(newCommitment);
+
+
+            // Store commitment
+            commitments[commitmentIndex] = newCommitment;
+
+            // Push pointers to other mappings
+            providerCommitments[commiterAddress].push(commitmentIndex);
+            blockCommitments[blockNumber].push(commitmentIndex);
             
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
         }
 
-        return commitmentCount;
+        return commitmentIndex;
     }
 
         /**
@@ -327,7 +343,7 @@ contract PreConfCommitmentStore is Ownable {
     function getCommitmentsByCommitter(address commiter)
         public
         view
-        returns (PreConfCommitment[] memory)
+        returns (bytes32[] memory)
     {
         return providerCommitments[commiter];
     }
@@ -346,17 +362,17 @@ contract PreConfCommitmentStore is Ownable {
 
     /**
      * @dev Initiate a slash for a commitment.
-     * @param commitmentHash The hash of the commitment to be slashed.
+     * @param commitmentIndex The hash of the commitment to be slashed.
      */
-    function initiateSlash(bytes32 commitmentHash) public onlyOracle {
-        PreConfCommitment memory commitment = commitments[commitmentHash];
+    function initiateSlash(bytes32 commitmentIndex) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentHash].commitmentUsed,
+            !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
 
         // Mark this commitment as used to prevent replays
-        commitments[commitmentHash].commitmentUsed = true;
+        commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
         providerRegistry.slash(
@@ -368,17 +384,17 @@ contract PreConfCommitmentStore is Ownable {
 
     /**
      * @dev Initiate a reward for a commitment.
-     * @param commitmentHash The hash of the commitment to be rewarded.
+     * @param commitmentIndex The hash of the commitment to be rewarded.
      */
-    function initateReward(bytes32 commitmentHash) public onlyOracle {
-        PreConfCommitment memory commitment = commitments[commitmentHash];
+    function initateReward(bytes32 commitmentIndex) public onlyOracle {
+        PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentHash].commitmentUsed,
+            !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
 
         // Mark this commitment as used to prevent replays
-        commitments[commitmentHash].commitmentUsed = true;
+        commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
         userRegistry.retrieveFunds(
