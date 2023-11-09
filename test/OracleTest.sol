@@ -23,7 +23,7 @@ contract OracleTest is Test {
 
     // Events to match against
     event BlockDataRequested(uint256 blockNumber);
-    event BlockDataReceived(bytes32[] txnList, uint256 blockNumber, string blockBuilderName);
+    event BlockDataReceived(string[] txnList, uint256 blockNumber, string blockBuilderName);
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
 
     function setUp() public {
@@ -71,8 +71,8 @@ contract OracleTest is Test {
     }
 
     function test_ReceiveBlockData() public {
-        bytes32[] memory txnList = new bytes32[](1);
-        txnList[0] = keccak256("0xkartik");
+        string[] memory txnList = new string[](1);
+        txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         uint256 blockNumber = block.number;
         string memory blockBuilderName = "mev builder";
         vm.expectEmit(true, true, false, true);

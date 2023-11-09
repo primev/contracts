@@ -64,11 +64,14 @@ interface IPreConfCommitmentStore {
         bytes memory commitmentSignature
     ) external returns (uint256);
 
-    function getCommitment(bytes32 commitmentHash) external view returns (PreConfCommitment memory);
+    function getCommitmentsByBlockNumber(uint256 blockNumber) external view returns (bytes32[] memory);
 
-    function initiateSlash(bytes32 commitmentHash) external;
 
-    function initateReward(bytes32 commitmentHash) external;
+    function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
+
+    function initiateSlash(bytes32 commitmentIndex) external;
+
+    function initateReward(bytes32 commitmentIndex) external;
 
     function updateOracle(address newOracle) external;
 

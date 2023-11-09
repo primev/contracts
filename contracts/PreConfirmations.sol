@@ -349,6 +349,19 @@ contract PreConfCommitmentStore is Ownable {
     }
 
 
+    /** 
+     * @dev Retrieves the list of commitments for a given block number.
+    * @param blockNumber The block number.
+    * @return A list of indexes referencing preconfimration structures for the specified block number.
+    */
+    function getCommitmentsByBlockNumber(uint256 blockNumber)
+        public
+        view
+        returns (bytes32[] memory)
+    {
+        return blockCommitments[blockNumber];
+    }
+
     /**
      * @dev Get a commitment by its hash.
      * @param commitmentHash The hash of the commitment.
