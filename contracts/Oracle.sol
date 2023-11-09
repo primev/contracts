@@ -60,6 +60,10 @@ contract Oracle is Ownable {
     // Event to signal the processing of a commitment
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
 
+    function addBuilderAddress(string memory builderName, address builderAddress) external onlyOwner {
+        blockBuilderNameToAddress[builderName] = builderAddress;
+    }
+
     // Function to request the block data
     function requestBlockData(uint256 blockNumber) external {
         // Emit an event that data request has been made

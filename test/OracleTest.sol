@@ -49,10 +49,13 @@ contract OracleTest is Test {
 
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
-        vm.prank(signer);
+        vm.startPrank(signer);
         userRegistry.registerAndStake{value: 2 ether}();
-       
+        
+        // vm.prank(signer);
         oracle = new Oracle(address(preConfCommitmentStore));
+        oracle.addBuilderAddress("mev builder", signer);
+        vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
         userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
