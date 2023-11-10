@@ -8,6 +8,7 @@ pragma solidity ^0.8.20;
 interface IPreConfCommitmentStore {
     // Structs, events, and errors can also be included in the interface if they are used in the external functions
 
+    /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
         bool commitmentUsed;
         address bidder;
@@ -16,10 +17,11 @@ interface IPreConfCommitmentStore {
         uint64 blockNumber;
         bytes32 bidHash;
         string txnHash;
-        string commitmentHash;
+        bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
     }
+
 
     event SignatureVerified(
         address indexed signer,

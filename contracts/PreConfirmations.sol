@@ -68,7 +68,7 @@ contract PreConfCommitmentStore is Ownable {
         uint64 blockNumber;
         bytes32 bidHash;
         string txnHash;
-        string commitmentHash;
+        bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
     }
@@ -272,7 +272,6 @@ contract PreConfCommitmentStore is Ownable {
      * @param bid The bid amount.
      * @param blockNumber The block number.
      * @param txnHash The transaction hash.
-     * @param commitmentHash The commitment hash.
      * @param bidSignature The signature of the bid.
      * @param commitmentSignature The signature of the commitment.
      * @return commitmentIndex The index of the stored commitment
@@ -281,7 +280,6 @@ contract PreConfCommitmentStore is Ownable {
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
-        string memory commitmentHash,
         bytes calldata bidSignature,
         bytes memory commitmentSignature
     ) public returns (bytes32 commitmentIndex) {
@@ -313,7 +311,7 @@ contract PreConfCommitmentStore is Ownable {
                 blockNumber,
                 bHash,
                 txnHash,
-                commitmentHash,
+                preConfHash,
                 bidSignature,
                 commitmentSignature
             );
@@ -363,14 +361,14 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
-     * @dev Get a commitment by its hash.
-     * @param commitmentHash The hash of the commitment.
+     * @dev Get a commitment by its commitmentIndex.
+     * @param commitmentIndex The index of the commitment.
      * @return A PreConfCommitment structure representing the commitment.
      */
     function getCommitment(
-        bytes32 commitmentHash
+        bytes32 commitmentIndex
     ) public view returns (PreConfCommitment memory) {
-        return commitments[commitmentHash];
+        return commitments[commitmentIndex];
     }
 
     /**
