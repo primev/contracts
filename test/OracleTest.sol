@@ -153,6 +153,42 @@ contract OracleTest is Test {
 
     }
 
+
+    function test_ReceiveBlockDataWithCommitmentsSlashed() public {
+        string[] memory txnList = new string[](1);
+        txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
+        uint64 blockNumber = 200;
+        uint64 bid = 2;
+        string memory blockBuilderName = "kartik builder";
+        (address user, uint256 userPk) = makeAddrAndKey("alice");
+
+        vm.deal(user, 200000 ether);
+        vm.startPrank(user);
+        userRegistry.registerAndStake{value: 250 ether }();
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+        uint256 ogStake = providerRegistry.checkStake(user);
+
+        string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
+        bytes32 commitmentIndex = constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, userPk);
+        vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
+        oracle.addBuilderAddress("kartik builder", user);
+        vm.expectEmit(true, true, false, true);
+        emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
+        oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
+
+        bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
+        assertEq(commitmentHashes.length, 1);
+        
+        // Ensuring no rewards
+        assertEq(userRegistry.getProviderAmount(user), 0);
+
+        // Detect slashing
+        uint256 postSlashStake = providerRegistry.checkStake(user);
+        assertEq(postSlashStake + bid, ogStake);
+
+    }
+
     // function test_ProcessCommitment_Slash() public {
     //   TODO(@ckartik): Add test
     // }
