@@ -139,3 +139,57 @@ forge test
 ```
 forge coverage
 ```
+
+## Local Contract Deployment with Anvil
+
+### Prerequisites
+Ensure Foundry is installed with Anvil, Cast, and Forge.
+
+### Steps
+
+1. **Start Anvil**:
+    Open a terminal and run Anvil to initiate a local Ethereum network simulation:
+
+    ```bash
+    anvil
+    ```
+
+    Anvil will start and display a list of available accounts and their corresponding private keys, pre-funded with Ethereum for testing purposes.
+
+2. **Note the Private Keys**:
+    Anvil provides a set of accounts with their private keys. Example output:
+
+    ```
+    Available Accounts
+    ==================
+
+    (0) "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" (10000 ETH)
+    (1) "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" (10000 ETH)
+    ... (more accounts) ...
+
+    Private Keys
+    ==================
+
+    (0) 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+    (1) 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+    ... (more keys) ...
+    ```
+
+3. **Deploy Your Contract**:
+    Use one of the provided private keys to deploy your contract using Forge. Example command:
+
+    ```bash
+    forge create PreConfCommitmentStore --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --constructor-args 0xD7a4B4cbA2DAb2dc3E2FCa91ea903Bf49842FD87 0xD7a4B4cbA2DAb2dc3E2FCa91ea903Bf49842FD87 0xD7a4B4cbA2DAb2dc3E2FCa91ea903Bf49842FD87
+    ```
+
+    After executing the command, you should see an output similar to the following:
+
+    ```
+    eth_getBlockByNumber
+    eth_feeHistory
+    eth_sendRawTransaction
+
+        Transaction: 0x0229f1adf045bfcc554f0ecff57d5a6cff05aecf222479a1a568ac840386dfff
+        Contract created: 0x5fbdb2315678afecb367f032d93f642f64180aa3
+        Gas used: 2733597
+    ```
