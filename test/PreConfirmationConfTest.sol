@@ -73,7 +73,7 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(user, recoveredAddress);
         assertEq(digest, bidHash);
 
-        preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", signature, signature);
+        preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", "0xkartik", signature, signature);
 
     }
 
@@ -144,7 +144,8 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(signer);
         userRegistry.registerAndStake{value: 2 ether}();
         string memory txnHash = "0xkartik";
-        bytes32 commitmentHash = bytes32(hex"31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc");
+        string
+            memory commitmentHash = "0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
         uint64 bid = 2;
@@ -163,6 +164,7 @@ contract TestPreConfCommitmentStore is Test {
             bid,
             blockNumber,
             txnHash,
+            commitmentHash,
             bidSignature,
             commitmentSignature
         );
@@ -173,6 +175,7 @@ contract TestPreConfCommitmentStore is Test {
             bid,
             blockNumber,
             txnHash,
+            commitmentHash,
             bidSignature,
             commitmentSignature
         );
@@ -208,6 +211,7 @@ contract TestPreConfCommitmentStore is Test {
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
+        string memory commitmentHash,
         bytes memory bidSignature,
         bytes memory commitmentSignature
     ) internal returns (bytes32) {
@@ -215,6 +219,7 @@ contract TestPreConfCommitmentStore is Test {
             bid,
             blockNumber,
             txnHash,
+            commitmentHash,
             bidSignature,
             commitmentSignature
         );
@@ -227,10 +232,17 @@ contract TestPreConfCommitmentStore is Test {
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
+        string memory commitmentHash,
         bytes memory bidSignature,
         bytes memory commitmentSignature
     ) public {
 
+        bytes32 reconstructedIndex = keccak256(
+            abi.encodePacked(
+                commitmentHash,
+                commitmentSignature
+            )
+        );
 
         (PreConfCommitmentStore.PreConfCommitment memory commitment) = preConfCommitmentStore
             .getCommitment(index);
@@ -249,6 +261,11 @@ contract TestPreConfCommitmentStore is Test {
         assert(commitments.length >= 1);
 
         assertEq(
+            index,
+            reconstructedIndex,
+            "Returned hash should match the preConfHash"
+        );
+        assertEq(
             commitment.commitmentUsed,
             false,
             "Commitment should have been marked as used"
@@ -263,6 +280,11 @@ contract TestPreConfCommitmentStore is Test {
             commitment.txnHash,
             txnHash,
             "Stored txnHash should match input txnHash"
+        );
+        assertEq(
+            commitment.commitmentHash,
+            commitmentHash,
+            "Stored commitmentHash should match input commitmentHash"
         );
         assertEq(
             commitment.bidSignature,
@@ -302,6 +324,7 @@ contract TestPreConfCommitmentStore is Test {
             bid,
             blockNumber,
             txnHash,
+            commitmentHash,
             bidSignature,
             commitmentSignature
         );
@@ -360,6 +383,7 @@ contract TestPreConfCommitmentStore is Test {
                 bid,
                 blockNumber,
                 txnHash,
+                commitmentHash,
                 bidSignature,
                 commitmentSignature
             );
@@ -425,6 +449,7 @@ contract TestPreConfCommitmentStore is Test {
                 bid,
                 blockNumber,
                 txnHash,
+                commitmentHash,
                 bidSignature,
                 commitmentSignature
             );

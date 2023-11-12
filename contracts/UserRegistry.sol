@@ -103,13 +103,6 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Get the amount assigned to a provider.
-     */
-    function getProviderAmount(address provider) external view returns (uint256) {
-        return providerAmount[provider];
-    }
-    
-    /**
      * @dev Internal function for user registration and staking.
      */
     function registerAndStake() public payable {
