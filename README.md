@@ -122,11 +122,39 @@ sequenceDiagram
 
 ```
 
-#### Deploy Scripts
+#### Deploy Scripts using hardhat
 
 ```
 npx hardhat run scripts/deploy.js
 ```
+
+#### Deploy Scripts using forge
+
+- Install foundryup
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+```
+
+- Running foundryup by itself will install the latest (nightly) precompiled binaries: forge, cast, anvil and chisel
+```
+foundryup
+```
+
+- Setup ENV Vars
+
+```
+export RPC_URL="http://localhost:8545/"
+export PRIVATE_KEY="your-private-key"
+export CHAIN_ID=17864
+```
+
+- Run the deploy script
+
+```
+forge script scripts/DeployScript.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
+```
+
 
 #### Test Contracts
 
