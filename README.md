@@ -153,7 +153,6 @@ export CHAIN_ID=17864
 
 ```
 forge script scripts/DeployScript.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
-
 ```
 
 

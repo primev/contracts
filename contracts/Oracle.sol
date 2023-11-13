@@ -14,6 +14,8 @@ import {IPreConfCommitmentStore} from './interfaces/IPreConfirmations.sol';
  */
 contract Oracle is Ownable {
 
+    mapping(string => address) public blockBuilderNameToAddress;
+
     // To shutup the compiler
     // TODO(@ckartik): remove or make Oracle non-payable
     receive() external payable {
@@ -35,9 +37,14 @@ contract Oracle is Ownable {
      */
     constructor(
     address _preConfContract
-    ) Ownable(msg.sender) {
+    ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
     }
+
+    // mapping of txns to bool to check if txns exists
+    // Stores all proccessed txns for onw
+    // TODO(@ckartik): This may be too restricvie in the log run as an appraoch
+    mapping(string => bool) txnHashes;
 
 
     // Event to request block data
@@ -45,13 +52,17 @@ contract Oracle is Ownable {
 
     // Event to signal the reception of block data
     event BlockDataReceived(
-        bytes32[] txnList,
+        string[] txnList,
         uint256 blockNumber,
         string blockBuilderName
     );
 
     // Event to signal the processing of a commitment
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
+
+    function addBuilderAddress(string memory builderName, address builderAddress) external onlyOwner {
+        blockBuilderNameToAddress[builderName] = builderAddress;
+    }
 
     // Function to request the block data
     function requestBlockData(uint256 blockNumber) external {
@@ -62,14 +73,32 @@ contract Oracle is Ownable {
     // Function to receive and process the block data (this would be automated in a real-world scenario)
     // TODO(@ckartik): Should restrict who can make this call
     function receiveBlockData(
-        bytes32[] calldata txnList,
+        string[] calldata txnList,
         uint256 blockNumber,
         string calldata blockBuilderName
     ) external {
         // Emit an event that the block data has been received
         emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
+        address builder = blockBuilderNameToAddress[blockBuilderName];
+        
+        for (uint256 i = 0; i < txnList.length; i++) {
+            txnHashes[txnList[i]] = true;
+        }
+
         // Placeholder: Process the block data and determine the commitment's validity
         // For demonstration, we'll call this with a dummy commitment hash and isSlash flag
+        bytes32[] memory commitmentHashes = preConfContract.getCommitmentsByBlockNumber(blockNumber);
+        for (uint256 i = 0; i < commitmentHashes.length; i++) {
+            IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentHashes[i]);
+            if (commitment.commiter == builder) {
+                if (txnHashes[commitment.txnHash]){
+                    this.processCommitment(commitmentHashes[i], false);
+                }
+                else {
+                    this.processCommitment(commitmentHashes[i], true);
+                }
+            }
+        }
     }
 
     // Function to simulate the processing of a commitment (initiate a slash or a reward)
