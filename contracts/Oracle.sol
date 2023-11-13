@@ -37,7 +37,7 @@ contract Oracle is Ownable {
      */
     constructor(
     address _preConfContract
-    ) Ownable(msg.sender) {
+    ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
     }
 
