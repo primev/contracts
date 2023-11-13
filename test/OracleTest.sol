@@ -9,6 +9,7 @@ import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
 
 contract OracleTest is Test {
+    using ECDSA for bytes32;
     Oracle internal oracle;
     PreConfCommitmentStore internal preConfCommitmentStore;
     uint16 internal feePercent;
@@ -23,7 +24,7 @@ contract OracleTest is Test {
 
     // Events to match against
     event BlockDataRequested(uint256 blockNumber);
-    event BlockDataReceived(bytes32[] txnList, uint256 blockNumber, string blockBuilderName);
+    event BlockDataReceived(string[] txnList, uint256 blockNumber, string blockBuilderName);
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
 
     function setUp() public {
@@ -49,10 +50,13 @@ contract OracleTest is Test {
 
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
-        vm.prank(signer);
+        vm.startPrank(signer);
         userRegistry.registerAndStake{value: 2 ether}();
-       
+        
+        // vm.prank(signer);
         oracle = new Oracle(address(preConfCommitmentStore));
+        oracle.addBuilderAddress("mev builder", signer);
+        vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
         userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
@@ -71,8 +75,8 @@ contract OracleTest is Test {
     }
 
     function test_ReceiveBlockData() public {
-        bytes32[] memory txnList = new bytes32[](1);
-        txnList[0] = keccak256("0xkartik");
+        string[] memory txnList = new string[](1);
+        txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         uint256 blockNumber = block.number;
         string memory blockBuilderName = "mev builder";
         vm.expectEmit(true, true, false, true);
@@ -203,7 +207,7 @@ contract OracleTest is Test {
         );
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
-        bytes32 commitmentIndex = preConfCommitmentStore.storeCommitment(bid, blockNumber, txnHash, cHash, bidSignature, commitmentSignature);
+        bytes32 commitmentIndex = preConfCommitmentStore.storeCommitment(bid, blockNumber, txnHash, bidSignature, commitmentSignature);
 
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
             txnHash,

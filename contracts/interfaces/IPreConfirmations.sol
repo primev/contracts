@@ -8,6 +8,7 @@ pragma solidity ^0.8.20;
 interface IPreConfCommitmentStore {
     // Structs, events, and errors can also be included in the interface if they are used in the external functions
 
+    /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
         bool commitmentUsed;
         address bidder;
@@ -16,10 +17,11 @@ interface IPreConfCommitmentStore {
         uint64 blockNumber;
         bytes32 bidHash;
         string txnHash;
-        string commitmentHash;
+        bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
     }
+
 
     event SignatureVerified(
         address indexed signer,
@@ -64,11 +66,14 @@ interface IPreConfCommitmentStore {
         bytes memory commitmentSignature
     ) external returns (uint256);
 
-    function getCommitment(bytes32 commitmentHash) external view returns (PreConfCommitment memory);
+    function getCommitmentsByBlockNumber(uint256 blockNumber) external view returns (bytes32[] memory);
 
-    function initiateSlash(bytes32 commitmentHash) external;
 
-    function initateReward(bytes32 commitmentHash) external;
+    function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
+
+    function initiateSlash(bytes32 commitmentIndex) external;
+
+    function initateReward(bytes32 commitmentIndex) external;
 
     function updateOracle(address newOracle) external;
 
