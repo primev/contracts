@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
 
 /// @title User Registry
@@ -71,7 +71,7 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
         uint256 _minStake,
         address _feeRecipient,
         uint16 _feePercent
-    ) {
+    ) Ownable(msg.sender) {
         minStake = _minStake;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
