@@ -4,6 +4,7 @@ import "forge-std/Script.sol";
 import "contracts/UserRegistry.sol";
 import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
+import "contracts/Oracle.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -22,6 +23,9 @@ contract DeployScript is Script {
 
         PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore(address(userRegistry), address(providerRegistry), feeRecipient);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
+
+        Oracle oracle = new Oracle(address(preConfCommitmentStore));
+        console.log("Oracle deployed to:", address(oracle));
 
         vm.stopBroadcast();
     }
