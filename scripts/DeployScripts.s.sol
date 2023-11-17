@@ -21,7 +21,7 @@ contract DeployScript is Script {
         ProviderRegistry providerRegistry = new ProviderRegistry(minStake, feeRecipient, feePercent);
         console.log("ProviderRegistry deployed to:", address(providerRegistry));
 
-        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore(address(userRegistry), address(providerRegistry), feeRecipient);
+        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore(address(providerRegistry), address(userRegistry), feeRecipient);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
         Oracle oracle = new Oracle(address(preConfCommitmentStore));
