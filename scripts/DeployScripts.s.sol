@@ -24,8 +24,17 @@ contract DeployScript is Script {
         PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore(address(providerRegistry), address(userRegistry), feeRecipient);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
+        providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
+        console.log("ProviderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
+
+        userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
+        console.log("UserRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
+
         Oracle oracle = new Oracle(address(preConfCommitmentStore));
         console.log("Oracle deployed to:", address(oracle));
+
+        preConfCommitmentStore.updateOracle(address(oracle));
+        console.log("PreConfCommitmentStore updated with Oracle address:", address(oracle));
 
         vm.stopBroadcast();
     }

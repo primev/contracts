@@ -14,7 +14,6 @@ contract OracleTest is Test {
     PreConfCommitmentStore internal preConfCommitmentStore;
     uint16 internal feePercent;
     uint256 internal minStake;
-    address internal provider;
     address internal feeRecipient;
     ProviderRegistry internal providerRegistry;
     uint256 testNumber;
@@ -128,28 +127,33 @@ contract OracleTest is Test {
 
     function test_ReceiveBlockDataWithCommitments() public {
         string[] memory txnList = new string[](1);
-        txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
+        txnList[0] = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         uint64 blockNumber = 200;
         uint64 bid = 2;
         string memory blockBuilderName = "kartik builder";
         (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
 
         vm.deal(user, 200000 ether);
         vm.startPrank(user);
         userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.deal(provider, 200000 ether);
+        vm.startPrank(provider);
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 commitmentIndex = constructAndStoreCommitment(bid, blockNumber, txnList[0], userPk, userPk);
+        constructAndStoreCommitment(bid, blockNumber, txnList[0], userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
-        oracle.addBuilderAddress("kartik builder", user);
+        oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
         emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
         oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
 
         bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
         assertEq(commitmentHashes.length, 1);
-        assertEq(userRegistry.getProviderAmount(user), bid);
+        assertEq(userRegistry.getProviderAmount(provider), bid);
 
     }
 
@@ -170,7 +174,7 @@ contract OracleTest is Test {
         uint256 ogStake = providerRegistry.checkStake(user);
 
         string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
-        bytes32 commitmentIndex = constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, userPk);
+        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, userPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress("kartik builder", user);
         vm.expectEmit(true, true, false, true);
@@ -196,10 +200,13 @@ contract OracleTest is Test {
     function test_ProcessCommitment_Reward() public {
 
          string memory txnHash = "0xkartik";
+         /*
+         Temporarily hardcoding the values for the following variables for future testing.
         string
             memory cHash = "0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
+        */
         uint64 bid = 2;
         uint64 blockNumber = 2;
         bytes memory bidSignature = bytes(
@@ -208,20 +215,6 @@ contract OracleTest is Test {
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
         bytes32 commitmentIndex = preConfCommitmentStore.storeCommitment(bid, blockNumber, txnHash, bidSignature, commitmentSignature);
-
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnHash,
-            bid,
-            blockNumber
-        );
-
-        bytes32 commitmentHash = preConfCommitmentStore.getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            bidHash,
-            _bytesToHexString(bidSignature)
-        );
 
         bool isSlash = false;
         vm.expectEmit(true, false, false, true);
