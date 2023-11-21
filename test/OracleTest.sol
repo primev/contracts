@@ -10,6 +10,7 @@ import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
 
 contract OracleTest is Test {
+    address internal owner;
     using ECDSA for bytes32;
     Oracle internal oracle;
     PreConfCommitmentStore internal preConfCommitmentStore;
@@ -48,14 +49,14 @@ contract OracleTest is Test {
             feeRecipient // Oracle
         );
 
-        address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-        vm.deal(signer, 5 ether);
-        vm.startPrank(signer);
+        address owner = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        vm.deal(owner, 5 ether);
+        vm.startPrank(owner);
         userRegistry.registerAndStake{value: 2 ether}();
         
-        // vm.prank(signer);
+        // vm.prank(owner);
         oracle = new Oracle(address(preConfCommitmentStore));
-        oracle.addBuilderAddress("mev builder", signer);
+        oracle.addBuilderAddress("mev builder", owner);
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
@@ -64,6 +65,24 @@ contract OracleTest is Test {
 
     }
 
+    function test_MultipleBlockBuildersRegistred() public {
+        vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
+        (address builder1,) = makeAddrAndKey("k builder");
+        (address builder2,) = makeAddrAndKey("primev builder");
+        (address builder3,) = makeAddrAndKey("titan builder");
+        (address builder4,) = makeAddrAndKey("zk builder");
+
+
+        oracle.addBuilderAddress("k builder", builder1);
+        oracle.addBuilderAddress("primev builder", builder2);
+        oracle.addBuilderAddress("titan builder", builder3);
+        oracle.addBuilderAddress("zk builder", builder4);
+
+        assertEq(oracle.blockBuilderNameToAddress("k builder"), builder1);
+        assertEq(oracle.blockBuilderNameToAddress("primev builder"), builder2);
+        assertEq(oracle.blockBuilderNameToAddress("titan builder"), builder3);
+        assertEq(oracle.blockBuilderNameToAddress("zk builder"), builder4);
+    }
     function test_RequestBlockData() public {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
