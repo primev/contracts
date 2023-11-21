@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import "../contracts/Oracle.sol";
 import "../contracts/PreConfirmations.sol";
 import "../contracts/interfaces/IPreConfirmations.sol";
@@ -165,18 +166,26 @@ contract OracleTest is Test {
         uint64 bid = 2;
         string memory blockBuilderName = "kartik builder";
         (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("bob");
+        console.log("user: %s, provider: %s", user, provider);
 
         vm.deal(user, 200000 ether);
+        vm.deal(provider, 200000 ether);
+
         vm.startPrank(user);
         userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.startPrank(provider);
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
-        uint256 ogStake = providerRegistry.checkStake(user);
+
+        uint256 ogStake = providerRegistry.checkStake(provider);
 
         string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
-        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, userPk);
+        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
-        oracle.addBuilderAddress("kartik builder", user);
+        oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
         emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
         oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
@@ -185,10 +194,10 @@ contract OracleTest is Test {
         assertEq(commitmentHashes.length, 1);
         
         // Ensuring no rewards
-        assertEq(userRegistry.getProviderAmount(user), 0);
+        assertEq(userRegistry.getProviderAmount(provider), 0);
 
         // Detect slashing
-        uint256 postSlashStake = providerRegistry.checkStake(user);
+        uint256 postSlashStake = providerRegistry.checkStake(provider);
         assertEq(postSlashStake + bid, ogStake);
 
     }
