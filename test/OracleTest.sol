@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 import "../contracts/Oracle.sol";
 import "../contracts/PreConfirmations.sol";
 import "../contracts/interfaces/IPreConfirmations.sol";
@@ -222,7 +221,6 @@ contract OracleTest is Test {
         string memory blockBuilderName = "kartik builder";
         (address user, uint256 userPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("bob");
-        console.log("user: %s, provider: %s", user, provider);
 
         vm.deal(user, 200000 ether);
         vm.deal(provider, 200000 ether);
