@@ -9,6 +9,7 @@ import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
 
 contract OracleTest is Test {
+    address internal owner;
     using ECDSA for bytes32;
     Oracle internal oracle;
     PreConfCommitmentStore internal preConfCommitmentStore;
@@ -47,20 +48,74 @@ contract OracleTest is Test {
             feeRecipient // Oracle
         );
 
-        address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-        vm.deal(signer, 5 ether);
-        vm.startPrank(signer);
+        address owner = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        vm.deal(owner, 5 ether);
+        vm.startPrank(owner);
         userRegistry.registerAndStake{value: 2 ether}();
         
-        // vm.prank(signer);
+        // vm.prank(owner);
         oracle = new Oracle(address(preConfCommitmentStore));
-        oracle.addBuilderAddress("mev builder", signer);
+        oracle.addBuilderAddress("mev builder", owner);
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
         userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
 
+    }
+
+    function test_MultipleBlockBuildersRegistred() public {
+        vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
+        (address builder1,) = makeAddrAndKey("k builder");
+        (address builder2,) = makeAddrAndKey("primev builder");
+        (address builder3,) = makeAddrAndKey("titan builder");
+        (address builder4,) = makeAddrAndKey("zk builder");
+
+
+        oracle.addBuilderAddress("k builder", builder1);
+        oracle.addBuilderAddress("primev builder", builder2);
+        oracle.addBuilderAddress("titan builder", builder3);
+        oracle.addBuilderAddress("zk builder", builder4);
+
+        assertEq(oracle.blockBuilderNameToAddress("k builder"), builder1);
+        assertEq(oracle.blockBuilderNameToAddress("primev builder"), builder2);
+        assertEq(oracle.blockBuilderNameToAddress("titan builder"), builder3);
+        assertEq(oracle.blockBuilderNameToAddress("zk builder"), builder4);
+    }
+
+    function test_builderUnidentified() public {
+        vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
+        (address user, uint256 userPk) = makeAddrAndKey("k builder");
+        (address provider, uint256 providerPk) = makeAddrAndKey("primev builder");
+        (address builder3,) = makeAddrAndKey("titan builder");
+        (address builder4,) = makeAddrAndKey("zk builder");
+
+        oracle.addBuilderAddress("titan builder", builder3);
+        oracle.addBuilderAddress("zk builder", builder4);
+
+        assertEq(oracle.blockBuilderNameToAddress("titan builder"), builder3);
+        assertEq(oracle.blockBuilderNameToAddress("zk builder"), builder4);
+        vm.stopPrank();
+
+        vm.deal(user, 1000 ether);
+        vm.deal(provider, 1000 ether);
+
+        vm.startPrank(user);
+        userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.startPrank(provider);
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+
+        constructAndStoreCommitment(2, 2, "0xkartik", userPk, providerPk);
+
+        string[] memory txnList = new string[](1);
+        txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
+        oracle.receiveBlockData(txnList, 2, "primev builder");
+
+        assertEq(userRegistry.getProviderAmount(provider), 0);
+        assertEq(providerRegistry.checkStake(provider), 250 ether);
     }
 
     function test_RequestBlockData() public {
@@ -165,18 +220,25 @@ contract OracleTest is Test {
         uint64 bid = 2;
         string memory blockBuilderName = "kartik builder";
         (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("bob");
 
         vm.deal(user, 200000 ether);
+        vm.deal(provider, 200000 ether);
+
         vm.startPrank(user);
         userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.startPrank(provider);
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
-        uint256 ogStake = providerRegistry.checkStake(user);
+
+        uint256 ogStake = providerRegistry.checkStake(provider);
 
         string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
-        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, userPk);
+        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
-        oracle.addBuilderAddress("kartik builder", user);
+        oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
         emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
         oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
@@ -185,11 +247,12 @@ contract OracleTest is Test {
         assertEq(commitmentHashes.length, 1);
         
         // Ensuring no rewards
-        assertEq(userRegistry.getProviderAmount(user), 0);
+        assertEq(userRegistry.getProviderAmount(provider), 0);
 
         // Detect slashing
-        uint256 postSlashStake = providerRegistry.checkStake(user);
+        uint256 postSlashStake = providerRegistry.checkStake(provider);
         assertEq(postSlashStake + bid, ogStake);
+        assertEq(userRegistry.checkStake(user), 250 ether);
 
     }
 
