@@ -199,7 +199,9 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        constructAndStoreCommitment(bid, blockNumber, txnList[0], userPk, providerPk);
+        bytes memory txnhashList = abi.encode(txnList);
+
+        constructAndStoreCommitment(bid, blockNumber, string(txnhashList), userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
@@ -235,8 +237,9 @@ contract OracleTest is Test {
 
         uint256 ogStake = providerRegistry.checkStake(provider);
 
-        string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
-        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, providerPk);
+        string[] memory commitedTxnList = new string[](1);
+        commitedTxnList[0] = string(abi.encodePacked(keccak256("0xSlash")));
+        constructAndStoreCommitment(bid, blockNumber, string(abi.encode(commitedTxnList)), userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);

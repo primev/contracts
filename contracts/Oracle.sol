@@ -44,7 +44,7 @@ contract Oracle is Ownable {
     // mapping of txns to bool to check if txns exists
     // Stores all proccessed txns for onw
     // TODO(@ckartik): This may be too restricvie in the log run as an appraoch
-    mapping(string => bool) txnHashes;
+    mapping(string => uint) txnHashes;
 
 
     // Event to request block data
@@ -82,7 +82,7 @@ contract Oracle is Ownable {
         address builder = blockBuilderNameToAddress[blockBuilderName];
         
         for (uint256 i = 0; i < txnList.length; i++) {
-            txnHashes[txnList[i]] = true;
+            txnHashes[txnList[i]] = i+1;
         }
 
         // Placeholder: Process the block data and determine the commitment's validity
@@ -91,7 +91,24 @@ contract Oracle is Ownable {
         for (uint256 i = 0; i < commitmentHashes.length; i++) {
             IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentHashes[i]);
             if (commitment.commiter == builder) {
-                if (txnHashes[commitment.txnHash]){
+                bool commitmentSucceeded = true;
+
+                // TODO(@ckartik): Ensure we check for correct encoding during commtiment storage.
+                (string[] memory commitedTransactions) = abi.decode(bytes(commitment.txnHash), (string[]));
+
+                // Determine if bundle order was satisfied
+                for (uint256 j = 0; j < commitedTransactions.length; j++) {
+                    if (txnHashes[commitedTransactions[j]] == 0) {
+                        commitmentSucceeded = false;
+                        break;
+                    }
+                    if (j+1 < commitedTransactions.length && txnHashes[commitedTransactions[j]] + 1 == txnHashes[commitedTransactions[j+1]]) {
+                        commitmentSucceeded = false;
+                        break;
+                    }
+                }
+
+                if (commitmentSucceeded){
                     this.processCommitment(commitmentHashes[i], false);
                 }
                 else {
