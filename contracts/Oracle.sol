@@ -95,14 +95,14 @@ contract Oracle is Ownable {
 
                 // TODO(@ckartik): Ensure we check for correct encoding during commtiment storage.
                 (string[] memory commitedTransactions) = abi.decode(bytes(commitment.txnHash), (string[]));
-
                 // Determine if bundle order was satisfied
                 for (uint256 j = 0; j < commitedTransactions.length; j++) {
                     if (txnHashes[commitedTransactions[j]] == 0) {
+
                         commitmentSucceeded = false;
                         break;
                     }
-                    if (j+1 < commitedTransactions.length && txnHashes[commitedTransactions[j]] + 1 == txnHashes[commitedTransactions[j+1]]) {
+                    if (j+1 < commitedTransactions.length && txnHashes[commitedTransactions[j]] + 1 != txnHashes[commitedTransactions[j+1]]) {
                         commitmentSucceeded = false;
                         break;
                     }

@@ -215,6 +215,45 @@ contract OracleTest is Test {
     }
 
 
+    function test_ReceiveBlockDataWithCommitmentsBundle() public {
+        string[] memory txnList = new string[](3);
+        txnList[0] = string(abi.encodePacked(keccak256("0xfrontrun")));
+        txnList[1] = string(abi.encodePacked(keccak256("0xmev")));
+        txnList[2] = string(abi.encodePacked(keccak256("0xbackrun")));
+        
+        uint64 blockNumber = 200;
+        uint64 bid = 2;
+        string memory blockBuilderName = "kartik builder";
+        (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
+
+        vm.deal(user, 200000 ether);
+        vm.startPrank(user);
+        userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.deal(provider, 200000 ether);
+        vm.startPrank(provider);
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+
+        bytes memory txnhashList = abi.encode(txnList);
+
+        constructAndStoreCommitment(bid, blockNumber, string(txnhashList), userPk, providerPk);
+        vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
+        oracle.addBuilderAddress("kartik builder", provider);
+        vm.expectEmit(true, true, false, true);
+        emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
+        oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
+
+        bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
+        assertEq(commitmentHashes.length, 1);
+        assertEq(userRegistry.getProviderAmount(provider), bid);
+
+    }
+
+
+
     function test_ReceiveBlockDataWithCommitmentsSlashed() public {
         string[] memory txnList = new string[](1);
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
