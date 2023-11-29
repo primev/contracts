@@ -16,6 +16,12 @@ contract Oracle is Ownable {
 
     mapping(string => address) public blockBuilderNameToAddress;
 
+    uint256 public nextRequestedBlockNumber;
+
+    function getNextRequestedBlockNumber() external view returns (uint256) {
+        return nextRequestedBlockNumber;
+    }
+
     // To shutup the compiler
     // TODO(@ckartik): remove or make Oracle non-payable
     receive() external payable {
@@ -98,6 +104,10 @@ contract Oracle is Ownable {
                     this.processCommitment(commitmentHashes[i], true);
                 }
             }
+        }
+
+        if (nextRequestedBlockNumber < blockNumber) {
+            nextRequestedBlockNumber = blockNumber + 1;
         }
     }
 
