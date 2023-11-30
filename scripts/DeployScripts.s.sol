@@ -14,6 +14,7 @@ contract DeployScript is Script {
         uint256 minStake = 1 ether;
         address feeRecipient = address(0x388C818CA8B9251b393131C08a736A67ccB19297);
         uint16 feePercent = 15;
+        uint256 nextRequestedBlockNumber = 18682511;
 
         UserRegistry userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
         console.log("UserRegistry deployed to:", address(userRegistry));
@@ -30,7 +31,7 @@ contract DeployScript is Script {
         userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("UserRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
-        Oracle oracle = new Oracle(address(preConfCommitmentStore));
+        Oracle oracle = new Oracle(address(preConfCommitmentStore), nextRequestedBlockNumber);
         console.log("Oracle deployed to:", address(oracle));
 
         preConfCommitmentStore.updateOracle(address(oracle));

@@ -42,9 +42,11 @@ contract Oracle is Ownable {
      * @param _preConfContract The address of the pre-confirmations contract.
      */
     constructor(
-    address _preConfContract
+    address _preConfContract,
+    uint256 _nextRequestedBlockNumber
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
+        nextRequestedBlockNumber = _nextRequestedBlockNumber;
     }
 
     // mapping of txns to bool to check if txns exists
@@ -106,7 +108,7 @@ contract Oracle is Ownable {
             }
         }
 
-        if (nextRequestedBlockNumber < blockNumber) {
+        if (nextRequestedBlockNumber <= blockNumber) {
             nextRequestedBlockNumber = blockNumber + 1;
         }
     }
