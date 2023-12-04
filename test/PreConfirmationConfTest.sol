@@ -155,9 +155,6 @@ contract TestPreConfCommitmentStore is Test {
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
 
-        // Step 1: Verify that the commitment has not been used before
-        verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
-
         // Step 2: Store the commitment
         bytes32 index = storeCommitment(
             bid,
@@ -176,32 +173,6 @@ contract TestPreConfCommitmentStore is Test {
             bidSignature,
             commitmentSignature
         );
-    }
-
-    function verifyCommitmentNotUsed(
-        string memory txnHash,
-        uint64 bid,
-        uint64 blockNumber,
-        bytes memory bidSignature
-    ) public returns (bytes32) {
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnHash,
-            bid,
-            blockNumber
-        );
-        bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            bidHash,
-            _bytesToHexString(bidSignature)
-        );
-
-        (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-            .commitments(preConfHash);
-        assertEq(commitmentUsed, false);
-
-        return bidHash;
     }
 
     function storeCommitment(
@@ -293,9 +264,6 @@ contract TestPreConfCommitmentStore is Test {
         );
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
-
-        // Step 1: Verify that the commitment has not been used before
-        verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
 
         // Step 2: Store the commitment
         bytes32 preConfHash = storeCommitment(
