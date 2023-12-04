@@ -336,13 +336,8 @@ contract TestPreConfCommitmentStore is Test {
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
-            // Step 1: Verify that the commitment has not been used before
-            bytes32 bidHash = verifyCommitmentNotUsed(
-                txnHash,
-                bid,
-                blockNumber,
-                signature
-            );
+
+            bytes32 bidHash = preConfCommitmentStore.getBidHash(txnHash, bid, blockNumber);
 
             bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
                 txnHash,
@@ -401,13 +396,9 @@ contract TestPreConfCommitmentStore is Test {
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
-            // Step 1: Verify that the commitment has not been used before
-            bytes32 bidHash = verifyCommitmentNotUsed(
-                txnHash,
-                bid,
-                blockNumber,
-                signature
-            );
+           
+            bytes32 bidHash = preConfCommitmentStore.getBidHash(txnHash, bid, blockNumber);
+
 
             bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
                 txnHash,
