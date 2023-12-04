@@ -9,7 +9,6 @@ import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
 
 contract OracleTest is Test {
-    address internal owner;
     using ECDSA for bytes32;
     Oracle internal oracle;
     PreConfCommitmentStore internal preConfCommitmentStore;

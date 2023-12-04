@@ -155,9 +155,6 @@ contract TestPreConfCommitmentStore is Test {
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
 
-        // Step 1: Verify that the commitment has not been used before
-        verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
-
         // Step 2: Store the commitment
         bytes32 index = storeCommitment(
             bid,
@@ -176,32 +173,6 @@ contract TestPreConfCommitmentStore is Test {
             bidSignature,
             commitmentSignature
         );
-    }
-
-    function verifyCommitmentNotUsed(
-        string memory txnHash,
-        uint64 bid,
-        uint64 blockNumber,
-        bytes memory bidSignature
-    ) public returns (bytes32) {
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnHash,
-            bid,
-            blockNumber
-        );
-        bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            bidHash,
-            _bytesToHexString(bidSignature)
-        );
-
-        (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-            .commitments(preConfHash);
-        assertEq(commitmentUsed, false);
-
-        return bidHash;
     }
 
     function storeCommitment(
@@ -248,11 +219,6 @@ contract TestPreConfCommitmentStore is Test {
         
         assert(commitments.length >= 1);
 
-        assertEq(
-            commitment.commitmentUsed,
-            false,
-            "Commitment should have been marked as used"
-        );
         assertEq(commitment.bid, bid, "Stored bid should match input bid");
         assertEq(
             commitment.blockNumber,
@@ -294,20 +260,18 @@ contract TestPreConfCommitmentStore is Test {
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
 
-        // Step 1: Verify that the commitment has not been used before
-        verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
-
         // Step 2: Store the commitment
-        bytes32 preConfHash = storeCommitment(
+        bytes32 commitmentIndex = storeCommitment(
             bid,
             blockNumber,
             txnHash,
             bidSignature,
             commitmentSignature
         );
+
         PreConfCommitmentStore.PreConfCommitment
             memory storedCommitment = preConfCommitmentStore.getCommitment(
-                preConfHash
+                commitmentIndex
             );
         
         assertEq(storedCommitment.bid, bid);
@@ -336,12 +300,10 @@ contract TestPreConfCommitmentStore is Test {
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
-            // Step 1: Verify that the commitment has not been used before
-            bytes32 bidHash = verifyCommitmentNotUsed(
+            bytes32 bidHash = preConfCommitmentStore.getBidHash(
                 txnHash,
                 bid,
-                blockNumber,
-                signature
+                blockNumber
             );
 
             bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
@@ -353,9 +315,10 @@ contract TestPreConfCommitmentStore is Test {
             );
 
             // Verify that the commitment has not been used before
-            (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-                .commitments(preConfHash);
-            assert(commitmentUsed == false);
+            (address bidder, , , , , , , , ) = preConfCommitmentStore
+            .commitments(preConfHash);
+            assert(bidder != address(0));
+
             bytes32 index = preConfCommitmentStore.storeCommitment(
                 bid,
                 blockNumber,
@@ -373,10 +336,12 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(feeRecipient);
             preConfCommitmentStore.initiateSlash(index);
 
-            (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-                .commitments(index);
-            // Verify that the commitment has been marked as used
-            assert(commitmentUsed == true);
+
+
+            // Verify that the commitment has not been used before
+            (address bidder2, , , , , , , , ) = preConfCommitmentStore
+            .commitments(index);
+            assert(bidder2 != address(0));
         }
     }
 
@@ -401,12 +366,10 @@ contract TestPreConfCommitmentStore is Test {
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
-            // Step 1: Verify that the commitment has not been used before
-            bytes32 bidHash = verifyCommitmentNotUsed(
+            bytes32 bidHash = preConfCommitmentStore.getBidHash(
                 txnHash,
                 bid,
-                blockNumber,
-                signature
+                blockNumber
             );
 
             bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
@@ -417,10 +380,13 @@ contract TestPreConfCommitmentStore is Test {
                 _bytesToHexString(bidSignature)
             );
 
+
+            
             // Verify that the commitment has not been used before
-            (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
+            (address bidder, , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
-            assert(commitmentUsed == false);
+            assert(bidder == address(0));
+
             bytes32 index = preConfCommitmentStore.storeCommitment(
                 bid,
                 blockNumber,
@@ -438,10 +404,10 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(feeRecipient);
             preConfCommitmentStore.initateReward(index);
 
-            (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
+            ( bidder, , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
             // Verify that the commitment has been marked as used
-            assert(commitmentUsed == true);
+            assert(bidder == address(0));
         }
     }
 

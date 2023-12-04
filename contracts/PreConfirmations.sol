@@ -61,7 +61,6 @@ contract PreConfCommitmentStore is Ownable {
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
-        bool commitmentUsed;
         address bidder;
         address commiter;
         uint64 bid;
@@ -304,7 +303,6 @@ contract PreConfCommitmentStore is Ownable {
             require(stake > (10 * bid), "Stake too low");
 
             PreConfCommitment memory newCommitment =  PreConfCommitment(
-                false,
                 bidderAddress,
                 commiterAddress,
                 bid,
@@ -378,12 +376,11 @@ contract PreConfCommitmentStore is Ownable {
     function initiateSlash(bytes32 commitmentIndex) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentIndex].commitmentUsed,
-            "Commitment already used"
+            commitment.bidder != address(0),
+            "Commitment does not exist"
         );
 
-        // Mark this commitment as used to prevent replays
-        commitments[commitmentIndex].commitmentUsed = true;
+        delete commitments[commitmentIndex];
         commitmentsCount[commitment.commiter] -= 1;
 
         providerRegistry.slash(
@@ -400,12 +397,12 @@ contract PreConfCommitmentStore is Ownable {
     function initateReward(bytes32 commitmentIndex) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
-            !commitments[commitmentIndex].commitmentUsed,
-            "Commitment already used"
+             commitment.bidder != address(0),
+            "Commitment does not exist"
         );
 
-        // Mark this commitment as used to prevent replays
-        commitments[commitmentIndex].commitmentUsed = true;
+        // Clean commitment from storage
+        delete commitments[commitmentIndex];
         commitmentsCount[commitment.commiter] -= 1;
 
         userRegistry.retrieveFunds(
