@@ -361,6 +361,16 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
+     * @dev Get a commitments' enclosed transaction by its commitmentIndex.
+     * @param commitmentIndex The index of the commitment.
+     * @return txnHash The transaction hash.
+     */
+    function getTxnHashFromCommitment(bytes32 commitmentIndex) public view returns (string memory txnHash)
+    {
+        return commitments[commitmentIndex].txnHash;
+    }
+
+    /**
      * @dev Get a commitment by its commitmentIndex.
      * @param commitmentIndex The index of the commitment.
      * @return A PreConfCommitment structure representing the commitment.
