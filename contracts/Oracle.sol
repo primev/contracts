@@ -16,6 +16,12 @@ contract Oracle is Ownable {
 
     mapping(string => address) public blockBuilderNameToAddress;
 
+    uint256 public nextRequestedBlockNumber;
+
+    function getNextRequestedBlockNumber() external view returns (uint256) {
+        return nextRequestedBlockNumber;
+    }
+
     // To shutup the compiler
     // TODO(@ckartik): remove or make Oracle non-payable
     receive() external payable {
@@ -36,9 +42,11 @@ contract Oracle is Ownable {
      * @param _preConfContract The address of the pre-confirmations contract.
      */
     constructor(
-    address _preConfContract
+    address _preConfContract,
+    uint256 _nextRequestedBlockNumber
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
+        nextRequestedBlockNumber = _nextRequestedBlockNumber;
     }
 
     // mapping of txns to bool to check if txns exists
@@ -98,6 +106,10 @@ contract Oracle is Ownable {
                     this.processCommitment(commitmentHashes[i], true);
                 }
             }
+        }
+
+        if (nextRequestedBlockNumber <= blockNumber) {
+            nextRequestedBlockNumber = blockNumber + 1;
         }
     }
 
