@@ -176,6 +176,9 @@ contract TestPreConfCommitmentStore is Test {
             bidSignature,
             commitmentSignature
         );
+
+        string memory commitmentTxnHash = preConfCommitmentStore.getTxnHashFromCommitment(index);
+        assertEq(commitmentTxnHash, "0xkartik");
     }
 
     function verifyCommitmentNotUsed(
