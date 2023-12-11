@@ -1,10 +1,8 @@
-# Pre-Confirmation Rollup Contracts
+# Contracts
 
 ## Overview
 
 This repository contains Solidity contracts and tests for handling pre-confirmation commitments and bids. The system uses two separate registries to manage users and providers, where both parties must stake ETH to participate. Commitments are verified and stored in a contract.
-
-## Contracts
 
 ### PreConfCommitmentStore
 
