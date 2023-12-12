@@ -144,7 +144,6 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(signer);
         userRegistry.registerAndStake{value: 2 ether}();
         string memory txnHash = "0xkartik";
-        bytes32 commitmentHash = bytes32(hex"31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc");
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
         uint64 bid = 2;
@@ -179,6 +178,7 @@ contract TestPreConfCommitmentStore is Test {
 
         string memory commitmentTxnHash = preConfCommitmentStore.getTxnHashFromCommitment(index);
         assertEq(commitmentTxnHash, "0xkartik");
+        // commitmentHash value is internal to contract and not asserted
     }
 
     function verifyCommitmentNotUsed(
@@ -285,8 +285,6 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(signer);
         userRegistry.registerAndStake{value: 2 ether}();
         string memory txnHash = "0xkartik";
-        string
-            memory commitmentHash = "0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
         uint64 bid = 2;
@@ -301,7 +299,7 @@ contract TestPreConfCommitmentStore is Test {
         verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
 
         // Step 2: Store the commitment
-        bytes32 preConfHash = storeCommitment(
+        bytes32 commitmentIndex = storeCommitment(
             bid,
             blockNumber,
             txnHash,
@@ -310,12 +308,13 @@ contract TestPreConfCommitmentStore is Test {
         );
         PreConfCommitmentStore.PreConfCommitment
             memory storedCommitment = preConfCommitmentStore.getCommitment(
-                preConfHash
+                commitmentIndex
             );
         
         assertEq(storedCommitment.bid, bid);
         assertEq(storedCommitment.blockNumber, blockNumber);
         assertEq(storedCommitment.txnHash, txnHash);
+        // commitmentHash value is internal to contract and not asserted
     }
 
     function test_InitiateSlash() public {
@@ -326,8 +325,6 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(signer);
             userRegistry.registerAndStake{value: 2 ether}();
             string memory txnHash = "0xkartik";
-            string
-                memory commitmentHash = "0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
             uint64 bid = 2;
@@ -381,6 +378,7 @@ contract TestPreConfCommitmentStore is Test {
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
         }
+        // commitmentHash value is internal to contract and not asserted
     }
 
     function test_InitiateReward() public {
@@ -391,8 +389,6 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(signer);
             userRegistry.registerAndStake{value: 2 ether}();
             string memory txnHash = "0xkartik";
-            string
-                memory commitmentHash = "0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
             uint64 bid = 2;
@@ -445,6 +441,7 @@ contract TestPreConfCommitmentStore is Test {
                 .commitments(index);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
+            // commitmentHash value is internal to contract and not asserted
         }
     }
 
