@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../contracts/Whitelist.sol";
 
+// Tests the Whitelist contract.
+// Note precompile interactions to mint/burn must be tested manually. 
 contract WhitelistTest is Test {
 
     address admin;
