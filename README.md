@@ -42,15 +42,20 @@ This is an interface that must be implemented by the provider registry contract.
 
 Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
 
+## Whitelist
+
+To enable bridging to native ether, bridging contracts need be able to mint/burn native ether. The `Whitelist` is responsible for managing a whitelist of addresses that can mint/burn native ether. The contract deployer is persisted as the admin, and is the only address that can mutate the whitelist.
+
 ## Tests
 
 The tests in this repository perform the following:
 
-- Deployment of the `ProviderRegistry` and `UserRegistry` contracts.
+- Deployment of the `ProviderRegistry`, `UserRegistry`, and `Whitelist` contracts.
 - Registration and staking of users and providers.
 - Verification of bid hashes and pre-confirmation commitment hashes.
 - Recovery of signer addresses.
 - Storage of valid commitments.
+- Tests basic whitelisting functionality.
 
 To run the tests, use the following command:
 

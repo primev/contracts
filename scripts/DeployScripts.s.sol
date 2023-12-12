@@ -15,6 +15,7 @@ contract DeployScript is Script {
         address feeRecipient = address(0x68bC10674b265f266b4b1F079Fa06eF4045c3ab9);
         uint16 feePercent = 2;
         uint256 nextRequestedBlockNumber = 18682511;
+        address hypERC20Addr = address(0x00); // Obtained from hyperlane deployment artifacts
 
         UserRegistry userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
         console.log("UserRegistry deployed to:", address(userRegistry));
@@ -36,6 +37,12 @@ contract DeployScript is Script {
 
         preConfCommitmentStore.updateOracle(address(oracle));
         console.log("PreConfCommitmentStore updated with Oracle address:", address(oracle));
+
+        Whitelist whitelist = new Whitelist();
+        console.log("Whitelist deployed to:", address(whitelist));
+
+        whitelist.addToWhitelist(address(hypERC20Addr));
+        console.log("Whitelist updated with hypERC20 address:", address(hypERC20Addr));
 
         vm.stopBroadcast();
     }
