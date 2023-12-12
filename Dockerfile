@@ -16,7 +16,7 @@ ARG RPC_URL
 ARG PRIVATE_KEY
 ARG CHAIN_ID
 
-# Run the deploy script using forge
-# Note: This line will execute during image build, 
-# which may not be ideal for deployment scripts. Consider using CMD or ENTRYPOINT for runtime execution.
-CMD forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast --chain-id "$CHAIN_ID" -vvvv
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
