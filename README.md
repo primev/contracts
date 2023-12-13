@@ -44,7 +44,7 @@ Note: In both IProviderRegistry and IUserRegistry - some functions are restricti
 
 ## Whitelist
 
-To enable bridging to native ether, bridging contracts need be able to mint/burn native ether. The `Whitelist` is responsible for managing a whitelist of addresses that can mint/burn native ether. The contract deployer is persisted as the admin, and is the only address that can mutate the whitelist.
+To enable bridging to native ether, bridging contracts need be able to mint/burn native ether. The `Whitelist` is responsible for managing a whitelist of addresses that can mint/burn native ether. An admin account must be specified on deployment, who is the only address that can mutate the whitelist.
 
 ## Tests
 
