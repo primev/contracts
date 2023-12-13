@@ -5,7 +5,9 @@ import "contracts/UserRegistry.sol";
 import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
 import "contracts/Oracle.sol";
+import "contracts/Whitelist.sol";
 
+// Deploys core contracts
 contract DeployScript is Script {
     function run() external {
         vm.startBroadcast();
@@ -15,7 +17,6 @@ contract DeployScript is Script {
         address feeRecipient = address(0x68bC10674b265f266b4b1F079Fa06eF4045c3ab9);
         uint16 feePercent = 2;
         uint256 nextRequestedBlockNumber = 18682511;
-        address hypERC20Addr = address(0x00); // Obtained from hyperlane deployment artifacts
 
         UserRegistry userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
         console.log("UserRegistry deployed to:", address(userRegistry));
@@ -37,6 +38,18 @@ contract DeployScript is Script {
 
         preConfCommitmentStore.updateOracle(address(oracle));
         console.log("PreConfCommitmentStore updated with Oracle address:", address(oracle));
+
+        vm.stopBroadcast();
+    }
+}
+
+// Deploys whitelist contract and adds HypERC20 to whitelist
+contract DeployWhitelist is Script {
+    function run() external {
+        vm.startBroadcast();
+
+        address hypERC20Addr = vm.envAddress("HYP_ERC20_ADDR");
+        require(hypERC20Addr != address(0), "Whitelist address not provided");
 
         Whitelist whitelist = new Whitelist();
         console.log("Whitelist deployed to:", address(whitelist));

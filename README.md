@@ -152,12 +152,17 @@ export PRIVATE_KEY="your-private-key"
 export CHAIN_ID=17864
 ```
 
-- Run the deploy script
+- Run the deploy script for core conracts
 
 ```
 forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
 ```
 
+- Run deploy script for whitelist contract, HYP_ERC20_ADDR denotes the HypERC20.sol contract address to give native mint/burn privileges.
+
+```
+HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
+```
 
 #### Test Contracts
 
