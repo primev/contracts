@@ -35,20 +35,18 @@ contract Whitelist {
     }
 
     // Mints native tokens if the sender is whitelisted.
-    // See geth fork precompile implementation:
-    // https://github.com/primevprotocol/go-ethereum/blob/precompile-updates/core/vm/contracts_with_ctx.go#L83
+    // See: https://github.com/primevprotocol/go-ethereum/blob/precompile-updates/core/vm/contracts_with_ctx.go#L83
     function mint(address _mintTo, uint256 _amount) external {
         require(isWhitelisted(msg.sender), "Sender is not whitelisted");
         bool success;
         (success, ) = MINT.call{value: 0, gas: gasleft()}(
-            abi.encode(_mintTo, _amount) // TODO: confirm new schema works with precompile
+            abi.encode(_mintTo, _amount)
         );
         require(success, "Native mint failed");
     }
 
     // Burns native tokens if the sender is whitelisted.
-    // See geth fork precompile implementation: 
-    // https://github.com/primevprotocol/go-ethereum/blob/precompile-updates/core/vm/contracts_with_ctx.go#L111
+    // See: https://github.com/primevprotocol/go-ethereum/blob/precompile-updates/core/vm/contracts_with_ctx.go#L111
     function burn(address _burnFrom, uint256 _amount) external {
         require(isWhitelisted(msg.sender), "Sender is not whitelisted");
         bool success;
