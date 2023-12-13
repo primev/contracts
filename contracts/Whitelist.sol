@@ -12,8 +12,9 @@ contract Whitelist {
     address constant MINT = address(0x89);
     address constant BURN = address(0x90);
 
-    constructor() {
-        admin = msg.sender;
+    constructor(address _admin) {
+        require(_admin != address(0), "Admin address cannot be zero");
+        admin = _admin;
     }
 
     modifier onlyAdmin() {

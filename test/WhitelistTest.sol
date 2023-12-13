@@ -14,10 +14,10 @@ contract WhitelistTest is Test {
     Whitelist whitelist;
 
     function setUp() public {
-        admin = address(this); // Contract deployer becomes admin
+        admin = address(this); // Original contract deployer as admin
         normalUser = address(0x100);
         addressInstance = address(0x200);
-        whitelist = new Whitelist();
+        whitelist = new Whitelist(admin);
     }
 
     function test_IsWhitelisted() public {
