@@ -42,15 +42,20 @@ This is an interface that must be implemented by the provider registry contract.
 
 Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
 
+## Whitelist
+
+To enable bridging to native ether, bridging contracts need be able to mint/burn native ether. The `Whitelist` is responsible for managing a whitelist of addresses that can mint/burn native ether. An admin account must be specified on deployment, who is the only address that can mutate the whitelist.
+
 ## Tests
 
 The tests in this repository perform the following:
 
-- Deployment of the `ProviderRegistry` and `UserRegistry` contracts.
+- Deployment of the `ProviderRegistry`, `UserRegistry`, and `Whitelist` contracts.
 - Registration and staking of users and providers.
 - Verification of bid hashes and pre-confirmation commitment hashes.
 - Recovery of signer addresses.
 - Storage of valid commitments.
+- Tests basic whitelisting functionality.
 
 To run the tests, use the following command:
 
@@ -147,12 +152,17 @@ export PRIVATE_KEY="your-private-key"
 export CHAIN_ID=17864
 ```
 
-- Run the deploy script
+- Run the deploy script for core conracts
 
 ```
 forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
 ```
 
+- Run deploy script for whitelist contract, HYP_ERC20_ADDR denotes the HypERC20.sol contract address to give native mint/burn privileges.
+
+```
+HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
+```
 
 #### Test Contracts
 
