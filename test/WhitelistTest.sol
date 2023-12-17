@@ -44,7 +44,7 @@ contract WhitelistTest is Test {
 
     function test_RevertNormalUserAddToWhitelist() public {
         vm.prank(normalUser);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert("Ownable: caller is not the owner");
         whitelist.addToWhitelist(addressInstance);
     }
 
@@ -53,7 +53,7 @@ contract WhitelistTest is Test {
         whitelist.addToWhitelist(addressInstance);
         assertTrue(whitelist.isWhitelisted(addressInstance));
         vm.prank(normalUser);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert("Ownable: caller is not the owner");
         whitelist.removeFromWhitelist(addressInstance);
     }
 }
