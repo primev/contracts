@@ -42,9 +42,17 @@ This is an interface that must be implemented by the provider registry contract.
 
 Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
 
-## Whitelist
+### Whitelist
 
 To enable bridging to native ether, bridging contracts need be able to mint/burn native ether. The `Whitelist` is responsible for managing a whitelist of addresses that can mint/burn native ether. An admin account must be specified on deployment, who is the only address that can mutate the whitelist.
+
+#### Functions
+
+- `addToWhitelist`: allows only the admin to add an address to the whitelist.
+- `removeFromWhitelist`: allows only the admin to remove an address from the whitelist.
+- `isWhitelisted`: returns boolean indicating if an address is whitelisted.
+- `mint`: allows whitelisted addresses to mint specific amount of native ether to any account.
+- `burn`: allows whitelisted addresses to burn specific amount of native ether from any account.
 
 ## Tests
 
@@ -152,7 +160,7 @@ export PRIVATE_KEY="your-private-key"
 export CHAIN_ID=17864
 ```
 
-- Run the deploy script for core conracts
+- Run the deploy script for core contracts
 
 ```
 forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
@@ -163,6 +171,12 @@ forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --priva
 ```
 HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
 ```
+
+#### Note on CREATE2
+
+Foundry scripts in this repo use the CREATE2 opcode to deploy for every contract. Meaning deployment on any chain will yield the same contract addresses, given a constant deployer account, contract bytecode, and salt. It's recommended to use `0xBe3dEF3973584FdcC1326634aF188f0d9772D57D` as the deployer account so that contract addresses will match external facing documentation. In production this address will have proper key management, for now here's the private key: `0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f03d5830e2dd5b0ea`.
+
+The CREATE2 proxy needs to be deployed prior to these contracts. See [this repo](https://github.com/primevprotocol/deterministic-deployment-proxy), or this [make command](https://github.com/primevprotocol/go-ethereum/blob/d29cfe94205e852cc57a8184585ccc895d32a517/geth-poa/Makefile#L48) to deploy. Anvil automatically deploys this proxy to the expected address.
 
 #### Test Contracts
 
