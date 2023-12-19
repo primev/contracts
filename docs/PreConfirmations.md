@@ -2,7 +2,7 @@
 
 ## PreConfCommitmentStore
 
-This contract allows users to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
+This contract allows bidders to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
 
 _This contract should not be used in production as it is for demonstration purposes._
 
@@ -58,13 +58,13 @@ contract IProviderRegistry providerRegistry
 
 _Address of provider registry_
 
-### userRegistry
+### bidderRegistry
 
 ```solidity
-contract IUserRegistry userRegistry
+contract IBidderRegistry bidderRegistry
 ```
 
-_Address of userRegistry_
+_Address of bidderRegistry_
 
 ### commitments
 
@@ -145,7 +145,7 @@ _Makes sure transaction sender is oracle_
 ### constructor
 
 ```solidity
-constructor(address _providerRegistry, address _userRegistry, address _oracle) public
+constructor(address _providerRegistry, address _bidderRegistry, address _oracle) public
 ```
 
 _Initializes the contract with the specified registry addresses, oracle, name, and version._
@@ -155,7 +155,7 @@ _Initializes the contract with the specified registry addresses, oracle, name, a
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _providerRegistry | address | The address of the provider registry. |
-| _userRegistry | address | The address of the user registry. |
+| _bidderRegistry | address | The address of the bidder registry. |
 | _oracle | address | The address of the oracle. |
 
 ### getBidHash
@@ -255,7 +255,7 @@ _Internal function to verify a bid_
 | ---- | ---- | ----------- |
 | messageDigest | bytes32 | returns the bid hash for given bid id. |
 | recoveredAddress | address | the address from the bid hash. |
-| stake | uint256 | the stake amount of the address for bid id user. |
+| stake | uint256 | the stake amount of the address for bid id bidder. |
 
 ### storeCommitment
 
@@ -358,19 +358,19 @@ _Updates the address of the provider registry._
 | ---- | ---- | ----------- |
 | newProviderRegistry | address | The new provider registry address. |
 
-### updateUserRegistry
+### updateBidderRegistry
 
 ```solidity
-function updateUserRegistry(address newUserRegistry) external
+function updateBidderRegistry(address newBidderRegistry) external
 ```
 
-_Updates the address of the user registry._
+_Updates the address of the bidder registry._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| newUserRegistry | address | The new user registry address. |
+| newBidderRegistry | address | The new bidder registry address. |
 
 ### _bytes32ToHexString
 

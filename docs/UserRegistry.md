@@ -1,8 +1,8 @@
 # Solidity API
 
-## UserRegistry
+## BidderRegistry
 
-This contract is for user registry and staking.
+This contract is for bidder registry and staking.
 
 ### PRECISION
 
@@ -66,21 +66,21 @@ address feeRecipient
 
 _Fee recipient_
 
-### userRegistered
+### bidderRegistered
 
 ```solidity
-mapping(address => bool) userRegistered
+mapping(address => bool) bidderRegistered
 ```
 
-_Mapping for if user is registered_
+_Mapping for if bidder is registered_
 
-### userStakes
+### bidderStakes
 
 ```solidity
-mapping(address => uint256) userStakes
+mapping(address => uint256) bidderStakes
 ```
 
-_Mapping from user addresses to their staked amount_
+_Mapping from bidder addresses to their staked amount_
 
 ### providerAmount
 
@@ -88,23 +88,23 @@ _Mapping from user addresses to their staked amount_
 mapping(address => uint256) providerAmount
 ```
 
-_Amount assigned to users_
+_Amount assigned to bidders_
 
-### UserRegistered
+### BidderRegistered
 
 ```solidity
-event UserRegistered(address user, uint256 stakedAmount)
+event BidderRegistered(address bidder, uint256 stakedAmount)
 ```
 
-_Event emitted when a user is registered with their staked amount_
+_Event emitted when a bidder is registered with their staked amount_
 
 ### FundsRetrieved
 
 ```solidity
-event FundsRetrieved(address user, uint256 amount)
+event FundsRetrieved(address bidder, uint256 amount)
 ```
 
-_Event emitted when funds are retrieved from a user's stake_
+_Event emitted when funds are retrieved from a bidder's stake_
 
 ### fallback
 
@@ -120,7 +120,7 @@ _Fallback function to revert all calls, ensuring no unintended interactions._
 receive() external payable
 ```
 
-_Receive function registers users and takes their stake
+_Receive function registers bidders and takes their stake
 Should be removed from here in case the registerAndStake function becomes more complex_
 
 ### constructor
@@ -135,7 +135,7 @@ _Constructor to initialize the contract with a minimum stake requirement._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _minStake | uint256 | The minimum stake required for user registration. |
+| _minStake | uint256 | The minimum stake required for bidder registration. |
 | _feeRecipient | address | The address that receives fee |
 | _feePercent | uint16 | The fee percentage for protocol |
 
@@ -167,43 +167,43 @@ _Sets the pre-confirmations contract address. Can only be called by the owner._
 function registerAndStake() public payable
 ```
 
-_Internal function for user registration and staking._
+_Internal function for bidder registration and staking._
 
 ### checkStake
 
 ```solidity
-function checkStake(address user) external view returns (uint256)
+function checkStake(address bidder) external view returns (uint256)
 ```
 
-_Check the stake of a user._
+_Check the stake of a bidder._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| user | address | The address of the user. |
+| bidder | address | The address of the bidder. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | The staked amount for the user. |
+| [0] | uint256 | The staked amount for the bidder. |
 
 ### retrieveFunds
 
 ```solidity
-function retrieveFunds(address user, uint256 amt, address payable provider) external
+function retrieveFunds(address bidder, uint256 amt, address payable provider) external
 ```
 
-_Retrieve funds from a user's stake (only callable by the pre-confirmations contract).
+_Retrieve funds from a bidder's stake (only callable by the pre-confirmations contract).
 reenterancy not necessary but still putting here for precaution_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| user | address | The address of the user. |
-| amt | uint256 | The amount to retrieve from the user's stake. |
+| bidder | address | The address of the bidder. |
+| amt | uint256 | The amount to retrieve from the bidder's stake. |
 | provider | address payable | The address to transfer the retrieved funds to. |
 
 ### setNewFeeRecipient
@@ -253,12 +253,12 @@ function withdrawProviderAmount(address payable provider) external
 ### withdrawStakedAmount
 
 ```solidity
-function withdrawStakedAmount(address payable user) external
+function withdrawStakedAmount(address payable bidder) external
 ```
 
 ### withdrawProtocolFee
 
 ```solidity
-function withdrawProtocolFee(address payable user) external
+function withdrawProtocolFee(address payable bidder) external
 ```
 

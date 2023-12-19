@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
-import "../contracts/UserRegistry.sol";
+import "../contracts/BidderRegistry.sol";
 
 contract TestPreConfCommitmentStore is Test {
     PreConfCommitmentStore internal preConfCommitmentStore;
@@ -18,7 +18,7 @@ contract TestPreConfCommitmentStore is Test {
     uint256 testNumber;
     uint64 testNumber2;
 
-    UserRegistry internal userRegistry;
+    BidderRegistry internal bidderRegistry;
 
     function setUp() public {
         testNumber = 2;
@@ -33,11 +33,12 @@ contract TestPreConfCommitmentStore is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
+
+        bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
+            address(bidderRegistry), // User Registry
             feeRecipient, // Oracle
             address(this) // Owner
         );
@@ -50,8 +51,8 @@ contract TestPreConfCommitmentStore is Test {
             address(providerRegistry)
         );
         assertEq(
-            address(preConfCommitmentStore.userRegistry()),
-            address(userRegistry)
+            address(preConfCommitmentStore.bidderRegistry()),
+            address(bidderRegistry)
         );
     }
 
@@ -61,18 +62,18 @@ contract TestPreConfCommitmentStore is Test {
             200 wei,
             3000
         );
-        (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         // Wallet memory kartik = vm.createWallet('test wallet');
-        (uint8 v,bytes32 r, bytes32 s) = vm.sign(userPk, bidHash);
+        (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        vm.deal(user, 200000 ether);
-        vm.prank(user);
-        userRegistry.registerAndStake{value: 1e18 wei}();
+        vm.deal(bidder, 200000 ether);
+        vm.prank(bidder);
+        bidderRegistry.registerAndStake{value: 1e18 wei}();
         (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
         
         assertEq(stake, 1e18 wei);
-        assertEq(user, recoveredAddress);
+        assertEq(bidder, recoveredAddress);
         assertEq(digest, bidHash);
 
         preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", signature, signature);
@@ -92,9 +93,9 @@ contract TestPreConfCommitmentStore is Test {
         );
     }
 
-    function test_UpdateUserRegistry() public {
-        preConfCommitmentStore.updateUserRegistry(feeRecipient);
-        assertEq(address(preConfCommitmentStore.userRegistry()), feeRecipient);
+    function test_UpdateBidderRegistry() public {
+        preConfCommitmentStore.updateBidderRegistry(feeRecipient);
+        assertEq(address(preConfCommitmentStore.bidderRegistry()), feeRecipient);
     }
 
     function test_GetBidHash() public {
@@ -144,7 +145,7 @@ contract TestPreConfCommitmentStore is Test {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
         vm.prank(signer);
-        userRegistry.registerAndStake{value: 2 ether}();
+        bidderRegistry.registerAndStake{value: 2 ether}();
         string memory txnHash = "0xkartik";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -285,7 +286,7 @@ contract TestPreConfCommitmentStore is Test {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
         vm.prank(signer);
-        userRegistry.registerAndStake{value: 2 ether}();
+        bidderRegistry.registerAndStake{value: 2 ether}();
         string memory txnHash = "0xkartik";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -325,7 +326,7 @@ contract TestPreConfCommitmentStore is Test {
             address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
             vm.deal(signer, 5 ether);
             vm.prank(signer);
-            userRegistry.registerAndStake{value: 2 ether}();
+            bidderRegistry.registerAndStake{value: 2 ether}();
             string memory txnHash = "0xkartik";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -389,7 +390,7 @@ contract TestPreConfCommitmentStore is Test {
             address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
             vm.deal(signer, 5 ether);
             vm.prank(signer);
-            userRegistry.registerAndStake{value: 2 ether}();
+            bidderRegistry.registerAndStake{value: 2 ether}();
             string memory txnHash = "0xkartik";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -430,7 +431,7 @@ contract TestPreConfCommitmentStore is Test {
                 commitmentSignature
             );
 
-            userRegistry.setPreconfirmationsContract(
+            bidderRegistry.setPreconfirmationsContract(
                 address(preConfCommitmentStore)
             );
             vm.deal(commiter, 5 ether);

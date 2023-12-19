@@ -23,6 +23,6 @@ function depositFunds() external payable
 ### slash
 
 ```solidity
-function slash(uint256 amt, address provider, address payable user) external
+function slash(uint256 amt, address provider, address payable bidder) external
 ```
 

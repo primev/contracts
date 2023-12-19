@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 
-interface IUserRegistry {
+interface IBidderRegistry {
     struct PreConfCommitment {
         string txnHash;
         uint64 bid;
@@ -14,10 +14,10 @@ interface IUserRegistry {
 
     function registerAndStake() external payable;
 
-    function checkStake(address user) external view returns (uint256);
+    function checkStake(address bidder) external view returns (uint256);
 
     function retrieveFunds(
-        address user,
+        address bidder,
         uint256 amt,
         address payable provider
     ) external;

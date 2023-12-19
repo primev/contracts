@@ -8,7 +8,7 @@ const { ethers } = require("hardhat");
 
 describe("Preconf", function () {
   describe("Deployment", function () {
-    it("Should deploy the smart contract and confirm preconf signature validity & bid validity & ensure both user and provider that are part of the preconf have staked eth", async function () {
+    it("Should deploy the smart contract and confirm preconf signature validity & bid validity & ensure both bidder and provider that are part of the preconf have staked eth", async function () {
       // We don't use the fixture here because we want a different deployment
       const [owner, addr1, oracle] = await ethers.getSigners();
       const bidderWallet = new ethers.Wallet(
@@ -36,12 +36,12 @@ describe("Preconf", function () {
       ]);
       await providerRegistry.waitForDeployment();
 
-      const userRegistry = await ethers.deployContract("UserRegistry", [
+      const bidderRegistry = await ethers.deployContract("BidderRegistry", [
         ethers.parseEther("2.0"),
       ]);
-      await userRegistry.waitForDeployment();
+      await bidderRegistry.waitForDeployment();
 
-      const txnReciept = await userRegistry
+      const txnReciept = await bidderRegistry
         .connect(bidderWallet)
         .registerAndStake({ value: ethers.parseEther("2.0") });
       await txnReciept.wait();
@@ -53,7 +53,7 @@ describe("Preconf", function () {
 
       const preconf = await ethers.deployContract("PreConfCommitmentStore", [
         providerRegistry.target,
-        userRegistry.target,
+        bidderRegistry.target,
         oracle,
       ]);
       await preconf.waitForDeployment();
@@ -131,29 +131,29 @@ describe("Preconf", function () {
     expect(ethers.formatEther(firstAddrStake)).to.equal("2.0");
   });
 
-  it("should allow a user to sign up to the user registry", async function () {
+  it("should allow a bidder to sign up to the bidder registry", async function () {
     const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const userRegistry = await ethers.deployContract("UserRegistry", [
+    const bidderRegistry = await ethers.deployContract("BidderRegistry", [
       ethers.parseEther("2.0"),
     ]);
-    await userRegistry.waitForDeployment();
+    await bidderRegistry.waitForDeployment();
 
-    console.log("provider address: ", userRegistry.target);
+    console.log("provider address: ", bidderRegistry.target);
 
-    const txn = await userRegistry
+    const txn = await bidderRegistry
       .connect(addr1)
       .registerAndStake({ value: ethers.parseEther("2.0") });
     await txn.wait();
 
-    const firstAddrStake = await userRegistry.checkStake(addr1.address);
+    const firstAddrStake = await bidderRegistry.checkStake(addr1.address);
     expect(ethers.formatEther(firstAddrStake)).to.equal("2.0");
   });
 
   it("should allow a contract deployer to deploy all 3 contracts and set the preconfirmations contract in the registries", async function () {
     const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const userRegistry = await ethers.deployContract("UserRegistry", [
+    const bidderRegistry = await ethers.deployContract("BidderRegistry", [
       ethers.parseEther("2.0"),
     ]);
 
@@ -161,24 +161,24 @@ describe("Preconf", function () {
       ethers.parseEther("2.0"),
     ]);
 
-    await userRegistry.waitForDeployment();
+    await bidderRegistry.waitForDeployment();
     await providerRegistry.waitForDeployment();
-    console.log("user reg address: ", userRegistry.target);
+    console.log("bidder reg address: ", bidderRegistry.target);
     console.log("provider reg address: ", providerRegistry.target);
 
     const preconf = await ethers.deployContract("PreConfCommitmentStore", [
       providerRegistry.target,
-      userRegistry.target,
+      bidderRegistry.target,
       oracle,
     ]);
     await preconf.waitForDeployment();
 
     console.log("preconf address: ", preconf.target);
 
-    const setPreConfOnUserRegTxn = await userRegistry
+    const setPreConfOnBidderRegTxn = await bidderRegistry
       .connect(owner)
       .setPreconfirmationsContract(preconf.target);
-    await setPreConfOnUserRegTxn.wait();
+    await setPreConfOnBidderRegTxn.wait();
 
     const setPreConfOnProviderRegTxn = await providerRegistry
       .connect(owner)
@@ -186,7 +186,7 @@ describe("Preconf", function () {
     await setPreConfOnProviderRegTxn.wait();
 
     await expect(
-      userRegistry.connect(owner).setPreconfirmationsContract(preconf.target)
+      bidderRegistry.connect(owner).setPreconfirmationsContract(preconf.target)
     ).to.be.revertedWith(
       "Preconfirmations Contract is already set and cannot be changed."
     );
@@ -203,32 +203,32 @@ describe("Preconf", function () {
   it("Reward a provider via the oracle into the preconf contract", async function () {
     const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const userRegistry = await ethers.deployContract("UserRegistry", [
+    const bidderRegistry = await ethers.deployContract("BidderRegistry", [
       ethers.parseEther("2.0"),
     ]);
     const providerRegistry = await ethers.deployContract("ProviderRegistry", [
       ethers.parseEther("2.0"),
     ]);
 
-    await userRegistry.waitForDeployment();
+    await bidderRegistry.waitForDeployment();
     await providerRegistry.waitForDeployment();
 
-    console.log("user reg address: ", userRegistry.target);
+    console.log("bidder reg address: ", bidderRegistry.target);
     console.log("provider reg address: ", providerRegistry.target);
 
     const preconf = await ethers.deployContract("PreConfCommitmentStore", [
       providerRegistry.target,
-      userRegistry.target,
+      bidderRegistry.target,
       oracle,
     ]);
     await preconf.waitForDeployment();
 
     console.log("preconf address: ", preconf.target);
 
-    const setPreConfOnUserRegTxn = await userRegistry
+    const setPreConfOnBidderRegTxn = await bidderRegistry
       .connect(owner)
       .setPreconfirmationsContract(preconf.target);
-    await setPreConfOnUserRegTxn.wait();
+    await setPreConfOnBidderRegTxn.wait();
 
     const setPreConfOnProviderRegTxn = await providerRegistry
       .connect(owner)
@@ -256,7 +256,7 @@ describe("Preconf", function () {
       value: ethers.parseEther("50.0"),
     });
 
-    const txnReciept = await userRegistry
+    const txnReciept = await bidderRegistry
       .connect(bidderWallet)
       .registerAndStake({ value: ethers.parseEther("2.0") });
     await txnReciept.wait();
@@ -301,32 +301,32 @@ describe("Preconf", function () {
   it("slash a provider via the oracle into the preconf contract", async function () {
     const [owner, addr1, oracle] = await ethers.getSigners();
 
-    const userRegistry = await ethers.deployContract("UserRegistry", [
+    const bidderRegistry = await ethers.deployContract("BidderRegistry", [
       ethers.parseEther("2.0"),
     ]);
     const providerRegistry = await ethers.deployContract("ProviderRegistry", [
       ethers.parseEther("2.0"),
     ]);
 
-    await userRegistry.waitForDeployment();
+    await bidderRegistry.waitForDeployment();
     await providerRegistry.waitForDeployment();
 
-    console.log("user reg address: ", userRegistry.target);
+    console.log("bidder reg address: ", bidderRegistry.target);
     console.log("provider reg address: ", providerRegistry.target);
 
     const preconf = await ethers.deployContract("PreConfCommitmentStore", [
       providerRegistry.target,
-      userRegistry.target,
+      bidderRegistry.target,
       oracle,
     ]);
     await preconf.waitForDeployment();
 
     console.log("preconf address: ", preconf.target);
 
-    const setPreConfOnUserRegTxn = await userRegistry
+    const setPreConfOnBidderRegTxn = await bidderRegistry
       .connect(owner)
       .setPreconfirmationsContract(preconf.target);
-    await setPreConfOnUserRegTxn.wait();
+    await setPreConfOnBidderRegTxn.wait();
 
     const setPreConfOnProviderRegTxn = await providerRegistry
       .connect(owner)
@@ -354,7 +354,7 @@ describe("Preconf", function () {
       value: ethers.parseEther("50.0"),
     });
 
-    const txnReciept = await userRegistry
+    const txnReciept = await bidderRegistry
       .connect(bidderWallet)
       .registerAndStake({ value: ethers.parseEther("2.0") });
     await txnReciept.wait();

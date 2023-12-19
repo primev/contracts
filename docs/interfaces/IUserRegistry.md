@@ -1,6 +1,6 @@
 # Solidity API
 
-## IUserRegistry
+## IBidderRegistry
 
 ### PreConfCommitment
 
@@ -25,12 +25,12 @@ function registerAndStake() external payable
 ### checkStake
 
 ```solidity
-function checkStake(address user) external view returns (uint256)
+function checkStake(address bidder) external view returns (uint256)
 ```
 
 ### retrieveFunds
 
 ```solidity
-function retrieveFunds(address user, uint256 amt, address payable provider) external
+function retrieveFunds(address bidder, uint256 amt, address payable provider) external
 ```
 

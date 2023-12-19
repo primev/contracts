@@ -14,23 +14,23 @@ Summary
 Impact: High
 Confidence: Medium
  - [ ] ID-0
-[UserRegistry.withdrawProviderAmount(address)](contracts/UserRegistry.sol#L186-L195) sends eth to arbitrary user
+[BidderRegistry.withdrawProviderAmount(address)](contracts/BidderRegistry.sol#L186-L195) sends eth to arbitrary bidder
 	Dangerous calls:
-	- [(success) = provider.call{value: amount}()](contracts/UserRegistry.sol#L193)
+	- [(success) = provider.call{value: amount}()](contracts/BidderRegistry.sol#L193)
 
-contracts/UserRegistry.sol#L186-L195
+contracts/BidderRegistry.sol#L186-L195
 
 
  - [ ] ID-1
-[ProviderRegistry.withdrawUserAmount(address)](contracts/ProviderRegistry.sol#L191-L198) sends eth to arbitrary user
+[ProviderRegistry.withdrawBidderAmount(address)](contracts/ProviderRegistry.sol#L191-L198) sends eth to arbitrary bidder
 	Dangerous calls:
-	- [(success) = user.call{value: userAmount[user]}()](contracts/ProviderRegistry.sol#L196)
+	- [(success) = bidder.call{value: bidderAmount[bidder]}()](contracts/ProviderRegistry.sol#L196)
 
 contracts/ProviderRegistry.sol#L191-L198
 
 
  - [ ] ID-2
-[ProviderRegistry.withdrawFeeRecipientAmount()](contracts/ProviderRegistry.sol#L185-L189) sends eth to arbitrary user
+[ProviderRegistry.withdrawFeeRecipientAmount()](contracts/ProviderRegistry.sol#L185-L189) sends eth to arbitrary bidder
 	Dangerous calls:
 	- [(successFee) = feeRecipient.call{value: feeRecipientAmount}()](contracts/ProviderRegistry.sol#L187)
 
@@ -38,11 +38,11 @@ contracts/ProviderRegistry.sol#L185-L189
 
 
  - [ ] ID-3
-[UserRegistry.withdrawFeeRecipientAmount()](contracts/UserRegistry.sol#L178-L184) sends eth to arbitrary user
+[BidderRegistry.withdrawFeeRecipientAmount()](contracts/BidderRegistry.sol#L178-L184) sends eth to arbitrary bidder
 	Dangerous calls:
-	- [(successFee) = feeRecipient.call{value: amount}()](contracts/UserRegistry.sol#L182)
+	- [(successFee) = feeRecipient.call{value: amount}()](contracts/BidderRegistry.sol#L182)
 
-contracts/UserRegistry.sol#L178-L184
+contracts/BidderRegistry.sol#L178-L184
 
 
 ## incorrect-exp
@@ -146,10 +146,10 @@ contracts/PreConfirmations.sol#L393-L395
 
 
  - [ ] ID-15
-[UserRegistry.setPreconfirmationsContract(address)](contracts/UserRegistry.sol#L95-L103) should emit an event for: 
-	- [preConfirmationsContract = contractAddress](contracts/UserRegistry.sol#L102) 
+[BidderRegistry.setPreconfirmationsContract(address)](contracts/BidderRegistry.sol#L95-L103) should emit an event for: 
+	- [preConfirmationsContract = contractAddress](contracts/BidderRegistry.sol#L102) 
 
-contracts/UserRegistry.sol#L95-L103
+contracts/BidderRegistry.sol#L95-L103
 
 
  - [ ] ID-16
@@ -163,10 +163,10 @@ contracts/ProviderRegistry.sol#L99-L107
 Impact: Low
 Confidence: Medium
  - [ ] ID-17
-[UserRegistry.withdrawProviderAmount(address).provider](contracts/UserRegistry.sol#L187) lacks a zero-check on :
-		- [(success) = provider.call{value: amount}()](contracts/UserRegistry.sol#L193)
+[BidderRegistry.withdrawProviderAmount(address).provider](contracts/BidderRegistry.sol#L187) lacks a zero-check on :
+		- [(success) = provider.call{value: amount}()](contracts/BidderRegistry.sol#L193)
 
-contracts/UserRegistry.sol#L187
+contracts/BidderRegistry.sol#L187
 
 
  - [ ] ID-18
@@ -177,17 +177,17 @@ contracts/ProviderRegistry.sol#L76
 
 
  - [ ] ID-19
-[UserRegistry.constructor(uint256,address,uint16)._feeRecipient](contracts/UserRegistry.sol#L72) lacks a zero-check on :
-		- [feeRecipient = _feeRecipient](contracts/UserRegistry.sol#L76)
+[BidderRegistry.constructor(uint256,address,uint16)._feeRecipient](contracts/BidderRegistry.sol#L72) lacks a zero-check on :
+		- [feeRecipient = _feeRecipient](contracts/BidderRegistry.sol#L76)
 
-contracts/UserRegistry.sol#L72
+contracts/BidderRegistry.sol#L72
 
 
  - [ ] ID-20
-[UserRegistry.setNewFeeRecipient(address).newFeeRecipient](contracts/UserRegistry.sol#L165) lacks a zero-check on :
-		- [feeRecipient = newFeeRecipient](contracts/UserRegistry.sol#L166)
+[BidderRegistry.setNewFeeRecipient(address).newFeeRecipient](contracts/BidderRegistry.sol#L165) lacks a zero-check on :
+		- [feeRecipient = newFeeRecipient](contracts/BidderRegistry.sol#L166)
 
-contracts/UserRegistry.sol#L165
+contracts/BidderRegistry.sol#L165
 
 
  - [ ] ID-21
@@ -198,10 +198,10 @@ contracts/PreConfirmations.sol#L393
 
 
  - [ ] ID-22
-[UserRegistry.setPreconfirmationsContract(address).contractAddress](contracts/UserRegistry.sol#L96) lacks a zero-check on :
-		- [preConfirmationsContract = contractAddress](contracts/UserRegistry.sol#L102)
+[BidderRegistry.setPreconfirmationsContract(address).contractAddress](contracts/BidderRegistry.sol#L96) lacks a zero-check on :
+		- [preConfirmationsContract = contractAddress](contracts/BidderRegistry.sol#L102)
 
-contracts/UserRegistry.sol#L96
+contracts/BidderRegistry.sol#L96
 
 
  - [ ] ID-23
@@ -219,10 +219,10 @@ contracts/ProviderRegistry.sol#L172
 
 
  - [ ] ID-25
-[UserRegistry.withdrawProtocolFee(address).user](contracts/UserRegistry.sol#L208) lacks a zero-check on :
-		- [(success) = user.call{value: _protocolFeeAmount}()](contracts/UserRegistry.sol#L214)
+[BidderRegistry.withdrawProtocolFee(address).bidder](contracts/BidderRegistry.sol#L208) lacks a zero-check on :
+		- [(success) = bidder.call{value: _protocolFeeAmount}()](contracts/BidderRegistry.sol#L214)
 
-contracts/UserRegistry.sol#L208
+contracts/BidderRegistry.sol#L208
 
 
  - [ ] ID-26
@@ -310,9 +310,9 @@ contracts/ProviderRegistry.sol#L2
 
 
  - [ ] ID-38
-Pragma version[^0.8.20](contracts/UserRegistry.sol#L2) necessitates a version too recent to be trusted. Consider deploying with 0.8.18.
+Pragma version[^0.8.20](contracts/BidderRegistry.sol#L2) necessitates a version too recent to be trusted. Consider deploying with 0.8.18.
 
-contracts/UserRegistry.sol#L2
+contracts/BidderRegistry.sol#L2
 
 
  - [ ] ID-39
@@ -346,9 +346,9 @@ contracts/PreConfirmations.sol#L2
 
 
  - [ ] ID-44
-Pragma version[^0.8.20](contracts/interfaces/IUserRegistry.sol#L2) necessitates a version too recent to be trusted. Consider deploying with 0.8.18.
+Pragma version[^0.8.20](contracts/interfaces/IBidderRegistry.sol#L2) necessitates a version too recent to be trusted. Consider deploying with 0.8.18.
 
-contracts/interfaces/IUserRegistry.sol#L2
+contracts/interfaces/IBidderRegistry.sol#L2
 
 
  - [ ] ID-45
@@ -368,24 +368,24 @@ contracts/ProviderRegistry.sol#L185-L189
 
 
  - [ ] ID-47
-Low level call in [UserRegistry.withdrawStakedAmount(address)](contracts/UserRegistry.sol#L197-L205):
-	- [(success) = user.call{value: stake}()](contracts/UserRegistry.sol#L203)
+Low level call in [BidderRegistry.withdrawStakedAmount(address)](contracts/BidderRegistry.sol#L197-L205):
+	- [(success) = bidder.call{value: stake}()](contracts/BidderRegistry.sol#L203)
 
-contracts/UserRegistry.sol#L197-L205
+contracts/BidderRegistry.sol#L197-L205
 
 
  - [ ] ID-48
-Low level call in [UserRegistry.withdrawProviderAmount(address)](contracts/UserRegistry.sol#L186-L195):
-	- [(success) = provider.call{value: amount}()](contracts/UserRegistry.sol#L193)
+Low level call in [BidderRegistry.withdrawProviderAmount(address)](contracts/BidderRegistry.sol#L186-L195):
+	- [(success) = provider.call{value: amount}()](contracts/BidderRegistry.sol#L193)
 
-contracts/UserRegistry.sol#L186-L195
+contracts/BidderRegistry.sol#L186-L195
 
 
  - [ ] ID-49
-Low level call in [UserRegistry.withdrawProtocolFee(address)](contracts/UserRegistry.sol#L207-L216):
-	- [(success) = user.call{value: _protocolFeeAmount}()](contracts/UserRegistry.sol#L214)
+Low level call in [BidderRegistry.withdrawProtocolFee(address)](contracts/BidderRegistry.sol#L207-L216):
+	- [(success) = bidder.call{value: _protocolFeeAmount}()](contracts/BidderRegistry.sol#L214)
 
-contracts/UserRegistry.sol#L207-L216
+contracts/BidderRegistry.sol#L207-L216
 
 
  - [ ] ID-50
@@ -396,15 +396,15 @@ contracts/ProviderRegistry.sol#L200-L223
 
 
  - [ ] ID-51
-Low level call in [UserRegistry.withdrawFeeRecipientAmount()](contracts/UserRegistry.sol#L178-L184):
-	- [(successFee) = feeRecipient.call{value: amount}()](contracts/UserRegistry.sol#L182)
+Low level call in [BidderRegistry.withdrawFeeRecipientAmount()](contracts/BidderRegistry.sol#L178-L184):
+	- [(successFee) = feeRecipient.call{value: amount}()](contracts/BidderRegistry.sol#L182)
 
-contracts/UserRegistry.sol#L178-L184
+contracts/BidderRegistry.sol#L178-L184
 
 
  - [ ] ID-52
-Low level call in [ProviderRegistry.withdrawUserAmount(address)](contracts/ProviderRegistry.sol#L191-L198):
-	- [(success) = user.call{value: userAmount[user]}()](contracts/ProviderRegistry.sol#L196)
+Low level call in [ProviderRegistry.withdrawBidderAmount(address)](contracts/ProviderRegistry.sol#L191-L198):
+	- [(success) = bidder.call{value: bidderAmount[bidder]}()](contracts/ProviderRegistry.sol#L196)
 
 contracts/ProviderRegistry.sol#L191-L198
 
@@ -500,9 +500,9 @@ contracts/PreConfirmations.sol#L36
 
 
  - [ ] ID-67
-[UserRegistry.minStake](contracts/UserRegistry.sol#L20) should be immutable 
+[BidderRegistry.minStake](contracts/BidderRegistry.sol#L20) should be immutable 
 
-contracts/UserRegistry.sol#L20
+contracts/BidderRegistry.sol#L20
 
 
  - [ ] ID-68

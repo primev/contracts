@@ -23,13 +23,13 @@ async function main() {
     [signer] = await hre.ethers.getSigners();
   }
 
-  const UserRegistry = await hre.ethers.deployContract("UserRegistry", [
+  const BidderRegistry = await hre.ethers.deployContract("BidderRegistry", [
     minStake,
     feeRecipient,
     feePercent,
   ], { signer });
-  await UserRegistry.waitForDeployment();
-  console.log("UserRegistry deployed to:", UserRegistry.target);
+  await BidderRegistry.waitForDeployment();
+  console.log("BidderRegistry deployed to:", BidderRegistry.target);
 
   const ProviderRegistry = await hre.ethers.deployContract("ProviderRegistry", [
     minStake,
@@ -41,7 +41,7 @@ async function main() {
 
   const PreConfCommitmentStore = await hre.ethers.deployContract(
     "PreConfCommitmentStore",
-    [UserRegistry.target, ProviderRegistry.target, oracle]
+    [BidderRegistry.target, ProviderRegistry.target, oracle]
   , { signer });
   await PreConfCommitmentStore.waitForDeployment();
   console.log(

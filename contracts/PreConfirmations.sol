@@ -5,12 +5,12 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
+import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
- * @notice This contract allows users to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
+ * @notice This contract allows bidders to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
  */
 contract PreConfCommitmentStore is Ownable {
     using ECDSA for bytes32;
@@ -43,8 +43,8 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of provider registry
     IProviderRegistry public providerRegistry;
 
-    /// @dev Address of userRegistry
-    IUserRegistry public userRegistry;
+    /// @dev Address of bidderRegistry
+    IBidderRegistry public bidderRegistry;
 
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
@@ -106,19 +106,19 @@ contract PreConfCommitmentStore is Ownable {
     /**
      * @dev Initializes the contract with the specified registry addresses, oracle, name, and version.
      * @param _providerRegistry The address of the provider registry.
-     * @param _userRegistry The address of the user registry.
+     * @param _bidderRegistry The address of the bidder registry.
      * @param _oracle The address of the oracle.
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         address _providerRegistry,
-        address _userRegistry,
+        address _bidderRegistry,
         address _oracle, 
         address _owner
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
-        userRegistry = IUserRegistry(_userRegistry);
+        bidderRegistry = IBidderRegistry(_bidderRegistry);
         _transferOwnership(_owner);
 
         // EIP-712 domain separator
@@ -207,7 +207,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param bidSignature bid signature.
      * @return messageDigest returns the bid hash for given bid id.
      * @return recoveredAddress the address from the bid hash.
-     * @return stake the stake amount of the address for bid id user.
+     * @return stake the stake amount of the address for bid id bidder.
      */
     function verifyBid(
         uint64 bid,
@@ -221,7 +221,7 @@ contract PreConfCommitmentStore is Ownable {
     {
         messageDigest = getBidHash(txnHash, bid, blockNumber);
         recoveredAddress = messageDigest.recover(bidSignature);
-        stake = userRegistry.checkStake(recoveredAddress);
+        stake = bidderRegistry.checkStake(recoveredAddress);
         require(stake > (10 * bid), "Invalid bid");
     }
 
@@ -421,7 +421,7 @@ contract PreConfCommitmentStore is Ownable {
         commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
-        userRegistry.retrieveFunds(
+        bidderRegistry.retrieveFunds(
             commitment.bidder,
             commitment.bid,
             payable(commitment.commiter)
@@ -447,11 +447,11 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
-     * @dev Updates the address of the user registry.
-     * @param newUserRegistry The new user registry address.
+     * @dev Updates the address of the bidder registry.
+     * @param newBidderRegistry The new bidder registry address.
      */
-    function updateUserRegistry(address newUserRegistry) external onlyOwner {
-        userRegistry = IUserRegistry(newUserRegistry);
+    function updateBidderRegistry(address newBidderRegistry) external onlyOwner {
+        bidderRegistry = IBidderRegistry(newBidderRegistry);
     }
 
     /**

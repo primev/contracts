@@ -11,6 +11,6 @@ interface IProviderRegistry {
     function slash(
         uint256 amt,
         address provider,
-        address payable user
+        address payable bidder
     ) external;
 }
