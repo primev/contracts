@@ -48,9 +48,9 @@ contract OracleTest is Test {
             feeRecipient // Oracle
         );
 
-        address owner = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-        vm.deal(owner, 5 ether);
-        vm.startPrank(owner);
+        address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        vm.deal(ownerInstance, 5 ether);
+        vm.startPrank(ownerInstance);
         userRegistry.registerAndStake{value: 2 ether}();
         
         // vm.prank(owner);
