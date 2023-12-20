@@ -55,8 +55,8 @@ contract OracleTest is Test {
         vm.startPrank(ownerInstance);
         userRegistry.registerAndStake{value: 2 ether}();
         
-        oracle = new Oracle(address(preConfCommitmentStore), 2, owner);
-        oracle.addBuilderAddress("mev builder", owner);
+        oracle = new Oracle(address(preConfCommitmentStore), 2, ownerInstance);
+        oracle.addBuilderAddress("mev builder", ownerInstance);
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
