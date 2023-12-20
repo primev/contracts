@@ -30,14 +30,16 @@ contract TestPreConfCommitmentStore is Test {
         providerRegistry = new ProviderRegistry(
             minStake,
             feeRecipient,
-            feePercent
+            feePercent,
+            address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
+        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
             address(userRegistry), // User Registry
-            feeRecipient // Oracle
+            feeRecipient, // Oracle
+            address(this) // Owner
         );
     }
 

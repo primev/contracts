@@ -40,13 +40,16 @@ contract Oracle is Ownable {
     /**
      * @dev Constructor to initialize the contract with a a preconf contract.
      * @param _preConfContract The address of the pre-confirmations contract.
+     * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
     address _preConfContract,
-    uint256 _nextRequestedBlockNumber
+    uint256 _nextRequestedBlockNumber,
+    address _owner
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
         nextRequestedBlockNumber = _nextRequestedBlockNumber;
+        _transferOwnership(_owner);
     }
 
     // mapping of txns to bool to check if txns exists

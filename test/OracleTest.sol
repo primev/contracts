@@ -38,14 +38,16 @@ contract OracleTest is Test {
         providerRegistry = new ProviderRegistry(
             minStake,
             feeRecipient,
-            feePercent
+            feePercent,
+            address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
+        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
             address(userRegistry), // User Registry
-            feeRecipient // Oracle
+            feeRecipient, // Oracle
+            address(this) // Owner
         );
 
         address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
@@ -53,9 +55,8 @@ contract OracleTest is Test {
         vm.startPrank(ownerInstance);
         userRegistry.registerAndStake{value: 2 ether}();
         
-        // vm.prank(owner);
-        oracle = new Oracle(address(preConfCommitmentStore), 2);
-        oracle.addBuilderAddress("mev builder", owner);
+        oracle = new Oracle(address(preConfCommitmentStore), 2, ownerInstance);
+        oracle.addBuilderAddress("mev builder", ownerInstance);
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));

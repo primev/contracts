@@ -108,15 +108,18 @@ contract PreConfCommitmentStore is Ownable {
      * @param _providerRegistry The address of the provider registry.
      * @param _userRegistry The address of the user registry.
      * @param _oracle The address of the oracle.
+     * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         address _providerRegistry,
         address _userRegistry,
-        address _oracle
+        address _oracle, 
+        address _owner
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
+        _transferOwnership(_owner);
 
         // EIP-712 domain separator
         DOMAIN_SEPARATOR_PRECONF = keccak256(

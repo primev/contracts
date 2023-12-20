@@ -70,15 +70,18 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
      * @param _minStake The minimum stake required for provider registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
+     * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         uint256 _minStake,
         address _feeRecipient,
-        uint16 _feePercent
+        uint16 _feePercent,
+        address _owner
     ) {
         minStake = _minStake;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
+        _transferOwnership(_owner);
     }
 
     /**

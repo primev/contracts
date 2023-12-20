@@ -21,7 +21,7 @@ contract UserRegistryTest is Test {
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
 
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent);
+        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         user = vm.addr(1);
         vm.deal(user, 100 ether);
