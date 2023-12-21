@@ -174,9 +174,19 @@ HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/D
 
 #### Note on CREATE2
 
-Foundry scripts in this repo use the CREATE2 opcode to deploy for every contract. Meaning deployment on any chain will yield the same contract addresses, given a constant deployer account, contract bytecode, and salt. It's recommended to use `0xBe3dEF3973584FdcC1326634aF188f0d9772D57D` as the deployer account so that contract addresses will match external facing documentation. In production this address will have proper key management, for now here's the private key: `0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f03d5830e2dd5b0ea`.
+Foundry scripts in this repo use the CREATE2 opcode to deploy for every contract. Meaning deployment on any chain will yield the same contract addresses, given a constant deployer account, contract bytecode, and salt. It's recommended to use `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` as the deployer account so that contract addresses will match external facing documentation. In production this address will have proper key management, for now here's the private key: `ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`.
 
 The CREATE2 proxy needs to be deployed prior to these contracts. See [this repo](https://github.com/primevprotocol/deterministic-deployment-proxy), or this [make command](https://github.com/primevprotocol/go-ethereum/blob/d29cfe94205e852cc57a8184585ccc895d32a517/geth-poa/Makefile#L48) to deploy. Anvil automatically deploys this proxy to the expected address.
+
+Using the above private key, expected contract addresses are:
+
+```bash
+UserRegistry deployed to: 0xEA616Ac3B633712ef57026432d86CB23498deD54
+ProviderRegistry deployed to: 0xBdd9CEd825167c0D616B0284BfACD034fF02D41D
+PreConfCommitmentStore deployed to: 0xFF435EC71C7cB6fEFbFfA8B1275c08c7e121E9Aa
+Oracle deployed to: 0xC68573B65444c21A4D9cE88B92DFEA222956B4E5
+Whitelist deployed to: 0xC2009B1b9036db2931349F2242eDA081FEc43D91
+```
 
 #### Test Contracts
 

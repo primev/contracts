@@ -10,7 +10,7 @@ import "contracts/Whitelist.sol";
 // Deploy scripts should inherit this contract if they deploy using create2 deterministic addrs.
 contract Create2Deployer {
     address constant create2Proxy = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-    address constant expectedDeployer = 0xBe3dEF3973584FdcC1326634aF188f0d9772D57D;
+    address constant expectedDeployer = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
     function checkCreate2Deployed() internal view {
         require(isContractDeployed(create2Proxy), "Create2 proxy needs to be deployed. See https://github.com/primevprotocol/deterministic-deployment-proxy");
