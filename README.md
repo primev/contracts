@@ -156,36 +156,40 @@ foundryup
 
 ```
 export RPC_URL="http://localhost:8545/"
-export PRIVATE_KEY="your-private-key"
+export PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 export CHAIN_ID=17864
 ```
 
 - Run the deploy script for core contracts
 
 ```
-forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
+forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv --use 0.8.23
 ```
 
 - Run deploy script for whitelist contract, HYP_ERC20_ADDR denotes the HypERC20.sol contract address to give native mint/burn privileges.
 
 ```
-HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv
+HYP_ERC20_ADDR=0xBe3dEF3973584FdcC1326634aF188f0d9772D57D forge script scripts/DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv --use 0.8.23
 ```
 
 #### Note on CREATE2
 
-Foundry scripts in this repo use the CREATE2 opcode to deploy for every contract. Meaning deployment on any chain will yield the same contract addresses, given a constant deployer account, contract bytecode, and salt. It's recommended to use `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` as the deployer account so that contract addresses will match external facing documentation. In production this address will have proper key management, for now here's the private key: `ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`.
+Foundry scripts in this repo use the CREATE2 opcode to deploy for every contract. Meaning deployment on any chain will yield the same contract addresses, given a constant deployer account, contract bytecode, and salt.
+
+This means the solidity version used for contract compilation affects the addresses those contracts will be deployed to. Solidity 0.8.23 is the canonical version to use.
+
+It's recommended to use `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` as the deployer account so that contract addresses will match external facing documentation. In production this address will have proper key management, for now here's the private key: `ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`.
 
 The CREATE2 proxy needs to be deployed prior to these contracts. See [this repo](https://github.com/primevprotocol/deterministic-deployment-proxy), or this [make command](https://github.com/primevprotocol/go-ethereum/blob/d29cfe94205e852cc57a8184585ccc895d32a517/geth-poa/Makefile#L48) to deploy. Anvil automatically deploys this proxy to the expected address.
 
-Using the above private key, expected contract addresses are:
+Using the above private key and compiling with solidity 0.8.23, expected contract addresses are:
 
 ```bash
-UserRegistry deployed to: 0xEA616Ac3B633712ef57026432d86CB23498deD54
-ProviderRegistry deployed to: 0xBdd9CEd825167c0D616B0284BfACD034fF02D41D
-PreConfCommitmentStore deployed to: 0xFF435EC71C7cB6fEFbFfA8B1275c08c7e121E9Aa
-Oracle deployed to: 0xC68573B65444c21A4D9cE88B92DFEA222956B4E5
-Whitelist deployed to: 0xC2009B1b9036db2931349F2242eDA081FEc43D91
+UserRegistry deployed to: 0xe38B5a8C41f307646F395030992Aa008978E2699
+ProviderRegistry deployed to: 0x7fA45D14358B698Bd85a0a2B03720A6Fe4b566d7
+PreConfCommitmentStore deployed to: 0x8B0F623dCD54cA50CD154B3dDCbB8436E876b019
+Oracle deployed to: 0x628F330Ae673df7D73d943f9590A4d643e4197f6
+Whitelist deployed to: 0x07e77fdc3DF92E58c9230eEFaABdBd92a8D0c2Af
 ```
 
 #### Test Contracts
