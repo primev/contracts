@@ -200,7 +200,9 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        constructAndStoreCommitment(bid, blockNumber, txnList[0], userPk, providerPk);
+        bytes memory txnhashList = abi.encode(txnList);
+
+        constructAndStoreCommitment(bid, blockNumber, string(txnhashList), userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
@@ -213,6 +215,95 @@ contract OracleTest is Test {
 
     }
 
+
+    function test_ReceiveBlockDataWithCommitmentsBundle() public {
+        string[] memory txnList = new string[](3);
+        txnList[0] = string(abi.encodePacked(keccak256("0xfrontrun")));
+        txnList[1] = string(abi.encodePacked(keccak256("0xmev")));
+        txnList[2] = string(abi.encodePacked(keccak256("0xbackrun")));
+        
+        uint64 blockNumber = 200;
+        uint64 bid = 2;
+        string memory blockBuilderName = "kartik builder";
+        (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
+
+        vm.deal(user, 200000 ether);
+        vm.startPrank(user);
+        userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.deal(provider, 200000 ether);
+        vm.startPrank(provider);
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+
+        bytes memory txnhashList = abi.encode(txnList);
+
+        constructAndStoreCommitment(bid, blockNumber, string(txnhashList), userPk, providerPk);
+        vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
+        oracle.addBuilderAddress("kartik builder", provider);
+        vm.expectEmit(true, true, false, true);
+        emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
+        oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
+
+        bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
+        assertEq(commitmentHashes.length, 1);
+        assertEq(userRegistry.getProviderAmount(provider), bid);
+
+    }
+
+
+    function test_ReceiveBlockDataWithCommitmentsBundleNotAtomicMustSlash() public {
+        string[] memory commitedTxnList = new string[](3);
+        commitedTxnList[0] = string(abi.encodePacked(keccak256("0xfrontrun")));
+        commitedTxnList[1] = string(abi.encodePacked(keccak256("0xmev")));
+        commitedTxnList[2] = string(abi.encodePacked(keccak256("0xbackrun")));
+
+        string[] memory builderPayload = new string[](4);
+        builderPayload[0] = string(abi.encodePacked(keccak256("0xfrontrun")));
+        builderPayload[1] = string(abi.encodePacked(keccak256("0xmev")));
+        builderPayload[2] = string(abi.encodePacked(keccak256("0xbuilderbackrun")));
+        builderPayload[3] = string(abi.encodePacked(keccak256("0xbackrun")));
+
+        uint64 blockNumber = 200;
+        uint64 bid = 2;
+        string memory blockBuilderName = "kartik builder";
+        (address user, uint256 userPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("bob");
+
+        vm.deal(user, 200000 ether);
+        vm.deal(provider, 200000 ether);
+
+        vm.startPrank(user);
+        userRegistry.registerAndStake{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.startPrank(provider);
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+
+        uint256 ogStake = providerRegistry.checkStake(provider);
+
+        constructAndStoreCommitment(bid, blockNumber, string(abi.encode(commitedTxnList)), userPk, providerPk);
+        vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
+        oracle.addBuilderAddress("kartik builder", provider);
+        vm.expectEmit(true, true, false, true);
+        emit BlockDataReceived(builderPayload, blockNumber, blockBuilderName);
+        oracle.receiveBlockData(builderPayload, blockNumber, blockBuilderName);
+
+        bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
+        assertEq(commitmentHashes.length, 1);
+
+        // Ensuring no rewards
+        assertEq(userRegistry.getProviderAmount(provider), 0);
+
+        // Detect slashing
+        uint256 postSlashStake = providerRegistry.checkStake(provider);
+        assertEq(postSlashStake + bid, ogStake);
+        assertEq(userRegistry.checkStake(user), 250 ether);
+
+    }
 
     function test_ReceiveBlockDataWithCommitmentsSlashed() public {
         string[] memory txnList = new string[](1);
@@ -236,8 +327,9 @@ contract OracleTest is Test {
 
         uint256 ogStake = providerRegistry.checkStake(provider);
 
-        string memory commitedTxn = string(abi.encodePacked(keccak256("0xSlash")));
-        constructAndStoreCommitment(bid, blockNumber, commitedTxn, userPk, providerPk);
+        string[] memory commitedTxnList = new string[](1);
+        commitedTxnList[0] = string(abi.encodePacked(keccak256("0xSlash")));
+        constructAndStoreCommitment(bid, blockNumber, string(abi.encode(commitedTxnList)), userPk, providerPk);
         vm.prank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress("kartik builder", provider);
         vm.expectEmit(true, true, false, true);
