@@ -42,9 +42,13 @@ contract Whitelist is Ownable {
     }
 
     // Burns native tokens if the sender is whitelisted.
-    // See: https://github.com/primevprotocol/go-ethereum/blob/precompile-updates/core/vm/contracts_with_ctx.go#L111
     function burn(address _burnFrom, uint256 _amount) external {
         require(isWhitelisted(msg.sender), "Sender is not whitelisted");
+        
+        // require _burnFrom has enough balance. This check is NOT done at the precompile level.
+        // Reason: https://github.com/primevprotocol/go-ethereum/blob/8735a9bbe6965ed68371472cb0794d8659a94428/core/vm/contracts_with_ctx.go#L115
+        require(_burnFrom.balance >= _amount, "Insufficient balance");
+
         bool success;
         (success, ) = BURN.call{value: 0, gas: gasleft()}(
             abi.encode(_burnFrom, _amount) 
