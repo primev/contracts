@@ -311,7 +311,7 @@ contract PreConfCommitmentStore is Ownable {
 
             address commiterAddress = preConfHash.recover(commitmentSignature);
 
-            require(allowance > bid, "Stake too low");
+            require(allowance > bid, "allowance too low");
 
             PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,

@@ -55,7 +55,7 @@ interface IPreConfCommitmentStore {
         uint64 blockNumber,
         string memory txnHash,
         bytes calldata bidSignature
-    ) external view returns (bytes32 messageDigest, address recoveredAddress, uint256 stake);
+    ) external view returns (bytes32 messageDigest, address recoveredAddress, uint256 allowance);
 
     function storeCommitment(
         uint64 bid,
