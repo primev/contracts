@@ -48,7 +48,7 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of userRegistry
     IUserRegistry public userRegistry;
 
-    IERC20 public NativeToken;
+    IERC20 public nativeToken;
 
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
@@ -118,11 +118,13 @@ contract PreConfCommitmentStore is Ownable {
         address _providerRegistry,
         address _userRegistry,
         address _oracle, 
-        address _owner
+        address _owner,
+        address _nativeToken
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
         userRegistry = IUserRegistry(_userRegistry);
+        nativeToken = IERC20(_nativeToken);
         _transferOwnership(_owner);
 
         // EIP-712 domain separator
@@ -226,7 +228,7 @@ contract PreConfCommitmentStore is Ownable {
     {
         messageDigest = getBidHash(txnHash, bid, blockNumber);
         recoveredAddress = messageDigest.recover(bidSignature);
-        allowance = NativeToken.allowance(recoveredAddress, address(this));
+        allowance = nativeToken.allowance(recoveredAddress, address(this));
         require(allowance >= bid, "Insufficient allowance");
     }
 
@@ -325,7 +327,6 @@ contract PreConfCommitmentStore is Ownable {
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);
-
 
             // Store commitment
             commitments[commitmentIndex] = newCommitment;
@@ -426,7 +427,7 @@ contract PreConfCommitmentStore is Ownable {
         commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
-        NativeToken.transferFrom(commitment.bidder, commitment.commiter, commitment.bid);
+        nativeToken.transferFrom(commitment.bidder, commitment.commiter, commitment.bid);
     }
 
     /**
