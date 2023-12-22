@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
+import "./DummyERC20.sol";
+
 import {ProviderRegistry} from "../contracts/ProviderRegistry.sol";
 import {UserRegistry} from "../contracts/UserRegistry.sol";
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
@@ -24,6 +26,12 @@ contract ProviderRegistryTest is Test {
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
 
+
+        // Deploy the dummy ERC20 token
+        DummyERC20 dummyToken = new DummyERC20("DummyToken", "DTK");
+        // Optionally mint some tokens for testing
+        dummyToken.mint(address(this), 1000 ether);
+
         providerRegistry = new ProviderRegistry(
             minStake,
             feeRecipient,
@@ -36,7 +44,8 @@ contract ProviderRegistryTest is Test {
             address(providerRegistry), // Provider Registry
             address(userRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this), // Owner
+            address(dummyToken)
         );
 
         provider = vm.addr(1);

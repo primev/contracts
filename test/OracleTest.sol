@@ -7,6 +7,8 @@ import "../contracts/PreConfirmations.sol";
 import "../contracts/interfaces/IPreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
+import "./DummyERC20.sol";
+
 
 contract OracleTest is Test {
     address internal owner;
@@ -35,6 +37,11 @@ contract OracleTest is Test {
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
 
+        // Deploy the dummy ERC20 token
+        DummyERC20 dummyToken = new DummyERC20("DummyToken", "DTK");
+        // Optionally mint some tokens for testing
+        dummyToken.mint(address(this), 1000 ether);
+
         providerRegistry = new ProviderRegistry(
             minStake,
             feeRecipient,
@@ -47,7 +54,8 @@ contract OracleTest is Test {
             address(providerRegistry), // Provider Registry
             address(userRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this), // Owner
+            address(dummyToken)
         );
 
         address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;

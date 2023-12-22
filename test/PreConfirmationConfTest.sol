@@ -7,6 +7,8 @@ import "forge-std/Test.sol";
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
 import "../contracts/UserRegistry.sol";
+import "./DummyERC20.sol";
+
 
 contract TestPreConfCommitmentStore is Test {
     PreConfCommitmentStore internal preConfCommitmentStore;
@@ -24,6 +26,13 @@ contract TestPreConfCommitmentStore is Test {
         testNumber = 2;
         testNumber2 = 2;
 
+
+        // Deploy the dummy ERC20 token
+        DummyERC20 dummyToken = new DummyERC20("DummyToken", "DTK");
+        // Optionally mint some tokens for testing
+        dummyToken.mint(address(this), 1000 ether);
+
+
         feePercent = 10;
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
@@ -39,7 +48,8 @@ contract TestPreConfCommitmentStore is Test {
             address(providerRegistry), // Provider Registry
             address(userRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this), // Owner
+            address(dummyToken)
         );
     }
 
