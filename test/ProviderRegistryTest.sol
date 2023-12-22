@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "./DummyERC20.sol";
 
 import {ProviderRegistry} from "../contracts/ProviderRegistry.sol";
-import {UserRegistry} from "../contracts/UserRegistry.sol";
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 
 contract ProviderRegistryTest is Test {
@@ -15,7 +14,6 @@ contract ProviderRegistryTest is Test {
     uint256 internal minStake;
     address internal provider;
     address internal feeRecipient;
-    UserRegistry userRegistry;
     PreConfCommitmentStore preConfCommitmentStore;
 
     event ProviderRegistered(address indexed provider, uint256 stakedAmount);
@@ -38,11 +36,9 @@ contract ProviderRegistryTest is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
             feeRecipient, // Oracle
             address(this), // Owner
             address(dummyToken)

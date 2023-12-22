@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
-import "../contracts/UserRegistry.sol";
 import "./DummyERC20.sol";
 
 
@@ -20,8 +19,6 @@ contract TestPreConfCommitmentStore is Test {
     uint256 testNumber;
     uint64 testNumber2;
     DummyERC20 internal dummyToken;
-
-    UserRegistry internal userRegistry;
 
     function setUp() public {
         testNumber = 2;
@@ -43,11 +40,9 @@ contract TestPreConfCommitmentStore is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
             feeRecipient, // Oracle
             address(this), // Owner
             address(dummyToken)
@@ -59,10 +54,6 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(
             address(preConfCommitmentStore.providerRegistry()),
             address(providerRegistry)
-        );
-        assertEq(
-            address(preConfCommitmentStore.userRegistry()),
-            address(userRegistry)
         );
     }
 
@@ -102,11 +93,6 @@ contract TestPreConfCommitmentStore is Test {
             address(preConfCommitmentStore.providerRegistry()),
             feeRecipient
         );
-    }
-
-    function test_UpdateUserRegistry() public {
-        preConfCommitmentStore.updateUserRegistry(feeRecipient);
-        assertEq(address(preConfCommitmentStore.userRegistry()), feeRecipient);
     }
 
     function test_GetBidHash() public {
@@ -448,9 +434,6 @@ contract TestPreConfCommitmentStore is Test {
                 commitmentSignature
             );
 
-            userRegistry.setPreconfirmationsContract(
-                address(preConfCommitmentStore)
-            );
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();

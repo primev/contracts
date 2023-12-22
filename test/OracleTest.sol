@@ -6,7 +6,6 @@ import "../contracts/Oracle.sol";
 import "../contracts/PreConfirmations.sol";
 import "../contracts/interfaces/IPreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
-import "../contracts/UserRegistry.sol";
 import "./DummyERC20.sol";
 
 
@@ -21,7 +20,6 @@ contract OracleTest is Test {
     ProviderRegistry internal providerRegistry;
     uint256 testNumber;
     uint64 testNumber2;
-    UserRegistry internal userRegistry;
     DummyERC20 internal dummyToken;
 
 
@@ -49,11 +47,9 @@ contract OracleTest is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
             feeRecipient, // Oracle
             address(this), // Owner
             address(dummyToken)
@@ -70,7 +66,6 @@ contract OracleTest is Test {
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
-        userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
 
     }
@@ -125,7 +120,6 @@ contract OracleTest is Test {
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         oracle.receiveBlockData(txnList, 2, "primev builder");
 
-        assertEq(userRegistry.getProviderAmount(provider), 0);
         assertEq(providerRegistry.checkStake(provider), 250 ether);
     }
 
@@ -258,10 +252,7 @@ contract OracleTest is Test {
 
         bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
         assertEq(commitmentHashes.length, 1);
-        
-        // Ensuring no rewards
-        assertEq(userRegistry.getProviderAmount(provider), 0);
-
+    
         // Detect slashing
         uint256 postSlashStake = providerRegistry.checkStake(provider);
         assertEq(postSlashStake + bid, ogStake);

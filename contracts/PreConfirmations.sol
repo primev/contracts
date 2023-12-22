@@ -7,7 +7,6 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
@@ -45,8 +44,6 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of provider registry
     IProviderRegistry public providerRegistry;
 
-    /// @dev Address of userRegistry
-    IUserRegistry public userRegistry;
 
     IERC20 public nativeToken;
 
@@ -110,20 +107,17 @@ contract PreConfCommitmentStore is Ownable {
     /**
      * @dev Initializes the contract with the specified registry addresses, oracle, name, and version.
      * @param _providerRegistry The address of the provider registry.
-     * @param _userRegistry The address of the user registry.
      * @param _oracle The address of the oracle.
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         address _providerRegistry,
-        address _userRegistry,
         address _oracle, 
         address _owner,
         address _nativeToken
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
-        userRegistry = IUserRegistry(_userRegistry);
         nativeToken = IERC20(_nativeToken);
         _transferOwnership(_owner);
 
@@ -446,14 +440,6 @@ contract PreConfCommitmentStore is Ownable {
         address newProviderRegistry
     ) public onlyOwner {
         providerRegistry = IProviderRegistry(newProviderRegistry);
-    }
-
-    /**
-     * @dev Updates the address of the user registry.
-     * @param newUserRegistry The new user registry address.
-     */
-    function updateUserRegistry(address newUserRegistry) external onlyOwner {
-        userRegistry = IUserRegistry(newUserRegistry);
     }
 
     /**
