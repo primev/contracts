@@ -19,13 +19,6 @@ contract FeeVault is Ownable {
     uint256 public immutable destinationChainId;
     ITokenRouter private tokenRouter;
 
-    // Example operational addresses
-    // These are addresses funded on genesis that use "operational ether" to deploy
-    // contracts, etc. 
-    address private operationalAddress1 = 0xdAC17F958D2ee523a2206206994597C13D831ec7; 
-    address private operationalAddress2 = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; 
-    address private operationalAddress3 = 0x4E6564574f4C61241bf8db2B91f74705d3Aaf452;
-
     constructor(address _treasury, address _tokenRouterAddr, uint256 _destinationChainId) {
         require(_treasury != address(0), "Treasury address cannot be zero");
         treasury = _treasury;
