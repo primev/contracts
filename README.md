@@ -54,6 +54,14 @@ To enable bridging to native ether, bridging contracts need be able to mint/burn
 - `mint`: allows whitelisted addresses to mint specific amount of native ether to any account.
 - `burn`: allows whitelisted addresses to burn specific amount of native ether from any account.
 
+### Fee Vault
+
+The mev-commit chain implements a fee mechanism where all base fees accumulate to a "fee vault" contract. The predetermined address for such a contract is hardcoded into mev-commit-geth.
+
+The fee vault contract is initiated with an immutable treasury address. The contract owner can invoke transfers of the accumulated fees from the sidechain contract, to the treasury address on L1, including bridging. 
+
+Since the treasury address is immutable, the contract owner only has the power to initiate transfers. The separation between the owner account and treasury account is useful in that key management can be separate. Ie. a secure multisig governing the protocol treasury doesn't need to submit regular transfer transactions.
+
 ## Tests
 
 The tests in this repository perform the following:
@@ -186,6 +194,7 @@ ProviderRegistry deployed to: 0xBdd9CEd825167c0D616B0284BfACD034fF02D41D
 PreConfCommitmentStore deployed to: 0xFF435EC71C7cB6fEFbFfA8B1275c08c7e121E9Aa
 Oracle deployed to: 0xC68573B65444c21A4D9cE88B92DFEA222956B4E5
 Whitelist deployed to: 0xC2009B1b9036db2931349F2242eDA081FEc43D91
+Fee Vault deployed to: TODO
 ```
 
 #### Test Contracts
