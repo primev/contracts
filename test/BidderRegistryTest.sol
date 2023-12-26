@@ -53,7 +53,7 @@ contract BidderRegistryTest is Test {
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
 
-        uint256 bidderPrepaidBalancestored = bidderRegistry.checkPrepay(bidder);
+        uint256 bidderPrepaidBalancestored = bidderRegistry.checkPrepayedAmount(bidder);
         assertEq(bidderPrepaidBalancestored, 1e18 wei);
     }
 
