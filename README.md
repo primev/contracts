@@ -189,7 +189,7 @@ UserRegistry deployed to: 0xe38B5a8C41f307646F395030992Aa008978E2699
 ProviderRegistry deployed to: 0x7fA45D14358B698Bd85a0a2B03720A6Fe4b566d7
 PreConfCommitmentStore deployed to: 0x8B0F623dCD54cA50CD154B3dDCbB8436E876b019
 Oracle deployed to: 0x628F330Ae673df7D73d943f9590A4d643e4197f6
-Whitelist deployed to: 0x07e77fdc3DF92E58c9230eEFaABdBd92a8D0c2Af
+Whitelist deployed to: 0x5D1415C0973034d162F5FEcF19B50dA057057e29
 ```
 
 #### Test Contracts
