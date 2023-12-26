@@ -12,9 +12,9 @@ interface IBidderRegistry {
         string commitmentSignature;
     }
 
-    function registerAndStake() external payable;
+    function registerAndPrepay() external payable;
 
-    function checkStake(address bidder) external view returns (uint256);
+    function checkPrepay(address bidder) external view returns (uint256);
 
     function retrieveFunds(
         address bidder,

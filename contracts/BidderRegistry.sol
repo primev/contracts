@@ -16,8 +16,8 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Fee percent that would be taken by protocol when provider is slashed
     uint16 public feePercent;
 
-    /// @dev Minimum stake required for registration
-    uint256 public minStake;
+    /// @dev Minimum prepay required for registration
+    uint256 public minPrepay;
 
     /// @dev Amount assigned to feeRecipient
     uint256 public feeRecipientAmount;
@@ -34,16 +34,16 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Mapping for if bidder is registered
     mapping(address => bool) public bidderRegistered;
 
-    /// @dev Mapping from bidder addresses to their staked amount
-    mapping(address => uint256) public bidderStakes;
+    /// @dev Mapping from bidder addresses to their prepayed amount
+    mapping(address => uint256) public bidderPrepaidBalances;
 
     /// @dev Amount assigned to bidders
     mapping(address => uint256) public providerAmount;
 
-    /// @dev Event emitted when a bidder is registered with their staked amount
-    event BidderRegistered(address indexed bidder, uint256 stakedAmount);
+    /// @dev Event emitted when a bidder is registered with their prepayed amount
+    event BidderRegistered(address indexed bidder, uint256 prepayedAmount);
 
-    /// @dev Event emitted when funds are retrieved from a bidder's stake
+    /// @dev Event emitted when funds are retrieved from a bidder's prepay
     event FundsRetrieved(address indexed bidder, uint256 amount);
 
     /**
@@ -54,27 +54,27 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Receive function registers bidders and takes their stake
-     * Should be removed from here in case the registerAndStake function becomes more complex
+     * @dev Receive function registers bidders and takes their prepay
+     * Should be removed from here in case the registerAndPrepay function becomes more complex
      */
     receive() external payable {
-        registerAndStake();
+        registerAndPrepay();
     }
 
     /**
-     * @dev Constructor to initialize the contract with a minimum stake requirement.
-     * @param _minStake The minimum stake required for bidder registration.
+     * @dev Constructor to initialize the contract with a minimum prepay requirement.
+     * @param _minPrepay The minimum prepay required for bidder registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
-        uint256 _minStake,
+        uint256 _minPrepay,
         address _feeRecipient,
         uint16 _feePercent,
         address _owner 
     ) {
-        minStake = _minStake;
+        minPrepay = _minPrepay;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
         _transferOwnership(_owner);
@@ -115,30 +115,30 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /**
      * @dev Internal function for bidder registration and staking.
      */
-    function registerAndStake() public payable {
+    function registerAndPrepay() public payable {
         require(!bidderRegistered[msg.sender], "Bidder already registered");
-        require(msg.value >= minStake, "Insufficient stake");
+        require(msg.value >= minPrepay, "Insufficient prepay");
 
-        bidderStakes[msg.sender] = msg.value;
+        bidderPrepaidBalances[msg.sender] = msg.value;
         bidderRegistered[msg.sender] = true;
 
         emit BidderRegistered(msg.sender, msg.value);
     }
 
     /**
-     * @dev Check the stake of a bidder.
+     * @dev Check the prepay of a bidder.
      * @param bidder The address of the bidder.
-     * @return The staked amount for the bidder.
+     * @return The prepayed amount for the bidder.
      */
-    function checkStake(address bidder) external view returns (uint256) {
-        return bidderStakes[bidder];
+    function checkPrepay(address bidder) external view returns (uint256) {
+        return bidderPrepaidBalances[bidder];
     }
 
     /**
-     * @dev Retrieve funds from a bidder's stake (only callable by the pre-confirmations contract).
+     * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
      * @param bidder The address of the bidder.
-     * @param amt The amount to retrieve from the bidder's stake.
+     * @param amt The amount to retrieve from the bidder's prepay.
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
@@ -146,12 +146,12 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         uint256 amt,
         address payable provider
     ) external nonReentrant onlyPreConfirmationEngine {
-        uint256 amount = bidderStakes[bidder];
+        uint256 amount = bidderPrepaidBalances[bidder];
         require(
             amount >= amt,
             "Amount to retrieve bigger than available funds"
         );
-        bidderStakes[bidder] -= amt;
+        bidderPrepaidBalances[bidder] -= amt;
 
         uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
         uint256 amtMinusFee = amt - feeAmt;
@@ -204,14 +204,14 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(success, "Couldn't transfer to provider");
     }
 
-    function withdrawStakedAmount(address payable bidder) external nonReentrant {
-        uint256 stake = bidderStakes[bidder];
-        bidderStakes[bidder] = 0;
-        require(msg.sender == bidder, "Only bidder can unstake");
-        require(stake > 0, "Provider Staked Amount is zero");
+    function withdrawPrepayedAmount(address payable bidder) external nonReentrant {
+        uint256 prepay = bidderPrepaidBalances[bidder];
+        bidderPrepaidBalances[bidder] = 0;
+        require(msg.sender == bidder, "Only bidder can unprepay");
+        require(prepay > 0, "Provider Prepayd Amount is zero");
 
-        (bool success, ) = bidder.call{value: stake}("");
-        require(success, "Couldn't transfer stake to bidder");
+        (bool success, ) = bidder.call{value: prepay}("");
+        require(success, "Couldn't transfer prepay to bidder");
     }
 
     function withdrawProtocolFee(
@@ -222,6 +222,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(_protocolFeeAmount > 0, "In sufficient protocol fee amount");
 
         (bool success, ) = bidder.call{value: _protocolFeeAmount}("");
-        require(success, "Couldn't transfer stake to bidder");
+        require(success, "Couldn't transfer prepay to bidder");
     }
 }
