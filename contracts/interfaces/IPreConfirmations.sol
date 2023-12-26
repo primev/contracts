@@ -79,7 +79,7 @@ interface IPreConfCommitmentStore {
 
     function updateProviderRegistry(address newProviderRegistry) external;
 
-    function updateUserRegistry(address newUserRegistry) external;
+    function updateBidderRegistry(address newBidderRegistry) external;
 
     // Public functions that can be included if they are meant to be called from other contracts
 

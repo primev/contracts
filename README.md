@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains Solidity contracts and tests for handling pre-confirmation commitments and bids. The system uses two separate registries to manage users and providers, where both parties must stake ETH to participate. Commitments are verified and stored in a contract.
+This repository contains Solidity contracts and tests for handling pre-confirmation commitments and bids. The system uses two separate registries to manage bidders and providers, where both parties must stake ETH to participate. Commitments are verified and stored in a contract.
 
 ### PreConfCommitmentStore
 
@@ -17,16 +17,16 @@ This is the core contract that handles pre-confirmation commitments. It uses EIP
 - `storeCommitment`: Stores a valid commitment in the contract.
 -
 
-### IUserRegistry
+### IBidderRegistry
 
-This is an interface that must be implemented by the user registry contract. It contains methods for registering, staking, and retrieving funds.
+This is an interface that must be implemented by the bidder registry contract. It contains methods for registering, staking, and retrieving funds.
 
 #### Functions
 
-- `registerAndStake`: Registers a user and stakes ETH.
-- `checkStake`: Checks the staked amount for a given user.
+- `prepay`: Registers a bidder and prepays ETH.
+- `getAllowance`: Checks the prepayed amount for a given bidder.
 - `depositFunds`: Deposits additional funds into the contract.
-- `retrieveFunds`: Retrieves a specific amount of funds for a user and sends them to a provider.
+- `retrieveFunds`: Retrieves a specific amount of funds for a bidder and sends them to a provider.
 
 ### IProviderRegistry
 
@@ -37,10 +37,10 @@ This is an interface that must be implemented by the provider registry contract.
 - `registerAndStake`: Registers a provider and stakes ETH.
 - `checkStake`: Checks the staked amount for a given provider.
 - `depositFunds`: Deposits additional funds into the contract.
-- `slash`: Slashes a specific amount of staked ETH from a provider and sends it to a user.
+- `slash`: Slashes a specific amount of staked ETH from a provider and sends it to a bidder.
 - `reward`: Rewards a specific amount of ETH to a provider.
 
-Note: In both IProviderRegistry and IUserRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
+Note: In both IProviderRegistry and IBidderRegistry - some functions are restrictied to be called exclusively by the preconfimration contract.
 
 ### Whitelist
 
@@ -58,8 +58,8 @@ To enable bridging to native ether, bridging contracts need be able to mint/burn
 
 The tests in this repository perform the following:
 
-- Deployment of the `ProviderRegistry`, `UserRegistry`, and `Whitelist` contracts.
-- Registration and staking of users and providers.
+- Deployment of the `ProviderRegistry`, `BidderRegistry`, and `Whitelist` contracts.
+- Registration and staking of bidders and providers.
 - Verification of bid hashes and pre-confirmation commitment hashes.
 - Recovery of signer addresses.
 - Storage of valid commitments.
@@ -75,17 +75,17 @@ npx hardhat test
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Bidder
     participant Provider
     participant PreConf
-    participant UserRegistry
+    participant BidderRegistry
     participant ProviderRegistry
     participant Oracle
 
-    User->>UserRegistry: registerAndStake()
-    activate UserRegistry
-    UserRegistry-->>User: UserRegistered event
-    deactivate UserRegistry
+    Bidder->>BidderRegistry: registerAndStake()
+    activate BidderRegistry
+    BidderRegistry-->>Bidder: BidderRegistered event
+    deactivate BidderRegistry
 
     Provider->>ProviderRegistry: registerAndStake()
     activate ProviderRegistry
@@ -99,10 +99,10 @@ sequenceDiagram
     ProviderRegistry-->>PreConf: stake
     deactivate ProviderRegistry
 
-    PreConf->>UserRegistry: checkStake(User)
-    activate UserRegistry
-    UserRegistry-->>PreConf: stake
-    deactivate UserRegistry
+    PreConf->>BidderRegistry: checkStake(Bidder)
+    activate BidderRegistry
+    BidderRegistry-->>PreConf: stake
+    deactivate BidderRegistry
 
     PreConf->>PreConf: verifyBidAndCommitment()
     PreConf-->>Provider: SignatureVerified event
@@ -111,10 +111,10 @@ sequenceDiagram
     alt Reward Case
         Oracle->>PreConf: initateReward(commitmentHash)
         activate PreConf
-        PreConf->>UserRegistry: retrieveFunds(User, amt, Provider)
-        activate UserRegistry
-        UserRegistry-->>PreConf: FundsRetrieved event
-        deactivate UserRegistry
+        PreConf->>BidderRegistry: retrieveFunds(Bidder, amt, Provider)
+        activate BidderRegistry
+        BidderRegistry-->>PreConf: FundsRetrieved event
+        deactivate BidderRegistry
 
         PreConf-->>Oracle: CommitmentUsed event
         deactivate PreConf
@@ -122,7 +122,7 @@ sequenceDiagram
     else Slashing Case
         Oracle->>PreConf: initiateSlash(commitmentHash)
         activate PreConf
-        PreConf->>ProviderRegistry: slash(amt, Provider, User)
+        PreConf->>ProviderRegistry: slash(amt, Provider, Bidder)
         activate ProviderRegistry
         ProviderRegistry-->>PreConf: FundsSlashed event
         deactivate ProviderRegistry

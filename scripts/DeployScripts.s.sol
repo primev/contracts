@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 import "forge-std/Script.sol";
-import "contracts/UserRegistry.sol";
+import "contracts/BidderRegistry.sol";
 import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
 import "contracts/Oracle.sol";
@@ -48,7 +48,7 @@ contract DeployScript is Script, Create2Deployer {
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
-        UserRegistry userRegistry = new UserRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
+        BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
         console.log("UserRegistry deployed to:", address(userRegistry));
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
@@ -60,7 +60,7 @@ contract DeployScript is Script, Create2Deployer {
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("ProviderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
-        userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
+        bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("UserRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);

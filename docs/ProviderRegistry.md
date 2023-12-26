@@ -74,13 +74,13 @@ mapping(address => uint256) providerStakes
 
 _Mapping from provider addresses to their staked amount_
 
-### userAmount
+### bidderAmount
 
 ```solidity
-mapping(address => uint256) userAmount
+mapping(address => uint256) bidderAmount
 ```
 
-_Amount assigned to users_
+_Amount assigned to bidders_
 
 ### ProviderRegistered
 
@@ -208,10 +208,10 @@ _Deposit more funds into the provider's stake._
 ### slash
 
 ```solidity
-function slash(uint256 amt, address provider, address payable user) external
+function slash(uint256 amt, address provider, address payable bidder) external
 ```
 
-_Slash funds from the provider and send the slashed amount to the user.
+_Slash funds from the provider and send the slashed amount to the bidder.
 reenterancy not necessary but still putting here for precaution_
 
 #### Parameters
@@ -220,7 +220,7 @@ reenterancy not necessary but still putting here for precaution_
 | ---- | ---- | ----------- |
 | amt | uint256 | The amount to slash from the provider's stake. |
 | provider | address | The address of the provider. |
-| user | address payable | The address to transfer the slashed funds to. |
+| bidder | address payable | The address to transfer the slashed funds to. |
 
 ### setNewFeeRecipient
 
@@ -260,10 +260,10 @@ _onlyOwner restriction_
 function withdrawFeeRecipientAmount() external
 ```
 
-### withdrawUserAmount
+### withdrawBidderAmount
 
 ```solidity
-function withdrawUserAmount(address user) external
+function withdrawBidderAmount(address bidder) external
 ```
 
 ### withdrawStakedAmount

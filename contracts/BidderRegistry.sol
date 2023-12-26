@@ -3,12 +3,12 @@ pragma solidity ^0.8.15;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
+import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 
-/// @title User Registry
+/// @title Bidder Registry
 /// @author Kartik Chopra
-/// @notice This contract is for user registry and staking.
-contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
+/// @notice This contract is for bidder registry and staking.
+contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev For improved precision
     uint256 constant PRECISION = 10 ** 25;
     uint256 constant PERCENT = 100 * PRECISION;
@@ -16,8 +16,8 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     /// @dev Fee percent that would be taken by protocol when provider is slashed
     uint16 public feePercent;
 
-    /// @dev Minimum stake required for registration
-    uint256 public minStake;
+    /// @dev Minimum prepay required for registration
+    uint256 public minAllowance;
 
     /// @dev Amount assigned to feeRecipient
     uint256 public feeRecipientAmount;
@@ -31,20 +31,20 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     /// @dev Fee recipient
     address public feeRecipient;
 
-    /// @dev Mapping for if user is registered
-    mapping(address => bool) public userRegistered;
+    /// @dev Mapping for if bidder is registered
+    mapping(address => bool) public bidderRegistered;
 
-    /// @dev Mapping from user addresses to their staked amount
-    mapping(address => uint256) public userStakes;
+    /// @dev Mapping from bidder addresses to their prepayed amount
+    mapping(address => uint256) public bidderPrepaidBalances;
 
-    /// @dev Amount assigned to users
+    /// @dev Amount assigned to bidders
     mapping(address => uint256) public providerAmount;
 
-    /// @dev Event emitted when a user is registered with their staked amount
-    event UserRegistered(address indexed user, uint256 stakedAmount);
+    /// @dev Event emitted when a bidder is registered with their prepayed amount
+    event BidderRegistered(address indexed bidder, uint256 prepayedAmount);
 
-    /// @dev Event emitted when funds are retrieved from a user's stake
-    event FundsRetrieved(address indexed user, uint256 amount);
+    /// @dev Event emitted when funds are retrieved from a bidder's prepay
+    event FundsRetrieved(address indexed bidder, uint256 amount);
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -54,27 +54,27 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Receive function registers users and takes their stake
-     * Should be removed from here in case the registerAndStake function becomes more complex
+     * @dev Receive function registers bidders and takes their prepay
+     * Should be removed from here in case the prepay function becomes more complex
      */
     receive() external payable {
-        registerAndStake();
+        prepay();
     }
 
     /**
-     * @dev Constructor to initialize the contract with a minimum stake requirement.
-     * @param _minStake The minimum stake required for user registration.
+     * @dev Constructor to initialize the contract with a minimum prepay requirement.
+     * @param _minAllowance The minimum prepay required for bidder registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
-        uint256 _minStake,
+        uint256 _minAllowance,
         address _feeRecipient,
         uint16 _feePercent,
         address _owner 
     ) {
-        minStake = _minStake;
+        minAllowance = _minAllowance;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
         _transferOwnership(_owner);
@@ -113,45 +113,45 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Internal function for user registration and staking.
+     * @dev Internal function for bidder registration and staking.
      */
-    function registerAndStake() public payable {
-        require(!userRegistered[msg.sender], "User already registered");
-        require(msg.value >= minStake, "Insufficient stake");
+    function prepay() public payable {
+        require(!bidderRegistered[msg.sender], "Bidder already registered");
+        require(msg.value >= minAllowance, "Insufficient prepay");
 
-        userStakes[msg.sender] = msg.value;
-        userRegistered[msg.sender] = true;
+        bidderPrepaidBalances[msg.sender] = msg.value;
+        bidderRegistered[msg.sender] = true;
 
-        emit UserRegistered(msg.sender, msg.value);
+        emit BidderRegistered(msg.sender, msg.value);
     }
 
     /**
-     * @dev Check the stake of a user.
-     * @param user The address of the user.
-     * @return The staked amount for the user.
+     * @dev Check the prepay of a bidder.
+     * @param bidder The address of the bidder.
+     * @return The prepayed amount for the bidder.
      */
-    function checkStake(address user) external view returns (uint256) {
-        return userStakes[user];
+    function GetAllowance(address bidder) external view returns (uint256) {
+        return bidderPrepaidBalances[bidder];
     }
 
     /**
-     * @dev Retrieve funds from a user's stake (only callable by the pre-confirmations contract).
+     * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
-     * @param user The address of the user.
-     * @param amt The amount to retrieve from the user's stake.
+     * @param bidder The address of the bidder.
+     * @param amt The amount to retrieve from the bidder's prepay.
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
-        address user,
+        address bidder,
         uint256 amt,
         address payable provider
     ) external nonReentrant onlyPreConfirmationEngine {
-        uint256 amount = userStakes[user];
+        uint256 amount = bidderPrepaidBalances[bidder];
         require(
             amount >= amt,
             "Amount to retrieve bigger than available funds"
         );
-        userStakes[user] -= amt;
+        bidderPrepaidBalances[bidder] -= amt;
 
         uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
         uint256 amtMinusFee = amt - feeAmt;
@@ -164,7 +164,7 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
 
         providerAmount[provider] += amtMinusFee;
 
-        emit FundsRetrieved(user, amount);
+        emit FundsRetrieved(bidder, amount);
     }
 
     /**
@@ -204,24 +204,24 @@ contract UserRegistry is IUserRegistry, Ownable, ReentrancyGuard {
         require(success, "Couldn't transfer to provider");
     }
 
-    function withdrawStakedAmount(address payable user) external nonReentrant {
-        uint256 stake = userStakes[user];
-        userStakes[user] = 0;
-        require(msg.sender == user, "Only user can unstake");
-        require(stake > 0, "Provider Staked Amount is zero");
+    function withdrawPrepayedAmount(address payable bidder) external nonReentrant {
+        uint256 prepayedAmount = bidderPrepaidBalances[bidder];
+        bidderPrepaidBalances[bidder] = 0;
+        require(msg.sender == bidder, "Only bidder can unprepay");
+        require(prepayedAmount > 0, "Provider Prepayd Amount is zero");
 
-        (bool success, ) = user.call{value: stake}("");
-        require(success, "Couldn't transfer stake to user");
+        (bool success, ) = bidder.call{value: prepayedAmount}("");
+        require(success, "Couldn't transfer prepay to bidder");
     }
 
     function withdrawProtocolFee(
-        address payable user
+        address payable bidder
     ) external onlyOwner nonReentrant {
         uint256 _protocolFeeAmount = protocolFeeAmount;
         protocolFeeAmount = 0;
         require(_protocolFeeAmount > 0, "In sufficient protocol fee amount");
 
-        (bool success, ) = user.call{value: _protocolFeeAmount}("");
-        require(success, "Couldn't transfer stake to user");
+        (bool success, ) = bidder.call{value: _protocolFeeAmount}("");
+        require(success, "Couldn't transfer prepay to bidder");
     }
 }

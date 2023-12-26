@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import {ProviderRegistry} from "../contracts/ProviderRegistry.sol";
-import {UserRegistry} from "../contracts/UserRegistry.sol";
+import {BidderRegistry} from "../contracts/BidderRegistry.sol";
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 
 contract ProviderRegistryTest is Test {
@@ -13,7 +13,7 @@ contract ProviderRegistryTest is Test {
     uint256 internal minStake;
     address internal provider;
     address internal feeRecipient;
-    UserRegistry userRegistry;
+    BidderRegistry bidderRegistry;
     PreConfCommitmentStore preConfCommitmentStore;
 
     event ProviderRegistered(address indexed provider, uint256 stakedAmount);
@@ -30,11 +30,12 @@ contract ProviderRegistryTest is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
+
+        bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
+            address(bidderRegistry), // User Registry
             feeRecipient, // Oracle
             address(this) // Owner
         );
@@ -149,11 +150,11 @@ contract ProviderRegistryTest is Test {
         vm.deal(provider, 3 ether);
         vm.prank(provider);
         providerRegistry.registerAndStake{value: 2 ether}();
-        address user = vm.addr(4);
+        address bidder = vm.addr(4);
 
-        providerRegistry.slash(1 ether, provider, payable(user));
+        providerRegistry.slash(1 ether, provider, payable(bidder));
 
-        assertEq(providerRegistry.userAmount(user), 900000000000000000 wei);
+        assertEq(providerRegistry.bidderAmount(bidder), 900000000000000000 wei);
         assertEq(providerRegistry.feeRecipientAmount(), 100000000000000000 wei);
         assertEq(providerRegistry.providerStakes(provider), 1 ether);
     }
@@ -166,11 +167,11 @@ contract ProviderRegistryTest is Test {
         vm.deal(provider, 3 ether);
         vm.prank(provider);
         providerRegistry.registerAndStake{value: 2 ether}();
-        address user = vm.addr(4);
+        address bidder = vm.addr(4);
 
-        providerRegistry.slash(1 ether, provider, payable(user));
+        providerRegistry.slash(1 ether, provider, payable(bidder));
 
-        assertEq(providerRegistry.userAmount(user), 900000000000000000 wei);
+        assertEq(providerRegistry.bidderAmount(bidder), 900000000000000000 wei);
         assertEq(providerRegistry.providerStakes(provider), 1 ether);
     }
 
@@ -178,9 +179,9 @@ contract ProviderRegistryTest is Test {
         vm.deal(provider, 3 ether);
         vm.prank(provider);
         providerRegistry.registerAndStake{value: 2 ether}();
-        address user = vm.addr(4);
+        address bidder = vm.addr(4);
         vm.expectRevert(bytes(""));
-        providerRegistry.slash(1 ether, provider, payable(user));
+        providerRegistry.slash(1 ether, provider, payable(bidder));
     }
 
     function testFail_shouldRetrieveFundsGreaterThanStake() public {
@@ -190,11 +191,11 @@ contract ProviderRegistryTest is Test {
         vm.deal(provider, 3 ether);
         vm.prank(provider);
         providerRegistry.registerAndStake{value: 2 ether}();
-        address user = vm.addr(4);
+        address bidder = vm.addr(4);
         vm.expectRevert(bytes(""));
         vm.prank(address(this));
 
-        providerRegistry.slash(3 ether, provider, payable(user));
+        providerRegistry.slash(3 ether, provider, payable(bidder));
     }
 
     function test_FeeRecipientAmount() public {
@@ -218,20 +219,20 @@ contract ProviderRegistryTest is Test {
         );
     }
 
-    function test_WithdrawUserAmount() public {
-        address user = vm.addr(7);
-        vm.deal(user, 3 ether);
-        vm.prank(user);
+    function test_WithdrawBidderAmount() public {
+        address bidder = vm.addr(7);
+        vm.deal(bidder, 3 ether);
+        vm.prank(bidder);
         providerRegistry.registerAndStake{value: 2 ether}();
 
         providerRegistry.setPreconfirmationsContract(address(this));
-        providerRegistry.slash(1e18 wei, user, payable(user));
-        vm.prank(user);
-        providerRegistry.withdrawUserAmount(user);
+        providerRegistry.slash(1e18 wei, bidder, payable(bidder));
+        vm.prank(bidder);
+        providerRegistry.withdrawBidderAmount(bidder);
         assertEq(
-            providerRegistry.userAmount(user),
+            providerRegistry.bidderAmount(bidder),
             0,
-            "UserAmount should be zero after withdrawal"
+            "BidderAmount should be zero after withdrawal"
         );
     }
 

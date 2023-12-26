@@ -9,13 +9,13 @@ import "../contracts/Whitelist.sol";
 contract WhitelistTest is Test {
 
     address admin;
-    address normalUser;
+    address normalBidder;
     address addressInstance;
     Whitelist whitelist;
 
     function setUp() public {
         admin = address(this); // Original contract deployer as admin
-        normalUser = address(0x100);
+        normalBidder = address(0x100);
         addressInstance = address(0x200);
         whitelist = new Whitelist(admin);
     }
@@ -42,17 +42,17 @@ contract WhitelistTest is Test {
         assertFalse(whitelist.isWhitelisted(addressInstance));
     }
 
-    function test_RevertNormalUserAddToWhitelist() public {
-        vm.prank(normalUser);
+    function test_RevertNormalBidderAddToWhitelist() public {
+        vm.prank(normalBidder);
         vm.expectRevert("Ownable: caller is not the owner");
         whitelist.addToWhitelist(addressInstance);
     }
 
-    function test_RevertNormalUserRemoveFromWhitelist() public {
+    function test_RevertNormalBidderRemoveFromWhitelist() public {
         vm.prank(admin);
         whitelist.addToWhitelist(addressInstance);
         assertTrue(whitelist.isWhitelisted(addressInstance));
-        vm.prank(normalUser);
+        vm.prank(normalBidder);
         vm.expectRevert("Ownable: caller is not the owner");
         whitelist.removeFromWhitelist(addressInstance);
     }

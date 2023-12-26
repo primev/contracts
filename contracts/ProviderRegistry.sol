@@ -35,8 +35,8 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     /// @dev Mapping from provider addresses to their staked amount
     mapping(address => uint256) public providerStakes;
 
-    /// @dev Amount assigned to users
-    mapping(address => uint256) public userAmount;
+    /// @dev Amount assigned to bidders
+    mapping(address => uint256) public bidderAmount;
 
     /// @dev Event for provider registration
     event ProviderRegistered(address indexed provider, uint256 stakedAmount);
@@ -141,16 +141,16 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Slash funds from the provider and send the slashed amount to the user.
+     * @dev Slash funds from the provider and send the slashed amount to the bidder.
      * @dev reenterancy not necessary but still putting here for precaution
      * @param amt The amount to slash from the provider's stake.
      * @param provider The address of the provider.
-     * @param user The address to transfer the slashed funds to.
+     * @param bidder The address to transfer the slashed funds to.
      */
     function slash(
         uint256 amt,
         address provider,
-        address payable user
+        address payable bidder
     ) external nonReentrant onlyPreConfirmationEngine {
         require(providerStakes[provider] >= amt, "Insufficient funds to slash");
         providerStakes[provider] -= amt;
@@ -162,7 +162,7 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
             feeRecipientAmount += feeAmt;
         }
 
-        userAmount[user] += amtMinusFee;
+        bidderAmount[bidder] += amtMinusFee;
 
         emit FundsSlashed(provider, amtMinusFee);
     }
@@ -191,13 +191,13 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         require(successFee, "Couldn't transfer to fee Recipient");
     }
 
-    function withdrawUserAmount(address user) external nonReentrant {
-        require(userAmount[user] > 0, "User Amount is zero");
+    function withdrawBidderAmount(address bidder) external nonReentrant {
+        require(bidderAmount[bidder] > 0, "Bidder Amount is zero");
 
-        userAmount[user] = 0;
+        bidderAmount[bidder] = 0;
 
-        (bool success, ) = user.call{value: userAmount[user]}("");
-        require(success, "Couldn't transfer to user");
+        (bool success, ) = bidder.call{value: bidderAmount[bidder]}("");
+        require(success, "Couldn't transfer to bidder");
     }
 
     function withdrawStakedAmount(
