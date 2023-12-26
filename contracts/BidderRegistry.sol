@@ -130,7 +130,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param bidder The address of the bidder.
      * @return The prepayed amount for the bidder.
      */
-    function checkPrepayedAmount(address bidder) external view returns (uint256) {
+    function GetAllowance(address bidder) external view returns (uint256) {
         return bidderPrepaidBalances[bidder];
     }
 
