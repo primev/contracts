@@ -14,7 +14,7 @@ interface IBidderRegistry {
 
     function prepay() external payable;
 
-    function GetAllowance(address bidder) external view returns (uint256);
+    function getAllowance(address bidder) external view returns (uint256);
 
     function retrieveFunds(
         address bidder,

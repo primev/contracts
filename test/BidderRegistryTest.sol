@@ -53,7 +53,7 @@ contract BidderRegistryTest is Test {
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
 
-        uint256 bidderStakeStored = bidderRegistry.GetAllowance(bidder);
+        uint256 bidderStakeStored = bidderRegistry.getAllowance(bidder);
         assertEq(bidderStakeStored, 1e18 wei);
     }
 

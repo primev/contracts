@@ -263,7 +263,7 @@ contract OracleTest is Test {
         // Detect slashing
         uint256 postSlashStake = providerRegistry.checkStake(provider);
         assertEq(postSlashStake + bid, ogStake);
-        assertEq(bidderRegistry.GetAllowance(bidder), 250 ether);
+        assertEq(bidderRegistry.getAllowance(bidder), 250 ether);
 
     }
 
