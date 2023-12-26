@@ -12,7 +12,7 @@ interface IBidderRegistry {
         string commitmentSignature;
     }
 
-    function registerAndPrepay() external payable;
+    function prepay() external payable;
 
     function GetAllowance(address bidder) external view returns (uint256);
 

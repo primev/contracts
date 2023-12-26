@@ -52,7 +52,7 @@ contract OracleTest is Test {
         address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(ownerInstance, 5 ether);
         vm.startPrank(ownerInstance);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
         
         oracle = new Oracle(address(preConfCommitmentStore), 2, ownerInstance);
         oracle.addBuilderAddress("mev builder", ownerInstance);
@@ -101,7 +101,7 @@ contract OracleTest is Test {
         vm.deal(provider, 1000 ether);
 
         vm.startPrank(bidder);
-        bidderRegistry.registerAndPrepay{value: 250 ether }();
+        bidderRegistry.prepay{value: 250 ether }();
         vm.stopPrank();
 
         vm.startPrank(provider);
@@ -202,7 +202,7 @@ contract OracleTest is Test {
 
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
-        bidderRegistry.registerAndPrepay{value: 250 ether }();
+        bidderRegistry.prepay{value: 250 ether }();
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
@@ -237,7 +237,7 @@ contract OracleTest is Test {
         vm.deal(provider, 200000 ether);
 
         vm.startPrank(bidder);
-        bidderRegistry.registerAndPrepay{value: 250 ether }();
+        bidderRegistry.prepay{value: 250 ether }();
         vm.stopPrank();
 
         vm.startPrank(provider);

@@ -55,10 +55,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @dev Receive function registers bidders and takes their prepay
-     * Should be removed from here in case the registerAndPrepay function becomes more complex
+     * Should be removed from here in case the prepay function becomes more complex
      */
     receive() external payable {
-        registerAndPrepay();
+        prepay();
     }
 
     /**
@@ -115,7 +115,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /**
      * @dev Internal function for bidder registration and staking.
      */
-    function registerAndPrepay() public payable {
+    function prepay() public payable {
         require(!bidderRegistered[msg.sender], "Bidder already registered");
         require(msg.value >= minAllowance, "Insufficient prepay");
 
@@ -205,12 +205,12 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     function withdrawPrepayedAmount(address payable bidder) external nonReentrant {
-        uint256 prepay = bidderPrepaidBalances[bidder];
+        uint256 prepayedAmount = bidderPrepaidBalances[bidder];
         bidderPrepaidBalances[bidder] = 0;
         require(msg.sender == bidder, "Only bidder can unprepay");
-        require(prepay > 0, "Provider Prepayd Amount is zero");
+        require(prepayedAmount > 0, "Provider Prepayd Amount is zero");
 
-        (bool success, ) = bidder.call{value: prepay}("");
+        (bool success, ) = bidder.call{value: prepayedAmount}("");
         require(success, "Couldn't transfer prepay to bidder");
     }
 

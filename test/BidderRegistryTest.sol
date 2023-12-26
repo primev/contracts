@@ -39,7 +39,7 @@ contract BidderRegistryTest is Test {
     function testFail_BidderStakeAndRegisterMinStake() public {
         vm.prank(bidder);
         vm.expectRevert(bytes(""));
-        bidderRegistry.registerAndPrepay{value: 1 wei}();
+        bidderRegistry.prepay{value: 1 wei}();
     }
 
     function test_BidderStakeAndRegister() public {
@@ -48,7 +48,7 @@ contract BidderRegistryTest is Test {
 
         emit BidderRegistered(bidder, 1e18 wei);
 
-        bidderRegistry.registerAndPrepay{value: 1e18 wei}();
+        bidderRegistry.prepay{value: 1e18 wei}();
 
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
@@ -59,9 +59,9 @@ contract BidderRegistryTest is Test {
 
     function testFail_BidderStakeAndRegisterAlreadyRegistered() public {
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2e18 wei}();
+        bidderRegistry.prepay{value: 2e18 wei}();
         vm.expectRevert(bytes(""));
-        bidderRegistry.registerAndPrepay{value: 1 wei}();
+        bidderRegistry.prepay{value: 1 wei}();
     }
 
     function testFail_receive() public {
@@ -121,7 +121,7 @@ contract BidderRegistryTest is Test {
     function test_shouldRetrieveFunds() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
         address provider = vm.addr(4);
 
         bidderRegistry.retrieveFunds(bidder, 1 ether, payable(provider));
@@ -141,7 +141,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
 
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
         address provider = vm.addr(4);
 
         bidderRegistry.retrieveFunds(bidder, 1 ether, payable(provider));
@@ -157,7 +157,7 @@ contract BidderRegistryTest is Test {
 
     function testFail_shouldRetrieveFundsNotPreConf() public {
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
         bidderRegistry.retrieveFunds(bidder, 1 ether, payable(provider));
@@ -168,7 +168,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
 
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
 
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
@@ -180,7 +180,7 @@ contract BidderRegistryTest is Test {
     function test_withdrawFeeRecipientAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 2 ether}();
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
         bidderRegistry.retrieveFunds(bidder, 1 ether, payable(provider));
@@ -198,7 +198,7 @@ contract BidderRegistryTest is Test {
     function test_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         address provider = vm.addr(4);
         uint256 balanceBefore = address(provider).balance;
         bidderRegistry.retrieveFunds(bidder, 2 ether, payable(provider));
@@ -211,7 +211,7 @@ contract BidderRegistryTest is Test {
     function testFail_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         address provider = vm.addr(4);
         bidderRegistry.withdrawProviderAmount(payable(provider));
     }
@@ -219,7 +219,7 @@ contract BidderRegistryTest is Test {
     function test_withdrawStakedAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         uint256 balanceBefore = address(bidder).balance;
         vm.prank(bidder);
         bidderRegistry.withdrawPrepayedAmount(payable(bidder));
@@ -231,7 +231,7 @@ contract BidderRegistryTest is Test {
     function testFail_withdrawStakedAmountNotOwner() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         bidderRegistry.withdrawPrepayedAmount(payable(bidder));
     }
 
@@ -246,7 +246,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         uint256 balanceBefore = address(bidder).balance;
         bidderRegistry.retrieveFunds(bidder, 2 ether, payable(provider));
         vm.prank(bidderRegistry.owner());
@@ -260,7 +260,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         vm.prank(bidderRegistry.owner());
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
@@ -269,7 +269,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.registerAndPrepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 5 ether}();
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
 }
