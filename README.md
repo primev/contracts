@@ -23,8 +23,8 @@ This is an interface that must be implemented by the bidder registry contract. I
 
 #### Functions
 
-- `registerAndStake`: Registers a bidder and stakes ETH.
-- `checkStake`: Checks the staked amount for a given bidder.
+- `registerAndPrepay`: Registers a bidder and prepays ETH.
+- `checkPrepayedAmount`: Checks the prepayed amount for a given bidder.
 - `depositFunds`: Deposits additional funds into the contract.
 - `retrieveFunds`: Retrieves a specific amount of funds for a bidder and sends them to a provider.
 
