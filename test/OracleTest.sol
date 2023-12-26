@@ -132,11 +132,22 @@ contract OracleTest is Test {
     function test_ReceiveBlockData() public {
         string[] memory txnList = new string[](1);
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
-        uint256 blockNumber = block.number;
+        uint256 blockNumber = 3;
         string memory blockBuilderName = "mev builder";
         vm.expectEmit(true, true, false, true);
         emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
         oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
+        assertEq(oracle.nextRequestedBlockNumber(), blockNumber + 1);
+    }
+
+    function test_ReceiveBlockData_Empty() public {
+        string[] memory txnList = new string[](1);
+        uint256 blockNumber = 13;
+        string memory blockBuilderName = "mev builder";
+        vm.expectEmit(true, true, false, true);
+        emit BlockDataReceived(txnList, blockNumber, blockBuilderName);
+        oracle.receiveBlockData(txnList, blockNumber, blockBuilderName);
+        assertEq(oracle.nextRequestedBlockNumber(), blockNumber + 1);
     }
 
     /**
