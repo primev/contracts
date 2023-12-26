@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-import {IUserRegistry} from "./interfaces/IUserRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
@@ -43,8 +44,8 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Address of provider registry
     IProviderRegistry public providerRegistry;
 
-    /// @dev Address of userRegistry
-    IUserRegistry public userRegistry;
+
+    IERC20 public nativeToken;
 
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
@@ -106,19 +107,18 @@ contract PreConfCommitmentStore is Ownable {
     /**
      * @dev Initializes the contract with the specified registry addresses, oracle, name, and version.
      * @param _providerRegistry The address of the provider registry.
-     * @param _userRegistry The address of the user registry.
      * @param _oracle The address of the oracle.
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         address _providerRegistry,
-        address _userRegistry,
         address _oracle, 
-        address _owner
+        address _owner,
+        address _nativeToken
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
-        userRegistry = IUserRegistry(_userRegistry);
+        nativeToken = IERC20(_nativeToken);
         _transferOwnership(_owner);
 
         // EIP-712 domain separator
@@ -165,6 +165,7 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
+
     /**
      * @dev Gives digest to be signed for pre confirmation
      * @param _txnHash transaction Hash.
@@ -207,7 +208,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param bidSignature bid signature.
      * @return messageDigest returns the bid hash for given bid id.
      * @return recoveredAddress the address from the bid hash.
-     * @return stake the stake amount of the address for bid id user.
+     * @return allowance the amount extractable from the address of bid id user.
      */
     function verifyBid(
         uint64 bid,
@@ -217,12 +218,12 @@ contract PreConfCommitmentStore is Ownable {
     )
         public
         view
-        returns (bytes32 messageDigest, address recoveredAddress, uint256 stake)
+        returns (bytes32 messageDigest, address recoveredAddress, uint256 allowance)
     {
         messageDigest = getBidHash(txnHash, bid, blockNumber);
         recoveredAddress = messageDigest.recover(bidSignature);
-        stake = userRegistry.checkStake(recoveredAddress);
-        require(stake > (10 * bid), "Invalid bid");
+        allowance = nativeToken.allowance(recoveredAddress, address(this));
+        require(allowance >= bid, "Insufficient allowance");
     }
 
     /**
@@ -286,7 +287,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes calldata bidSignature,
         bytes memory commitmentSignature
     ) public returns (bytes32 commitmentIndex) {
-        (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
+        (bytes32 bHash, address bidderAddress, uint256 allowance) = verifyBid(
             bid,
             blockNumber,
             txnHash,
@@ -304,7 +305,7 @@ contract PreConfCommitmentStore is Ownable {
 
             address commiterAddress = preConfHash.recover(commitmentSignature);
 
-            require(stake > (10 * bid), "Stake too low");
+            require(allowance > bid, "allowance too low");
 
             PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,
@@ -320,7 +321,6 @@ contract PreConfCommitmentStore is Ownable {
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);
-
 
             // Store commitment
             commitments[commitmentIndex] = newCommitment;
@@ -421,11 +421,7 @@ contract PreConfCommitmentStore is Ownable {
         commitments[commitmentIndex].commitmentUsed = true;
         commitmentsCount[commitment.commiter] -= 1;
 
-        userRegistry.retrieveFunds(
-            commitment.bidder,
-            commitment.bid,
-            payable(commitment.commiter)
-        );
+        nativeToken.transferFrom(commitment.bidder, commitment.commiter, commitment.bid);
     }
 
     /**
@@ -444,14 +440,6 @@ contract PreConfCommitmentStore is Ownable {
         address newProviderRegistry
     ) public onlyOwner {
         providerRegistry = IProviderRegistry(newProviderRegistry);
-    }
-
-    /**
-     * @dev Updates the address of the user registry.
-     * @param newUserRegistry The new user registry address.
-     */
-    function updateUserRegistry(address newUserRegistry) external onlyOwner {
-        userRegistry = IUserRegistry(newUserRegistry);
     }
 
     /**

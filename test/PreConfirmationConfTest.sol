@@ -6,7 +6,8 @@ import "forge-std/Test.sol";
 
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
-import "../contracts/UserRegistry.sol";
+import "./DummyERC20.sol";
+
 
 contract TestPreConfCommitmentStore is Test {
     PreConfCommitmentStore internal preConfCommitmentStore;
@@ -17,12 +18,18 @@ contract TestPreConfCommitmentStore is Test {
     ProviderRegistry internal providerRegistry;
     uint256 testNumber;
     uint64 testNumber2;
-
-    UserRegistry internal userRegistry;
+    DummyERC20 internal dummyToken;
 
     function setUp() public {
         testNumber = 2;
         testNumber2 = 2;
+
+
+        // Deploy the dummy ERC20 token
+        dummyToken = new DummyERC20("DummyToken", "DTK");
+        // Optionally mint some tokens for testing
+        dummyToken.mint(address(this), 1000 ether);
+
 
         feePercent = 10;
         minStake = 1e18 wei;
@@ -33,13 +40,12 @@ contract TestPreConfCommitmentStore is Test {
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this), // Owner
+            address(dummyToken)
         );
     }
 
@@ -48,10 +54,6 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(
             address(preConfCommitmentStore.providerRegistry()),
             address(providerRegistry)
-        );
-        assertEq(
-            address(preConfCommitmentStore.userRegistry()),
-            address(userRegistry)
         );
     }
 
@@ -68,10 +70,11 @@ contract TestPreConfCommitmentStore is Test {
 
         vm.deal(user, 200000 ether);
         vm.prank(user);
-        userRegistry.registerAndStake{value: 1e18 wei}();
-        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
+        dummyToken.approve(address(preConfCommitmentStore), 1e18 wei);
+
+        (bytes32 digest, address recoveredAddress, uint256 allowance) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
         
-        assertEq(stake, 1e18 wei);
+        assertEq(allowance, 1e18 wei);
         assertEq(user, recoveredAddress);
         assertEq(digest, bidHash);
 
@@ -90,11 +93,6 @@ contract TestPreConfCommitmentStore is Test {
             address(preConfCommitmentStore.providerRegistry()),
             feeRecipient
         );
-    }
-
-    function test_UpdateUserRegistry() public {
-        preConfCommitmentStore.updateUserRegistry(feeRecipient);
-        assertEq(address(preConfCommitmentStore.userRegistry()), feeRecipient);
     }
 
     function test_GetBidHash() public {
@@ -144,7 +142,8 @@ contract TestPreConfCommitmentStore is Test {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
         vm.prank(signer);
-        userRegistry.registerAndStake{value: 2 ether}();
+        dummyToken.approve(address(preConfCommitmentStore), 2 ether);
+
         string memory txnHash = "0xkartik";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -285,7 +284,8 @@ contract TestPreConfCommitmentStore is Test {
         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
         vm.deal(signer, 5 ether);
         vm.prank(signer);
-        userRegistry.registerAndStake{value: 2 ether}();
+        dummyToken.approve(address(preConfCommitmentStore), 2 ether);
+
         string memory txnHash = "0xkartik";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -325,7 +325,8 @@ contract TestPreConfCommitmentStore is Test {
             address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
             vm.deal(signer, 5 ether);
             vm.prank(signer);
-            userRegistry.registerAndStake{value: 2 ether}();
+            dummyToken.approve(address(preConfCommitmentStore), 2 ether);
+
             string memory txnHash = "0xkartik";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -386,10 +387,13 @@ contract TestPreConfCommitmentStore is Test {
     function test_InitiateReward() public {
         // Assuming you have a stored commitment
         {
+            dummyToken.transfer(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3, 5 ether);
             address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
             vm.deal(signer, 5 ether);
             vm.prank(signer);
-            userRegistry.registerAndStake{value: 2 ether}();
+
+            dummyToken.approve(address(preConfCommitmentStore), 2 ether);
+
             string memory txnHash = "0xkartik";
             bytes
                 memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -430,9 +434,6 @@ contract TestPreConfCommitmentStore is Test {
                 commitmentSignature
             );
 
-            userRegistry.setPreconfirmationsContract(
-                address(preConfCommitmentStore)
-            );
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();

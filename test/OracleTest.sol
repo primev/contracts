@@ -6,7 +6,8 @@ import "../contracts/Oracle.sol";
 import "../contracts/PreConfirmations.sol";
 import "../contracts/interfaces/IPreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
-import "../contracts/UserRegistry.sol";
+import "./DummyERC20.sol";
+
 
 contract OracleTest is Test {
     address internal owner;
@@ -19,7 +20,7 @@ contract OracleTest is Test {
     ProviderRegistry internal providerRegistry;
     uint256 testNumber;
     uint64 testNumber2;
-    UserRegistry internal userRegistry;
+    DummyERC20 internal dummyToken;
 
 
     // Events to match against
@@ -35,32 +36,36 @@ contract OracleTest is Test {
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
 
+        // Deploy the dummy ERC20 token
+        dummyToken = new DummyERC20("DummyToken", "DTK");
+        // Optionally mint some tokens for testing
+        dummyToken.mint(address(this), 10000 ether);
+
         providerRegistry = new ProviderRegistry(
             minStake,
             feeRecipient,
             feePercent,
             address(this)
         );
-        userRegistry = new UserRegistry(minStake, feeRecipient, feePercent, address(this));
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
-            address(userRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this), // Owner
+            address(dummyToken)
         );
 
         address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        dummyToken.transfer(ownerInstance, 5 ether);
         vm.deal(ownerInstance, 5 ether);
         vm.startPrank(ownerInstance);
-        userRegistry.registerAndStake{value: 2 ether}();
+        dummyToken.approve(address(preConfCommitmentStore), 2 ether);
         
         oracle = new Oracle(address(preConfCommitmentStore), 2, ownerInstance);
         oracle.addBuilderAddress("mev builder", ownerInstance);
         vm.stopPrank();
 
         preConfCommitmentStore.updateOracle(address(oracle));
-        userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
 
     }
@@ -98,11 +103,11 @@ contract OracleTest is Test {
         assertEq(oracle.blockBuilderNameToAddress("zk builder"), builder4);
         vm.stopPrank();
 
-        vm.deal(user, 1000 ether);
+        
         vm.deal(provider, 1000 ether);
 
         vm.startPrank(user);
-        userRegistry.registerAndStake{value: 250 ether }();
+        dummyToken.approve(address(preConfCommitmentStore), 2 ether);
         vm.stopPrank();
 
         vm.startPrank(provider);
@@ -115,7 +120,6 @@ contract OracleTest is Test {
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         oracle.receiveBlockData(txnList, 2, "primev builder");
 
-        assertEq(userRegistry.getProviderAmount(provider), 0);
         assertEq(providerRegistry.checkStake(provider), 250 ether);
     }
 
@@ -201,10 +205,12 @@ contract OracleTest is Test {
         (address user, uint256 userPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
 
-        vm.deal(user, 200000 ether);
+
+        dummyToken.mint(user, 200000 ether);
         vm.startPrank(user);
-        userRegistry.registerAndStake{value: 250 ether }();
+        dummyToken.approve(address(preConfCommitmentStore), 2 ether);
         vm.stopPrank();
+
 
         vm.deal(provider, 200000 ether);
         vm.startPrank(provider);
@@ -220,7 +226,7 @@ contract OracleTest is Test {
 
         bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
         assertEq(commitmentHashes.length, 1);
-        assertEq(userRegistry.getProviderAmount(provider), bid);
+        assertEq(200000 ether - dummyToken.balanceOf(user), bid);
 
     }
 
@@ -234,11 +240,11 @@ contract OracleTest is Test {
         (address user, uint256 userPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("bob");
 
-        vm.deal(user, 200000 ether);
+        dummyToken.mint(user, 200000 ether);
         vm.deal(provider, 200000 ether);
 
         vm.startPrank(user);
-        userRegistry.registerAndStake{value: 250 ether }();
+        dummyToken.approve(address(preConfCommitmentStore), 250 ether);
         vm.stopPrank();
 
         vm.startPrank(provider);
@@ -257,14 +263,11 @@ contract OracleTest is Test {
 
         bytes32[] memory commitmentHashes = preConfCommitmentStore.getCommitmentsByBlockNumber(blockNumber);
         assertEq(commitmentHashes.length, 1);
-        
-        // Ensuring no rewards
-        assertEq(userRegistry.getProviderAmount(provider), 0);
-
+    
         // Detect slashing
         uint256 postSlashStake = providerRegistry.checkStake(provider);
         assertEq(postSlashStake + bid, ogStake);
-        assertEq(userRegistry.checkStake(user), 250 ether);
+        assertEq(dummyToken.allowance(user, address(preConfCommitmentStore)), 250 ether);
 
     }
 

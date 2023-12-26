@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 import "forge-std/Script.sol";
-import "contracts/UserRegistry.sol";
 import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
 import "contracts/Oracle.sol";
@@ -47,21 +46,18 @@ contract DeployScript is Script, Create2Deployer {
 
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
-
-        UserRegistry userRegistry = new UserRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
-        console.log("UserRegistry deployed to:", address(userRegistry));
+        
+        // NativeToken will be set in future once we know where it's getting deployed
+        address NativeToken = address(0x000);
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
         console.log("ProviderRegistry deployed to:", address(providerRegistry));
 
-        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(userRegistry), feeRecipient, msg.sender);
+        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), feeRecipient, msg.sender, NativeToken);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("ProviderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
-
-        userRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
-        console.log("UserRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);
         console.log("Oracle deployed to:", address(oracle));

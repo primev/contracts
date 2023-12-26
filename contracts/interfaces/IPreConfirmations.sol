@@ -55,7 +55,7 @@ interface IPreConfCommitmentStore {
         uint64 blockNumber,
         string memory txnHash,
         bytes calldata bidSignature
-    ) external view returns (bytes32 messageDigest, address recoveredAddress, uint256 stake);
+    ) external view returns (bytes32 messageDigest, address recoveredAddress, uint256 allowance);
 
     function storeCommitment(
         uint64 bid,
@@ -79,7 +79,6 @@ interface IPreConfCommitmentStore {
 
     function updateProviderRegistry(address newProviderRegistry) external;
 
-    function updateUserRegistry(address newUserRegistry) external;
 
     // Public functions that can be included if they are meant to be called from other contracts
 
