@@ -18,7 +18,7 @@ contract Create2Deployer {
 
     function checkDeployer() internal view {
         if (msg.sender != expectedDeployer) {
-            console.log("Warning: deployer is not expected address of 0xBe3dEF3973584FdcC1326634aF188f0d9772D57D. Contracts addresses will not match documentation");
+            console.log("Warning: deployer is not expected address of 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266. Contracts addresses will not match documentation");
         }
     }
 
