@@ -17,7 +17,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     uint16 public feePercent;
 
     /// @dev Minimum prepay required for registration
-    uint256 public minPrepay;
+    uint256 public minAllowance;
 
     /// @dev Amount assigned to feeRecipient
     uint256 public feeRecipientAmount;
@@ -63,18 +63,18 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @dev Constructor to initialize the contract with a minimum prepay requirement.
-     * @param _minPrepay The minimum prepay required for bidder registration.
+     * @param _minAllowance The minimum prepay required for bidder registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
-        uint256 _minPrepay,
+        uint256 _minAllowance,
         address _feeRecipient,
         uint16 _feePercent,
         address _owner 
     ) {
-        minPrepay = _minPrepay;
+        minAllowance = _minAllowance;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
         _transferOwnership(_owner);
@@ -117,7 +117,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      */
     function registerAndPrepay() public payable {
         require(!bidderRegistered[msg.sender], "Bidder already registered");
-        require(msg.value >= minPrepay, "Insufficient prepay");
+        require(msg.value >= minAllowance, "Insufficient prepay");
 
         bidderPrepaidBalances[msg.sender] = msg.value;
         bidderRegistered[msg.sender] = true;

@@ -29,7 +29,7 @@ contract BidderRegistryTest is Test {
     }
 
     function test_VerifyInitialContractState() public {
-        assertEq(bidderRegistry.minPrepay(), 1e18 wei);
+        assertEq(bidderRegistry.minAllowance(), 1e18 wei);
         assertEq(bidderRegistry.feeRecipient(), feeRecipient);
         assertEq(bidderRegistry.feePercent(), feePercent);
         assertEq(bidderRegistry.preConfirmationsContract(), address(0));
