@@ -43,7 +43,7 @@ contract DeployScript is Script, Create2Deployer {
         uint256 minStake = 1 ether;
         address feeRecipient = address(0x68bC10674b265f266b4b1F079Fa06eF4045c3ab9);
         uint16 feePercent = 2;
-        uint256 nextRequestedBlockNumber = 18682511;
+        uint256 nextRequestedBlockNumber = 4958905;
 
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
