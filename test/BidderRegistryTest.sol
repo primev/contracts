@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
@@ -21,7 +21,7 @@ contract BidderRegistryTest is Test {
         minStake = 1e18 wei;
         feeRecipient = vm.addr(9);
 
-        bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent);
+        bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent, address(this));
 
         bidder = vm.addr(1);
         vm.deal(bidder, 100 ether);
@@ -53,8 +53,8 @@ contract BidderRegistryTest is Test {
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
 
-        uint256 bidderPrepaidBalancestored = bidderRegistry.checkPrepayedAmount(bidder);
-        assertEq(bidderPrepaidBalancestored, 1e18 wei);
+        uint256 bidderStakeStored = bidderRegistry.checkPrepayedAmount(bidder);
+        assertEq(bidderStakeStored, 1e18 wei);
     }
 
     function testFail_BidderStakeAndRegisterAlreadyRegistered() public {
