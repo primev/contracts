@@ -49,12 +49,12 @@ contract DeployScript is Script, Create2Deployer {
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
         BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
-        console.log("UserRegistry deployed to:", address(userRegistry));
+        console.log("UserRegistry deployed to:", address(bidderRegistry));
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
         console.log("ProviderRegistry deployed to:", address(providerRegistry));
 
-        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(userRegistry), feeRecipient, msg.sender);
+        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(bidderRegistry), feeRecipient, msg.sender);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
