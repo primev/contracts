@@ -82,9 +82,8 @@ contract Oracle is Ownable {
 
     // Function to receive and process the block data (this would be automated in a real-world scenario)
     // TODO(@ckartik): Should restrict who can make this call
-    // Note: Long term we will want to 
     function processBuilderCommitmentForBlockNumber(
-        bytes32 commitmentHash,
+        bytes32 commitmentIndex,
         uint256 blockNumber,
         string calldata blockBuilderName,
         bool isSlash
@@ -92,15 +91,21 @@ contract Oracle is Ownable {
         // Check grafiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
         
-        IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentHash);
+        IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
         if (commitment.commiter == builder) {
-                this.processCommitment(commitmentHash, isSlash);
+                this.processCommitment(commitmentIndex, isSlash);
         }
 
-        if (nextRequestedBlockNumber <= blockNumber) {
-            nextRequestedBlockNumber = blockNumber + 1;
-        }
     }
+
+    function setNextBlock(uint64 newBlockNumber) external {
+        nextRequestedBlockNumber = newBlockNumber;
+    }
+
+    function moveToNextBlock() external {
+        nextRequestedBlockNumber++;
+    }
+
 
 
     // Function to simulate the processing of a commitment (initiate a slash or a reward)
