@@ -260,12 +260,13 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     function getCommitmentIndex(
-        PreConfCommitment memory commitment
+        bytes32 commitmentHash,
+        bytes memory commitmentSignature
     )  public pure returns (bytes32){
         return keccak256(
             abi.encodePacked(
-                commitment.commitmentHash,
-                commitment.commitmentSignature
+                commitmentHash,
+                commitmentSignature
             )
         );
     }
@@ -319,7 +320,7 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentSignature
             );
 
-            commitmentIndex = getCommitmentIndex(newCommitment);
+            commitmentIndex = getCommitmentIndex(newCommitment.commitmentHash, newCommitment.commitmentSignature);
 
 
             // Store commitment
