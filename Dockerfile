@@ -15,6 +15,8 @@ RUN forge build --use 0.8.23
 ARG RPC_URL
 ARG PRIVATE_KEY
 ARG CHAIN_ID
+ARG DEPLOY_TYPE
+ARG HYP_ERC20_ADDR 
 
 RUN chmod +x entrypoint.sh
 
