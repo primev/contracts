@@ -52,22 +52,6 @@ contract Oracle is Ownable {
         _transferOwnership(_owner);
     }
 
-    // mapping of txns to bool to check if txns exists
-    // Stores all proccessed txns for onw
-    // TODO(@ckartik): This may be too restricvie in the log run as an appraoch
-    // mapping(string => bool) txnHashes;
-
-
-    // // Event to request block data
-    // event BlockDataRequested(uint256 blockNumber);
-
-    // // Event to signal the reception of block data
-    // event BlockDataReceived(
-    //     string[] txnList,
-    //     uint256 blockNumber,
-    //     string blockBuilderName
-    // );
-
     // Event to signal the processing of a commitment
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
 
@@ -87,29 +71,27 @@ contract Oracle is Ownable {
         uint256 blockNumber,
         string calldata blockBuilderName,
         bool isSlash
-    ) external {
+    ) external onlyOwner {
         // Check grafiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
         
         IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
-        if (commitment.commiter == builder) {
-                this.processCommitment(commitmentIndex, isSlash);
+        if (commitment.commiter == builder && commitment.blockNumber == blockNumber) {
+                processCommitment(commitmentIndex, isSlash);
         }
 
     }
 
-    function setNextBlock(uint64 newBlockNumber) external {
+    function setNextBlock(uint64 newBlockNumber) external onlyOwner {
         nextRequestedBlockNumber = newBlockNumber;
     }
 
-    function moveToNextBlock() external {
+    function moveToNextBlock() external onlyOwner {
         nextRequestedBlockNumber++;
     }
 
-
-
     // Function to simulate the processing of a commitment (initiate a slash or a reward)
-    function processCommitment(bytes32 commitmentIndex, bool isSlash) external {
+    function processCommitment(bytes32 commitmentIndex, bool isSlash) private {
         if (isSlash) {
             preConfContract.initiateSlash(commitmentIndex);
         } else {
