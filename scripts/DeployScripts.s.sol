@@ -76,6 +76,13 @@ contract DeployScript is Script, Create2Deployer {
 // Deploys whitelist contract and adds HypERC20 to whitelist
 contract DeployWhitelist is Script, Create2Deployer {
     function run() external {
+
+        address expectedWhiteListAddr = 0x5D1415C0973034d162F5FEcF19B50dA057057e29;
+        if (isContractDeployed(expectedWhiteListAddr)) {
+            console.log("Whitelist already deployed to:", expectedWhiteListAddr);
+            return;
+        }
+
         vm.startBroadcast();
 
         checkCreate2Deployed();
