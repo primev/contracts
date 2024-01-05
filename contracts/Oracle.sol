@@ -65,7 +65,7 @@ contract Oracle is Ownable {
 
     /**
      * @dev Allows the owner to add a new builder address.
-     * @param builderName The name of the block builder.
+     * @param builderName The name of the block builder as it appears on extra data.
      * @param builderAddress The Ethereum address of the builder.
      */
     function addBuilderAddress(string memory builderName, address builderAddress) external onlyOwner {
@@ -83,7 +83,7 @@ contract Oracle is Ownable {
     // Function to receive and process the block data (this would be automated in a real-world scenario)
     /**
      * @dev Processes a builder's commitment for a specific block number.
-     * @param commitmentIndex The index of the commitment in the PreConfCommitmentStore.
+     * @param commitmentIndex The id of the commitment in the PreConfCommitmentStore.
      * @param blockNumber The block number to be processed.
      * @param blockBuilderName The name of the block builder.
      * @param isSlash Determines whether the commitment should be slashed or rewarded.
@@ -121,7 +121,7 @@ contract Oracle is Ownable {
 
     /**
      * @dev Internal function to process a commitment, either slashing or rewarding based on the commitment's state.
-     * @param commitmentIndex The index of the commitment to be processed.
+     * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.
      */
     function processCommitment(bytes32 commitmentIndex, bool isSlash) private {
