@@ -56,6 +56,10 @@ contract BidderRegistryTest is Test {
         uint256 bidderStakeStored = bidderRegistry.getAllowance(bidder);
         assertEq(bidderStakeStored, 1 ether);
 
+        vm.expectEmit(true, false, false, true);
+
+        emit BidderRegistered(bidder, 2 ether);
+
         bidderRegistry.prepay{value: 1 ether}();
 
         uint256 bidderStakeStored2 = bidderRegistry.getAllowance(bidder);

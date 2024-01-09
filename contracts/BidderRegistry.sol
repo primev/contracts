@@ -121,7 +121,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         bidderPrepaidBalances[msg.sender] += msg.value;
         bidderRegistered[msg.sender] = true;
 
-        emit BidderRegistered(msg.sender, msg.value);
+        emit BidderRegistered(msg.sender, bidderPrepaidBalances[msg.sender]);
     }
 
     /**
