@@ -49,7 +49,7 @@ contract DeployScript is Script, Create2Deployer {
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
         BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
-        console.log("UserRegistry deployed to:", address(bidderRegistry));
+        console.log("BidderRegistry deployed to:", address(bidderRegistry));
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
         console.log("ProviderRegistry deployed to:", address(providerRegistry));
@@ -61,7 +61,7 @@ contract DeployScript is Script, Create2Deployer {
         console.log("ProviderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
-        console.log("UserRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
+        console.log("BidderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);
         console.log("Oracle deployed to:", address(oracle));
