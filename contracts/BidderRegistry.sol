@@ -116,13 +116,12 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @dev Internal function for bidder registration and staking.
      */
     function prepay() public payable {
-        require(!bidderRegistered[msg.sender], "Bidder already registered");
         require(msg.value >= minAllowance, "Insufficient prepay");
 
-        bidderPrepaidBalances[msg.sender] = msg.value;
+        bidderPrepaidBalances[msg.sender] += msg.value;
         bidderRegistered[msg.sender] = true;
 
-        emit BidderRegistered(msg.sender, msg.value);
+        emit BidderRegistered(msg.sender, bidderPrepaidBalances[msg.sender]);
     }
 
     /**

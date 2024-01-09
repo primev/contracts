@@ -43,18 +43,28 @@ contract BidderRegistryTest is Test {
     }
 
     function test_BidderStakeAndRegister() public {
-        vm.prank(bidder);
+        vm.startPrank(bidder);
         vm.expectEmit(true, false, false, true);
 
-        emit BidderRegistered(bidder, 1e18 wei);
+        emit BidderRegistered(bidder, 1 ether);
 
-        bidderRegistry.prepay{value: 1e18 wei}();
+        bidderRegistry.prepay{value: 1 ether}();
 
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
 
         uint256 bidderStakeStored = bidderRegistry.getAllowance(bidder);
-        assertEq(bidderStakeStored, 1e18 wei);
+        assertEq(bidderStakeStored, 1 ether);
+
+        vm.expectEmit(true, false, false, true);
+
+        emit BidderRegistered(bidder, 2 ether);
+
+        bidderRegistry.prepay{value: 1 ether}();
+
+        uint256 bidderStakeStored2 = bidderRegistry.getAllowance(bidder);
+        assertEq(bidderStakeStored2, 2 ether);
+
     }
 
     function testFail_BidderStakeAndRegisterAlreadyRegistered() public {
