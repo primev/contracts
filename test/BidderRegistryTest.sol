@@ -140,6 +140,7 @@ contract BidderRegistryTest is Test {
 
         assertEq(providerAmount, 900000000000000000);
         assertEq(feeRecipientAmount, 100000000000000000);
+        assertEq(bidderRegistry.getFeeRecipientAmount(), 100000000000000000);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 1 ether);
     }
 
@@ -198,6 +199,7 @@ contract BidderRegistryTest is Test {
         uint256 balanceAfter = feeRecipient.balance;
         assertEq(balanceAfter - balanceBefore, 100000000000000000);
         assertEq(bidderRegistry.feeRecipientAmount(), 0);
+        assertEq(bidderRegistry.getFeeRecipientAmount(), 0);
     }
 
     function testFail_withdrawFeeRecipientAmount() public {

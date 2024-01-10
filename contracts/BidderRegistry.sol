@@ -113,6 +113,13 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
     
     /**
+     * @dev Get the amount assigned to the fee recipient (treasury).
+     */
+    function getFeeRecipientAmount() external onlyOwner view returns (uint256) {
+        return feeRecipientAmount;
+    }
+
+    /**
      * @dev Internal function for bidder registration and staking.
      */
     function prepay() public payable {
