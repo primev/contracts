@@ -41,7 +41,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     mapping(address => uint256) public providerAmount;
 
     /// @dev Event emitted when a bidder is registered with their prepayed amount
-    event BidderRegistered(address indexed bidder, uint256 prepayedAmount);
+    event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
     event FundsRetrieved(address indexed bidder, uint256 amount);
@@ -112,6 +112,13 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         return providerAmount[provider];
     }
     
+    /**
+     * @dev Get the amount assigned to the fee recipient (treasury).
+     */
+    function getFeeRecipientAmount() external onlyOwner view returns (uint256) {
+        return feeRecipientAmount;
+    }
+
     /**
      * @dev Internal function for bidder registration and staking.
      */
@@ -203,13 +210,13 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(success, "Couldn't transfer to provider");
     }
 
-    function withdrawPrepayedAmount(address payable bidder) external nonReentrant {
-        uint256 prepayedAmount = bidderPrepaidBalances[bidder];
+    function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
+        uint256 prepaidAmount = bidderPrepaidBalances[bidder];
         bidderPrepaidBalances[bidder] = 0;
         require(msg.sender == bidder, "Only bidder can unprepay");
-        require(prepayedAmount > 0, "Provider Prepayd Amount is zero");
+        require(prepaidAmount > 0, "Provider Prepayd Amount is zero");
 
-        (bool success, ) = bidder.call{value: prepayedAmount}("");
+        (bool success, ) = bidder.call{value: prepaidAmount}("");
         require(success, "Couldn't transfer prepay to bidder");
     }
 
