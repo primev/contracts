@@ -234,7 +234,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.prepay{value: 5 ether}();
         uint256 balanceBefore = address(bidder).balance;
         vm.prank(bidder);
-        bidderRegistry.withdrawPrepayedAmount(payable(bidder));
+        bidderRegistry.withdrawPrepaidAmount(payable(bidder));
         uint256 balanceAfter = address(bidder).balance;
         assertEq(balanceAfter - balanceBefore, 5 ether);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 0);
@@ -244,13 +244,13 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
         bidderRegistry.prepay{value: 5 ether}();
-        bidderRegistry.withdrawPrepayedAmount(payable(bidder));
+        bidderRegistry.withdrawPrepaidAmount(payable(bidder));
     }
 
     function testFail_withdrawStakedAmountStakeZero() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.withdrawPrepayedAmount(payable(bidder));
+        bidderRegistry.withdrawPrepaidAmount(payable(bidder));
     }
 
     function test_withdrawProtocolFee() public {
