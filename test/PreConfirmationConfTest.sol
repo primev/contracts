@@ -71,13 +71,10 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(bidder);
         bidderRegistry.prepay{value: 1e18 wei}();
         (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, "0xkartik", signature);
-        
+
         assertEq(stake, 1e18 wei);
         assertEq(bidder, recoveredAddress);
         assertEq(digest, bidHash);
-
-        preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik", signature, signature);
-
     }
 
     function test_UpdateOracle() public {
@@ -154,6 +151,10 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory bidSignature = bytes(
             hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
         );
+        address commiter = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        vm.deal(commiter, 30 ether);
+        vm.prank(commiter);
+        providerRegistry.registerAndStake{value:20 ether}();
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
 
@@ -287,6 +288,7 @@ contract TestPreConfCommitmentStore is Test {
         vm.deal(signer, 5 ether);
         vm.prank(signer);
         bidderRegistry.prepay{value: 2 ether}();
+
         string memory txnHash = "0xkartik";
         bytes
             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
@@ -295,6 +297,10 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory bidSignature = bytes(
             hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
         );
+        address commiter = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
+        vm.deal(commiter, 30 ether);
+        vm.prank(commiter);
+        providerRegistry.registerAndStake{value:20 ether}();
         bytes
             memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
 
@@ -336,6 +342,9 @@ contract TestPreConfCommitmentStore is Test {
                 hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
             );
             address commiter = 0xE3E9cc6677B1b7f05C483168bf25B4D9604c6763;
+            vm.deal(commiter, 25 ether);
+            vm.prank(commiter);
+            providerRegistry.registerAndStake{value: 20 ether}();
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
@@ -354,7 +363,6 @@ contract TestPreConfCommitmentStore is Test {
                 bidHash,
                 _bytesToHexString(bidSignature)
             );
-
             // Verify that the commitment has not been used before
             (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
@@ -370,9 +378,6 @@ contract TestPreConfCommitmentStore is Test {
                 address(preConfCommitmentStore)
             );
 
-            vm.deal(commiter, 5 ether);
-            vm.prank(commiter);
-            providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
             preConfCommitmentStore.initiateSlash(index);
 
@@ -400,6 +405,9 @@ contract TestPreConfCommitmentStore is Test {
                 hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
             );
             address commiter = 0xE3E9cc6677B1b7f05C483168bf25B4D9604c6763;
+            vm.deal(commiter, 30 ether);
+            vm.prank(commiter);
+            providerRegistry.registerAndStake{value:20 ether}();
             bytes
                 memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
 
@@ -434,9 +442,6 @@ contract TestPreConfCommitmentStore is Test {
             bidderRegistry.setPreconfirmationsContract(
                 address(preConfCommitmentStore)
             );
-            vm.deal(commiter, 5 ether);
-            vm.prank(commiter);
-            providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
             preConfCommitmentStore.initateReward(index);
 
