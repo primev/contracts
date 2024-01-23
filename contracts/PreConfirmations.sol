@@ -7,7 +7,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "forge-std/console.sol";
 
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
@@ -306,9 +305,7 @@ contract PreConfCommitmentStore is Ownable {
             );
 
             address commiterAddress = preConfHash.recover(commitmentSignature);
-            console.logAddress(commiterAddress);
             uint256 providerStake = providerRegistry.checkStake(commiterAddress);
-
             require(providerStake > (10*bid), "provider stake is not sufficent to cover the bid.");
 
             PreConfCommitment memory newCommitment =  PreConfCommitment(
