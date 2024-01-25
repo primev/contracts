@@ -33,7 +33,7 @@ abstract contract Gateway {
 
     function _initiateTransfer(address _recipient, uint256 _amount
     ) internal returns (uint256 returnIdx) {
-        require(_amount >= counterpartyFee, "Amount must cover counterparty's finalization fee");
+        require(_amount >= counterpartyFee, "Amount must cover counterpartys finalization fee");
         ++transferIdx;
         _decrementMsgSender(_amount);
         emit TransferInitiated(msg.sender, _recipient, _amount, transferIdx);
