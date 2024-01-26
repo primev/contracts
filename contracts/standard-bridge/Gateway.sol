@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 /**
  * @dev Gateway contract for standard bridge. 
  */
-abstract contract Gateway {   
+abstract contract Gateway is Ownable {   
     
     // @dev index for tracking transfers.
     // Also total number of transfers initiated from this gateway.
@@ -20,10 +22,12 @@ abstract contract Gateway {
     // The counterparty's finalization fee, included for UX purposes
     uint256 public immutable counterpartyFee;
 
-    constructor(address _relayer, uint256 _finalizationFee, uint256 _counterpartyFee) {
+    constructor(address _owner, address _relayer, 
+        uint256 _finalizationFee, uint256 _counterpartyFee) Ownable() {
         relayer = _relayer;
         finalizationFee = _finalizationFee;
         counterpartyFee = _counterpartyFee;
+        _transferOwnership(_owner);
     }
 
     modifier onlyRelayer() {

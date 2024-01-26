@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Gateway.sol";
-
+import {Gateway} from "./Gateway.sol";
 import {IWhitelist} from "../interfaces/IWhitelist.sol";
 
-// TODO: Make ownable upgradeable
-contract SettlementGateway is Gateway, Ownable {
+contract SettlementGateway is Gateway{
 
     // This address assumes deployer is 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     address private constant WHITELIST_ADDR =
         address(0x5D1415C0973034d162F5FEcF19B50dA057057e29);
     
-    constructor(address _relayer, uint256 _finalizationFee, uint256 _counterpartyFee
-        ) Gateway(_relayer, _finalizationFee, _counterpartyFee) Ownable() {}
+    constructor(address _owner, address _relayer, uint256 _finalizationFee, uint256 _counterpartyFee
+        ) Gateway(_owner, _relayer, _finalizationFee, _counterpartyFee) {}
 
     // Burns native ether on settlement chain, 
     // there should be equiv ether on L1 which will be UNLOCKED during finalization.

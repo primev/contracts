@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: BSL 1.1
 pragma solidity ^0.8.15;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Gateway.sol";
+import {Gateway} from "./Gateway.sol";
 
-// TODO: Make ownable upgradeable
-contract L1Gateway is Gateway, Ownable {
+contract L1Gateway is Gateway {
 
-    constructor(address _relayer, uint256 _finalizationFee, uint256 _counterpartyFee
-        ) Gateway(_relayer, _finalizationFee, _counterpartyFee) Ownable() {}
+    constructor(address _owner, address _relayer, uint256 _finalizationFee, uint256 _counterpartyFee
+        ) Gateway(_owner, _relayer, _finalizationFee, _counterpartyFee) {}
 
     function _decrementMsgSender(uint256 _amount) internal override {
         require(msg.value == _amount, "Incorrect Ether value sent");
