@@ -10,7 +10,7 @@ abstract contract Gateway is Ownable {
     
     // @dev index for tracking transfers.
     // Also total number of transfers initiated from this gateway.
-    uint256 private transferIdx;
+    uint256 public transferIdx;
 
     // @dev Address of relayer account. 
     address public immutable relayer;
@@ -35,8 +35,8 @@ abstract contract Gateway is Ownable {
         _;
     }
 
-    function _initiateTransfer(address _recipient, uint256 _amount
-    ) internal returns (uint256 returnIdx) {
+    function initiateTransfer(address _recipient, uint256 _amount
+    ) external payable returns (uint256 returnIdx) {
         require(_amount >= counterpartyFee, "Amount must cover counterpartys finalization fee");
         ++transferIdx;
         _decrementMsgSender(_amount);
@@ -47,7 +47,7 @@ abstract contract Gateway is Ownable {
     function _decrementMsgSender(uint256 _amount) internal virtual;
 
     function _finalizeTransfer(address _recipient, uint256 _amount, uint256 _counterpartyIdx
-    ) internal onlyRelayer {
+    ) external onlyRelayer {
         require(_amount >= finalizationFee, "Amount must cover finalization fee");
         uint256 amountAfterFee = _amount - finalizationFee;
         _fund(amountAfterFee, _recipient);
