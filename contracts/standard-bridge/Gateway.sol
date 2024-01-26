@@ -61,7 +61,7 @@ abstract contract Gateway {
      * @param transferIdx Current index of this gateway.
      */
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 idx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
 
     /**
      * @dev Emitted when a transfer is finalized.
