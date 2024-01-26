@@ -46,7 +46,7 @@ abstract contract Gateway is Ownable {
         _;
     }
 
-    function _finalizeTransfer(address _recipient, uint256 _amount, uint256 _counterpartyIdx
+    function finalizeTransfer(address _recipient, uint256 _amount, uint256 _counterpartyIdx
     ) external onlyRelayer {
         require(_amount >= finalizationFee, "Amount must cover finalization fee");
         uint256 amountAfterFee = _amount - finalizationFee;

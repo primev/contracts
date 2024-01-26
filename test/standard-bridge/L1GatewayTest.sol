@@ -87,7 +87,7 @@ contract L1GatewayTest is Test {
 
         // Call function as relayer
         vm.prank(relayer);
-        l1Gateway._finalizeTransfer(bridgeUser, amount, counterpartyIdx);
+        l1Gateway.finalizeTransfer(bridgeUser, amount, counterpartyIdx);
 
         // Finalization fee is 0.1 ether
         assertEq(address(l1Gateway).balance, 1 ether);
@@ -101,7 +101,7 @@ contract L1GatewayTest is Test {
         vm.deal(address(l1Gateway), 1 ether);
         vm.expectRevert("Only relayer can call this function");
         vm.prank(bridgeUser);
-        l1Gateway._finalizeTransfer(address(0x101), amount, 1);
+        l1Gateway.finalizeTransfer(address(0x101), amount, 1);
     }
 
     // This scenario shouldn't be possible since initiateTransfer() should have prevented it.
@@ -110,6 +110,6 @@ contract L1GatewayTest is Test {
         vm.deal(address(l1Gateway), 1 ether);
         vm.expectRevert("Amount must cover finalization fee");
         vm.prank(relayer);
-        l1Gateway._finalizeTransfer(address(0x101), amount, 1);
+        l1Gateway.finalizeTransfer(address(0x101), amount, 1);
     }
 }
