@@ -30,11 +30,6 @@ abstract contract Gateway is Ownable {
         _transferOwnership(_owner);
     }
 
-    modifier onlyRelayer() {
-        require(msg.sender == relayer, "Only relayer can call this function");
-        _;
-    }
-
     function initiateTransfer(address _recipient, uint256 _amount
     ) external payable returns (uint256 returnIdx) {
         require(_amount >= counterpartyFee, "Amount must cover counterpartys finalization fee");
@@ -45,6 +40,11 @@ abstract contract Gateway is Ownable {
     }
     // @dev where _decrementMsgSender is implemented by inheriting contract.
     function _decrementMsgSender(uint256 _amount) internal virtual;
+
+    modifier onlyRelayer() {
+        require(msg.sender == relayer, "Only relayer can call this function");
+        _;
+    }
 
     function _finalizeTransfer(address _recipient, uint256 _amount, uint256 _counterpartyIdx
     ) external onlyRelayer {

@@ -54,48 +54,62 @@ contract L1GatewayTest is Test {
         assertEq(returnedIdx, 1);
     }
 
+    function TestAmountTooSmallForCounterpartyFee() public {
+        vm.deal(bridgeUser, 100 ether);
+        vm.deal(address(l1Gateway), 1 ether);
+        assertEq(address(bridgeUser).balance, 100 ether);
+        vm.expectRevert("Amount must cover counterpartys finalization fee");
+        vm.prank(bridgeUser);
+        l1Gateway.initiateTransfer{value: 0.04 ether}(bridgeUser, 0.04 ether);
+    }
 
-    // function test_Fund() public {
-    //     uint256 amount = 7 ether;
-    //     address thisContract = address(this);
+    event TransferFinalized(
+        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
 
-    //     l1Gateway._fund(amount, toFund){value: amount};
-    //     assertEq(address(toFund).balance, amount);
-    // }
+    function test_FinalizeTransfer() public {
+        // These values are trusted from relayer
+        uint256 amount = 4 ether;
+        uint256 counterpartyIdx = 1;
 
-    // function test_RevertOnInsufficientBalanceForFund() public {
-    //     uint256 amount = 1 ether;
-    //     address toFund = address(this);
+        // Fund gateway and relayer
+        vm.deal(address(l1Gateway), 5 ether);
+        vm.deal(relayer, 5 ether);
 
-    //     vm.expectRevert("Insufficient contract balance");
-    //     l1Gateway._fund(amount, toFund);
-    // }
+        // Initial assertions
+        assertEq(address(l1Gateway).balance, 5 ether);
+        assertEq(relayer.balance, 5 ether);
+        assertEq(bridgeUser.balance, 0 ether);
+        assertEq(l1Gateway.transferIdx(), 0);
 
-    // function test_RevertOnIncorrectEtherValueSent() public {
-    //     uint256 amount = 1 ether;
-        
-    //     vm.expectRevert("Incorrect Ether value sent");
-    //     l1Gateway._decrementMsgSender(amount);
-    // }
+        // Set up expectation for event
+        vm.expectEmit(true, true, true, true);
+        emit TransferFinalized(bridgeUser, amount, counterpartyIdx);
 
-    // function test_OnlyRelayerCanFinalizeTransfer() public {
-    //     address recipient = address(0x3);
-    //     uint256 amount = 2 ether; // includes finalization fee
-    //     uint256 counterpartyIdx = 1;
+        // Call function as relayer
+        vm.prank(relayer);
+        l1Gateway._finalizeTransfer(bridgeUser, amount, counterpartyIdx);
 
-    //     vm.prank(relayer);
-    //     l1Gateway._finalizeTransfer(recipient, amount, counterpartyIdx);
-    //     // Check balances and logs to ensure transfer was finalized
-    // }
+        // Finalization fee is 0.1 ether
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(relayer.balance, 5.1 ether);
+        assertEq(bridgeUser.balance, 3.9 ether);
+        assertEq(l1Gateway.transferIdx(), 0);
+    }
 
-    // function test_RevertIfNotRelayerFinalizesTransfer() public {
-    //     address recipient = address(0x3);
-    //     uint256 amount = 2 ether;
-    //     uint256 counterpartyIdx = 1;
+    function test_OnlyRelayerCanCallFinalizeTransfer() public {
+        uint256 amount = 0.1 ether;
+        vm.deal(address(l1Gateway), 1 ether);
+        vm.expectRevert("Only relayer can call this function");
+        vm.prank(bridgeUser);
+        l1Gateway._finalizeTransfer(address(0x101), amount, 1);
+    }
 
-    //     vm.expectRevert("Only relayer can call this function");
-    //     l1Gateway._finalizeTransfer(recipient, amount, counterpartyIdx);
-    // }
-
-    // receive() external payable {}
+    // This scenario shouldn't be possible since initiateTransfer() should have prevented it.
+    function test_AmountTooSmallForFinalizationFee() public {
+        uint256 amount = 0.09 ether;
+        vm.deal(address(l1Gateway), 1 ether);
+        vm.expectRevert("Amount must cover finalization fee");
+        vm.prank(relayer);
+        l1Gateway._finalizeTransfer(address(0x101), amount, 1);
+    }
 }
