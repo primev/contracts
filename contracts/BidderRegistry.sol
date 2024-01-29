@@ -37,6 +37,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Mapping from bidder addresses to their prepayed amount
     mapping(address => uint256) public bidderPrepaidBalances;
 
+    /// @dev Mapping from bidder addresses to their locked amount based on bidID (commitmentDigest)
+    mapping(bytes32 => BidState) public BidPayment;
+
     /// @dev Amount assigned to bidders
     mapping(address => uint256) public providerAmount;
 
@@ -140,6 +143,17 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         return bidderPrepaidBalances[bidder];
     }
 
+    function IdempotentBidFundsMovement(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
+        BidState memory bidState = BidPayment[commitmentDigest];
+        if (bidState.state == State.UnPreConfirmed) {
+            BidPayment[commitmentDigest] = BidState({
+                bidAmt: bid,
+                state: State.PreConfirmed
+            });
+            bidderPrepaidBalances[bidder] -= bidState.bidAmt;
+        }
+    }
+
     /**
      * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
@@ -196,7 +210,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         feeRecipientAmount = 0;
         require(amount > 0, "fee recipient amount Amount is zero");
         (bool successFee, ) = feeRecipient.call{value: amount}("");
-        require(successFee, "Couldn't transfer to fee Recipient");
+        require(successFee, "couldn't transfer to fee Recipient");
     }
 
     function withdrawProviderAmount(
@@ -207,17 +221,17 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         require(amount > 0, "provider Amount is zero");
         (bool success, ) = provider.call{value: amount}("");
-        require(success, "Couldn't transfer to provider");
+        require(success, "couldn't transfer to provider");
     }
 
     function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
         uint256 prepaidAmount = bidderPrepaidBalances[bidder];
         bidderPrepaidBalances[bidder] = 0;
-        require(msg.sender == bidder, "Only bidder can unprepay");
-        require(prepaidAmount > 0, "Provider Prepayd Amount is zero");
+        require(msg.sender == bidder, "only bidder can unprepay");
+        require(prepaidAmount > 0, "provider Prepayd Amount is zero");
 
         (bool success, ) = bidder.call{value: prepaidAmount}("");
-        require(success, "Couldn't transfer prepay to bidder");
+        require(success, "couldn't transfer prepay to bidder");
     }
 
     function withdrawProtocolFee(
@@ -225,9 +239,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     ) external onlyOwner nonReentrant {
         uint256 _protocolFeeAmount = protocolFeeAmount;
         protocolFeeAmount = 0;
-        require(_protocolFeeAmount > 0, "In sufficient protocol fee amount");
+        require(_protocolFeeAmount > 0, "insufficient protocol fee amount");
 
         (bool success, ) = bidder.call{value: _protocolFeeAmount}("");
-        require(success, "Couldn't transfer prepay to bidder");
+        require(success, "couldn't transfer prepay to bidder");
     }
 }

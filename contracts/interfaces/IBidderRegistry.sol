@@ -12,8 +12,22 @@ interface IBidderRegistry {
         string commitmentSignature;
     }
 
+
+    struct BidState {
+        uint64 bidAmt;
+        State state;
+    }
+
+    enum State {
+        UnPreConfirmed,
+        PreConfirmed,
+        Withdrawn
+    }
+
     function prepay() external payable;
 
+    function IdempotentBidFundsMovement(bytes32 commitmentDigest, uint64 bid, address bidder) external;
+    
     function getAllowance(address bidder) external view returns (uint256);
 
     function retrieveFunds(
