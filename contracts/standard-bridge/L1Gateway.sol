@@ -10,7 +10,7 @@ contract L1Gateway is Gateway {
 
     function _decrementMsgSender(uint256 _amount) internal override {
         require(msg.value == _amount, "Incorrect Ether value sent");
-        // Ether is automatically escrowed in the contract balance
+        // Wrapping function initiateTransfer is payable. Ether is escrowed in contract balance
     }
 
     function _fund(uint256 _amount, address _toFund) internal override {
@@ -18,7 +18,6 @@ contract L1Gateway is Gateway {
         payable(_toFund).transfer(_amount);
     }
 
-    // TODO: test functionality
     receive() external payable {}
 }
 
