@@ -15,11 +15,11 @@ abstract contract Gateway is Ownable {
     // @dev Address of relayer account. 
     address public immutable relayer;
 
-    // @dev Flat fee paid to relayer on destination chain upon transfer finalization.
+    // @dev Flat fee (wei) paid to relayer on destination chain upon transfer finalization.
     // This must be greater than what relayer will pay per tx.
     uint256 public immutable finalizationFee;
 
-    // The counterparty's finalization fee, included for UX purposes
+    // The counterparty's finalization fee (wei), included for UX purposes
     uint256 public immutable counterpartyFee;
 
     constructor(address _owner, address _relayer, 
@@ -61,7 +61,7 @@ abstract contract Gateway is Ownable {
      * @dev Emitted when a cross chain transfer is initiated.
      * @param sender Address initiating the transfer. Indexed for efficient filtering.
      * @param recipient Address receiving the tokens. Indexed for efficient filtering.
-     * @param amount Ether being transferred.
+     * @param amount Ether being transferred in wei.
      * @param transferIdx Current index of this gateway.
      */
     event TransferInitiated(
@@ -70,7 +70,7 @@ abstract contract Gateway is Ownable {
     /**
      * @dev Emitted when a transfer is finalized.
      * @param recipient Address receiving the tokens. Indexed for efficient filtering.
-     * @param amount Ether being transferred.
+     * @param amount Ether being transferred in wei.
      * @param counterpartyIdx Index of counterpary gateway when transfer was initiated.
      */
     event TransferFinalized(
