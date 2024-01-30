@@ -47,7 +47,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
-    event FundsRetrieved(address indexed bidder, uint256 amount);
+    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 amount);
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -150,29 +150,24 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
                 bidAmt: bid,
                 state: State.PreConfirmed
             });
-            bidderPrepaidBalances[bidder] -= bidState.bidAmt;
+            bidderPrepaidBalances[bidder] -= bid;
         }
     }
 
     /**
      * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
-     * @param bidder The address of the bidder.
-     * @param amt The amount to retrieve from the bidder's prepay.
+     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and prepayment
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
-        address bidder,
-        uint256 amt,
+        bytes32 commitmentDigest,
         address payable provider
     ) external nonReentrant onlyPreConfirmationEngine {
-        uint256 amount = bidderPrepaidBalances[bidder];
-        require(
-            amount >= amt,
-            "Amount to retrieve bigger than available funds"
-        );
-        bidderPrepaidBalances[bidder] -= amt;
 
+        BidState memory bidState = BidPayment[commitmentDigest];
+        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+        uint256 amt = bidState.bidAmt;
         uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
         uint256 amtMinusFee = amt - feeAmt;
 
@@ -184,7 +179,11 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         providerAmount[provider] += amtMinusFee;
 
-        emit FundsRetrieved(bidder, amount);
+        // TODO(@ckartik): Ensure we throughly test this flow
+        BidPayment[commitmentDigest].state = State.Withdrawn;
+        BidPayment[commitmentDigest].bidAmt = 0;
+
+        emit FundsRetrieved(commitmentDigest, amt);
     }
 
     /**

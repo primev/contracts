@@ -120,6 +120,12 @@ contract Oracle is Ownable {
     }
 
     /**
+     */
+    function returnFunds(bytes32 bidID) external onlyOwner {
+        // Bidder registery.returnFunds(bidID);
+    }
+
+    /**
      * @dev Internal function to process a commitment, either slashing or rewarding based on the commitment's state.
      * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.

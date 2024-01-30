@@ -27,12 +27,11 @@ interface IBidderRegistry {
     function prepay() external payable;
 
     function IdempotentBidFundsMovement(bytes32 commitmentDigest, uint64 bid, address bidder) external;
-    
+
     function getAllowance(address bidder) external view returns (uint256);
 
     function retrieveFunds(
-        address bidder,
-        uint256 amt,
+        bytes32 commitmentDigest,
         address payable provider
     ) external;
 }

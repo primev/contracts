@@ -407,6 +407,12 @@ contract PreConfCommitmentStore is Ownable {
             commitment.commiter,
             payable(commitment.bidder)
         );
+
+        // Return funds to bidder
+        bidderRegistry.retrieveFunds(
+            commitment.commitmentHash,
+            payable(commitment.bidder)
+        );
     }
 
     /**
@@ -425,8 +431,7 @@ contract PreConfCommitmentStore is Ownable {
         commitmentsCount[commitment.commiter] -= 1;
 
         bidderRegistry.retrieveFunds(
-            commitment.bidder,
-            commitment.bid,
+            commitment.commitmentHash,
             payable(commitment.commiter)
         );
     }
