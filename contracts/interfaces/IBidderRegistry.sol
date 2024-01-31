@@ -14,6 +14,7 @@ interface IBidderRegistry {
 
 
     struct BidState {
+        address bidder;
         uint64 bidAmt;
         State state;
     }
@@ -34,4 +35,6 @@ interface IBidderRegistry {
         bytes32 commitmentDigest,
         address payable provider
     ) external;
+
+    function returnFunds(bytes32 bidID) external;
 }

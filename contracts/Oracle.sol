@@ -5,6 +5,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IPreConfCommitmentStore} from './interfaces/IPreConfirmations.sol';
+import {IBidderRegistry} from './interfaces/IBidderRegistry.sol';
+
 
 /// @title Oracle Contract
 /// @author Kartik Chopra
@@ -44,6 +46,8 @@ contract Oracle is Ownable {
     /// @dev Reference to the PreConfCommitmentStore contract interface.
     IPreConfCommitmentStore private preConfContract;
 
+    IBidderRegistry private bidderRegistry;
+
     /**
      * @dev Constructor to initialize the contract with a PreConfirmations contract.
      * @param _preConfContract The address of the pre-confirmations contract.
@@ -52,10 +56,12 @@ contract Oracle is Ownable {
      */
     constructor(
         address _preConfContract,
+        address _bidderRegistry,
         uint256 _nextRequestedBlockNumber,
         address _owner
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
+        bidderRegistry = IBidderRegistry(_bidderRegistry);
         nextRequestedBlockNumber = _nextRequestedBlockNumber;
         _transferOwnership(_owner);
     }
@@ -122,7 +128,7 @@ contract Oracle is Ownable {
     /**
      */
     function returnFunds(bytes32 bidID) external onlyOwner {
-        // Bidder registery.returnFunds(bidID);
+        bidderRegistry.returnFunds(bidID);
     }
 
     /**

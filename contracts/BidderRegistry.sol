@@ -148,7 +148,8 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         if (bidState.state == State.UnPreConfirmed) {
             BidPayment[commitmentDigest] = BidState({
                 bidAmt: bid,
-                state: State.PreConfirmed
+                state: State.PreConfirmed,
+                bidder: bidder
             });
             bidderPrepaidBalances[bidder] -= bid;
         }
@@ -184,6 +185,24 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         BidPayment[commitmentDigest].bidAmt = 0;
 
         emit FundsRetrieved(commitmentDigest, amt);
+    }
+
+    /**
+     * @dev Return funds to a bidder's prepay (only callable by the pre-confirmations contract).
+     * @dev reenterancy not necessary but still putting here for precaution
+     * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
+     */
+    function returnFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
+        BidState memory bidState = BidPayment[bidID];
+        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+        uint256 amt = bidState.bidAmt;
+        bidderPrepaidBalances[bidState.bidder] += amt;
+
+
+        BidPayment[bidID].state = State.Withdrawn;
+        BidPayment[bidID].bidAmt = 0;
+
+        emit FundsRetrieved(bidID, amt);
     }
 
     /**
