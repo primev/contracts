@@ -332,7 +332,7 @@ contract PreConfCommitmentStore is Ownable {
             commitmentsCount[commiterAddress] += 1;
 
             // Check if Bid has bid-amt stored
-            bidderRegistry.IdempotentBidFundsMovement(commitmentDigest, bid, bidderAddress);
+            bidderRegistry.LockBidFunds(commitmentDigest, bid, bidderAddress);
 
         }
 
@@ -408,7 +408,7 @@ contract PreConfCommitmentStore is Ownable {
             payable(commitment.bidder)
         );
 
-        bidderRegistry.returnFunds(commitment.commitmentHash);
+        bidderRegistry.unlockFunds(commitment.commitmentHash);
     }
 
     /**

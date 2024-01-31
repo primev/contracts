@@ -27,7 +27,7 @@ interface IBidderRegistry {
 
     function prepay() external payable;
 
-    function IdempotentBidFundsMovement(bytes32 commitmentDigest, uint64 bid, address bidder) external;
+    function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external;
 
     function getAllowance(address bidder) external view returns (uint256);
 
@@ -36,5 +36,5 @@ interface IBidderRegistry {
         address payable provider
     ) external;
 
-    function returnFunds(bytes32 bidID) external;
+    function unlockFunds(bytes32 bidID) external;
 }

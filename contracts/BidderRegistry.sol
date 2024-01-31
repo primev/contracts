@@ -143,7 +143,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         return bidderPrepaidBalances[bidder];
     }
 
-    function IdempotentBidFundsMovement(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
+    function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
         BidState memory bidState = BidPayment[commitmentDigest];
         if (bidState.state == State.UnPreConfirmed) {
             BidPayment[commitmentDigest] = BidState({
@@ -192,7 +192,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @dev reenterancy not necessary but still putting here for precaution
      * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
      */
-    function returnFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
+    function unlockFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
         BidState memory bidState = BidPayment[bidID];
         require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
         uint256 amt = bidState.bidAmt;
