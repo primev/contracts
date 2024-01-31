@@ -126,6 +126,8 @@ contract Oracle is Ownable {
     }
 
     /**
+        * @dev unlocks funds to the bidders assosciated with BidIDs in the input array.
+        * @param bidIDs The array of BidIDs to unlock funds for.
      */
     function unlockFunds(bytes32[] memory bidIDs) external onlyOwner {
         for (uint256 i = 0; i < bidIDs.length; i++) {
