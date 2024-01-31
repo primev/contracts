@@ -42,6 +42,8 @@ contract TestPreConfCommitmentStore is Test {
             feeRecipient, // Oracle
             address(this) // Owner
         );
+
+        bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
     }
 
     function test_Initialize() public {
@@ -431,9 +433,6 @@ contract TestPreConfCommitmentStore is Test {
                 commitmentSignature
             );
 
-            bidderRegistry.setPreconfirmationsContract(
-                address(preConfCommitmentStore)
-            );
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();

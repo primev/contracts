@@ -37,6 +37,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Mapping from bidder addresses to their prepayed amount
     mapping(address => uint256) public bidderPrepaidBalances;
 
+    /// @dev Mapping from bidder addresses to their locked amount based on bidID (commitmentDigest)
+    mapping(bytes32 => BidState) public BidPayment;
+
     /// @dev Amount assigned to bidders
     mapping(address => uint256) public providerAmount;
 
@@ -44,7 +47,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
-    event FundsRetrieved(address indexed bidder, uint256 amount);
+    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 amount);
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -140,25 +143,32 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         return bidderPrepaidBalances[bidder];
     }
 
+    function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
+        BidState memory bidState = BidPayment[commitmentDigest];
+        if (bidState.state == State.Undefined) {
+            BidPayment[commitmentDigest] = BidState({
+                bidAmt: bid,
+                state: State.PreConfirmed,
+                bidder: bidder
+            });
+            bidderPrepaidBalances[bidder] -= bid;
+        }
+    }
+
     /**
      * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
-     * @param bidder The address of the bidder.
-     * @param amt The amount to retrieve from the bidder's prepay.
+     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and prepayment
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
-        address bidder,
-        uint256 amt,
+        bytes32 commitmentDigest,
         address payable provider
     ) external nonReentrant onlyPreConfirmationEngine {
-        uint256 amount = bidderPrepaidBalances[bidder];
-        require(
-            amount >= amt,
-            "Amount to retrieve bigger than available funds"
-        );
-        bidderPrepaidBalances[bidder] -= amt;
 
+        BidState memory bidState = BidPayment[commitmentDigest];
+        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+        uint256 amt = bidState.bidAmt;
         uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
         uint256 amtMinusFee = amt - feeAmt;
 
@@ -170,7 +180,29 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         providerAmount[provider] += amtMinusFee;
 
-        emit FundsRetrieved(bidder, amount);
+        // TODO(@ckartik): Ensure we throughly test this flow
+        BidPayment[commitmentDigest].state = State.Withdrawn;
+        BidPayment[commitmentDigest].bidAmt = 0;
+
+        emit FundsRetrieved(commitmentDigest, amt);
+    }
+
+    /**
+     * @dev Return funds to a bidder's prepay (only callable by the pre-confirmations contract).
+     * @dev reenterancy not necessary but still putting here for precaution
+     * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
+     */
+    function unlockFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
+        BidState memory bidState = BidPayment[bidID];
+        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+        uint256 amt = bidState.bidAmt;
+        bidderPrepaidBalances[bidState.bidder] += amt;
+
+
+        BidPayment[bidID].state = State.Withdrawn;
+        BidPayment[bidID].bidAmt = 0;
+
+        emit FundsRetrieved(bidID, amt);
     }
 
     /**
@@ -196,7 +228,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         feeRecipientAmount = 0;
         require(amount > 0, "fee recipient amount Amount is zero");
         (bool successFee, ) = feeRecipient.call{value: amount}("");
-        require(successFee, "Couldn't transfer to fee Recipient");
+        require(successFee, "couldn't transfer to fee Recipient");
     }
 
     function withdrawProviderAmount(
@@ -207,17 +239,17 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         require(amount > 0, "provider Amount is zero");
         (bool success, ) = provider.call{value: amount}("");
-        require(success, "Couldn't transfer to provider");
+        require(success, "couldn't transfer to provider");
     }
 
     function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
         uint256 prepaidAmount = bidderPrepaidBalances[bidder];
         bidderPrepaidBalances[bidder] = 0;
-        require(msg.sender == bidder, "Only bidder can unprepay");
-        require(prepaidAmount > 0, "Provider Prepayd Amount is zero");
+        require(msg.sender == bidder, "only bidder can unprepay");
+        require(prepaidAmount > 0, "bidder prepaid Amount is zero");
 
         (bool success, ) = bidder.call{value: prepaidAmount}("");
-        require(success, "Couldn't transfer prepay to bidder");
+        require(success, "couldn't transfer prepay to bidder");
     }
 
     function withdrawProtocolFee(
@@ -225,9 +257,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     ) external onlyOwner nonReentrant {
         uint256 _protocolFeeAmount = protocolFeeAmount;
         protocolFeeAmount = 0;
-        require(_protocolFeeAmount > 0, "In sufficient protocol fee amount");
+        require(_protocolFeeAmount > 0, "insufficient protocol fee amount");
 
         (bool success, ) = bidder.call{value: _protocolFeeAmount}("");
-        require(success, "Couldn't transfer prepay to bidder");
+        require(success, "couldn't transfer prepay to bidder");
     }
 }

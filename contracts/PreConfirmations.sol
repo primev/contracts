@@ -294,7 +294,7 @@ contract PreConfCommitmentStore is Ownable {
         );
         // This helps in avoiding stack too deep
         {
-            bytes32 preConfHash = getPreConfHash(
+            bytes32 commitmentDigest = getPreConfHash(
                 txnHash,
                 bid,
                 blockNumber,
@@ -302,7 +302,7 @@ contract PreConfCommitmentStore is Ownable {
                 _bytesToHexString(bidSignature)
             );
 
-            address commiterAddress = preConfHash.recover(commitmentSignature);
+            address commiterAddress = commitmentDigest.recover(commitmentSignature);
 
             require(stake > (10 * bid), "Stake too low");
 
@@ -314,13 +314,12 @@ contract PreConfCommitmentStore is Ownable {
                 blockNumber,
                 bHash,
                 txnHash,
-                preConfHash,
+                commitmentDigest,
                 bidSignature,
                 commitmentSignature
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);
-
 
             // Store commitment
             commitments[commitmentIndex] = newCommitment;
@@ -331,6 +330,10 @@ contract PreConfCommitmentStore is Ownable {
             
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
+
+            // Check if Bid has bid-amt stored
+            bidderRegistry.LockBidFunds(commitmentDigest, bid, bidderAddress);
+
         }
 
         return commitmentIndex;
@@ -404,6 +407,8 @@ contract PreConfCommitmentStore is Ownable {
             commitment.commiter,
             payable(commitment.bidder)
         );
+
+        bidderRegistry.unlockFunds(commitment.commitmentHash);
     }
 
     /**
@@ -422,8 +427,7 @@ contract PreConfCommitmentStore is Ownable {
         commitmentsCount[commitment.commiter] -= 1;
 
         bidderRegistry.retrieveFunds(
-            commitment.bidder,
-            commitment.bid,
+            commitment.commitmentHash,
             payable(commitment.commiter)
         );
     }
