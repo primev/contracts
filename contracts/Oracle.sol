@@ -127,8 +127,10 @@ contract Oracle is Ownable {
 
     /**
      */
-    function returnFunds(bytes32 bidID) external onlyOwner {
-        bidderRegistry.returnFunds(bidID);
+    function returnFunds(bytes32[] memory bidIDs) external onlyOwner {
+        for (uint256 i = 0; i < bidIDs.length; i++) {
+            bidderRegistry.returnFunds(bidIDs[i]);
+        }
     }
 
     /**
