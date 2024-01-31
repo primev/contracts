@@ -20,7 +20,7 @@ interface IBidderRegistry {
     }
 
     enum State {
-        UnPreConfirmed,
+        Undefined,
         PreConfirmed,
         Withdrawn
     }

@@ -145,7 +145,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
         BidState memory bidState = BidPayment[commitmentDigest];
-        if (bidState.state == State.UnPreConfirmed) {
+        if (bidState.state == State.Undefined) {
             BidPayment[commitmentDigest] = BidState({
                 bidAmt: bid,
                 state: State.PreConfirmed,
