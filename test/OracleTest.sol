@@ -26,6 +26,7 @@ contract OracleTest is Test {
     event BlockDataRequested(uint256 blockNumber);
     event BlockDataReceived(string[] txnList, uint256 blockNumber, string blockBuilderName);
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
+    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 amount);
 
     function setUp() public {
         testNumber = 2;
@@ -54,7 +55,7 @@ contract OracleTest is Test {
         vm.startPrank(ownerInstance);
         bidderRegistry.prepay{value: 2 ether}();
         
-        oracle = new Oracle(address(preConfCommitmentStore), address(bidderRegistry), 2, ownerInstance);
+        oracle = new Oracle(address(preConfCommitmentStore), 2, ownerInstance);
         oracle.addBuilderAddress("mev builder", ownerInstance);
         vm.stopPrank();
 
@@ -292,10 +293,13 @@ contract OracleTest is Test {
         vm.stopPrank();
 
         bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, bidderPk, providerPk);
+        assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - bid);
         bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, bidderPk, providerPk);
+        assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 2*bid);
         bytes32 index3 = constructAndStoreCommitment(bid, blockNumber, txn3, bidderPk, providerPk);
+        assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 3*bid);
         bytes32 index4 = constructAndStoreCommitment(bid, blockNumber, txn4, bidderPk, providerPk);
-
+        assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 4*bid);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
@@ -316,6 +320,41 @@ contract OracleTest is Test {
         assertEq(providerRegistry.checkStake(provider), 250 ether);
         assertEq(bidderRegistry.getProviderAmount(provider), 4*bid);
     }
+
+
+    function test_process_commitment_and_return() public {
+        string memory txn = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
+        uint64 blockNumber = 200;
+        uint64 bid = 2;
+        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
+
+        vm.deal(bidder, 200000 ether);
+        vm.startPrank(bidder);
+        bidderRegistry.prepay{value: 250 ether }();
+        vm.stopPrank();
+
+        vm.deal(provider, 200000 ether);
+        vm.startPrank(provider);
+        providerRegistry.registerAndStake{value: 250 ether}();
+        vm.stopPrank();
+
+        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, bidderPk, providerPk);
+        PreConfCommitmentStore.PreConfCommitment memory commitment = preConfCommitmentStore.getCommitment(index);
+
+        vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
+        bytes32[] memory commitments = new bytes32[](1);
+        commitments[0] = commitment.commitmentHash;
+
+        vm.expectEmit(true, false, false, true);
+        emit FundsRetrieved(commitment.commitmentHash, bid);
+        oracle.unlockFunds(commitments);
+        
+        
+        assertEq(providerRegistry.checkStake(provider) , 250 ether);
+        assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether);
+    }
+
 
     /**
     constructAndStoreCommitment is a helper function to construct and store a commitment

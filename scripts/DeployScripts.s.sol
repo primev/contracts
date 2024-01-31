@@ -63,7 +63,7 @@ contract DeployScript is Script, Create2Deployer {
         bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("BidderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
-        Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), address(bidderRegistry), nextRequestedBlockNumber, msg.sender);
+        Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);
         console.log("Oracle deployed to:", address(oracle));
 
         preConfCommitmentStore.updateOracle(address(oracle));

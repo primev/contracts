@@ -46,7 +46,6 @@ contract Oracle is Ownable {
     /// @dev Reference to the PreConfCommitmentStore contract interface.
     IPreConfCommitmentStore private preConfContract;
 
-    IBidderRegistry private bidderRegistry;
 
     /**
      * @dev Constructor to initialize the contract with a PreConfirmations contract.
@@ -56,12 +55,10 @@ contract Oracle is Ownable {
      */
     constructor(
         address _preConfContract,
-        address _bidderRegistry,
         uint256 _nextRequestedBlockNumber,
         address _owner
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
-        bidderRegistry = IBidderRegistry(_bidderRegistry);
         nextRequestedBlockNumber = _nextRequestedBlockNumber;
         _transferOwnership(_owner);
     }
@@ -131,7 +128,7 @@ contract Oracle is Ownable {
      */
     function unlockFunds(bytes32[] memory bidIDs) external onlyOwner {
         for (uint256 i = 0; i < bidIDs.length; i++) {
-            bidderRegistry.unlockFunds(bidIDs[i]);
+            preConfContract.unlockBidFunds(bidIDs[i]);
         }
     }
 
