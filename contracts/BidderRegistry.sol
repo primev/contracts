@@ -246,7 +246,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         uint256 prepaidAmount = bidderPrepaidBalances[bidder];
         bidderPrepaidBalances[bidder] = 0;
         require(msg.sender == bidder, "only bidder can unprepay");
-        require(prepaidAmount > 0, "provider Prepayd Amount is zero");
+        require(prepaidAmount > 0, "bidder prepaid Amount is zero");
 
         (bool success, ) = bidder.call{value: prepaidAmount}("");
         require(success, "couldn't transfer prepay to bidder");
