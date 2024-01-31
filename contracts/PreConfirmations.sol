@@ -99,7 +99,7 @@ contract PreConfCommitmentStore is Ownable {
      * @dev Makes sure transaction sender is oracle
      */
     modifier onlyOracle() {
-        require(msg.sender == oracle, "Only the oracle can call this function");
+        require(msg.sender == oracle, "only the oracle can call this function");
         _;
     }
 
@@ -222,7 +222,7 @@ contract PreConfCommitmentStore is Ownable {
         messageDigest = getBidHash(txnHash, bid, blockNumber);
         recoveredAddress = messageDigest.recover(bidSignature);
         stake = bidderRegistry.getAllowance(recoveredAddress);
-        require(stake > (10 * bid), "Invalid bid");
+        require(stake > (10 * bid), "invalid bid");
     }
 
     /**
@@ -286,7 +286,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes calldata bidSignature,
         bytes memory commitmentSignature
     ) public returns (bytes32 commitmentIndex) {
-        (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
+        (bytes32 bHash, address bidderAddress, uint256 allowance) = verifyBid(
             bid,
             blockNumber,
             txnHash,
@@ -294,6 +294,8 @@ contract PreConfCommitmentStore is Ownable {
         );
         // This helps in avoiding stack too deep
         {
+            require(allowance > (10 * bid), "prepaid allowance too low from bidder");
+
             bytes32 preConfHash = getPreConfHash(
                 txnHash,
                 bid,
@@ -303,8 +305,8 @@ contract PreConfCommitmentStore is Ownable {
             );
 
             address commiterAddress = preConfHash.recover(commitmentSignature);
-
-            require(stake > (10 * bid), "Stake too low");
+            uint256 providerStake = providerRegistry.checkStake(commiterAddress);
+            require(providerStake > (10*bid), "provider stake is not sufficent to cover the bid.");
 
             PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,

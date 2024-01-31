@@ -113,8 +113,8 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
      * @dev Register and stake function for providers.
      */
     function registerAndStake() public payable {
-        require(!providerRegistered[msg.sender], "Provider already registered");
-        require(msg.value >= minStake, "Insufficient stake");
+        require(!providerRegistered[msg.sender], "provider already registered");
+        require(msg.value >= minStake, "insufficient stake");
 
         providerStakes[msg.sender] = msg.value;
         providerRegistered[msg.sender] = true;
@@ -135,7 +135,7 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
      * @dev Deposit more funds into the provider's stake.
      */
     function depositFunds() external payable {
-        require(providerRegistered[msg.sender], "Provider not registered");
+        require(providerRegistered[msg.sender], "provider not registered");
         providerStakes[msg.sender] += msg.value;
         emit FundsDeposited(msg.sender, msg.value);
     }
@@ -188,28 +188,28 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     function withdrawFeeRecipientAmount() external nonReentrant {
         feeRecipientAmount = 0;
         (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
-        require(successFee, "Couldn't transfer to fee Recipient");
+        require(successFee, "couldn't transfer to fee Recipient");
     }
 
     function withdrawBidderAmount(address bidder) external nonReentrant {
-        require(bidderAmount[bidder] > 0, "Bidder Amount is zero");
+        require(bidderAmount[bidder] > 0, "bidder Amount is zero");
 
         bidderAmount[bidder] = 0;
 
         (bool success, ) = bidder.call{value: bidderAmount[bidder]}("");
-        require(success, "Couldn't transfer to bidder");
+        require(success, "couldn't transfer to bidder");
     }
 
     function withdrawStakedAmount(
         address payable provider
     ) external nonReentrant {
-        require(msg.sender == provider, "Only provider can unstake");
+        require(msg.sender == provider, "only provider can unstake");
         uint256 stake = providerStakes[provider];
         providerStakes[provider] = 0;
-        require(stake > 0, "Provider Staked Amount is zero");
+        require(stake > 0, "provider Staked Amount is zero");
         require(
             preConfirmationsContract != address(0),
-            "Pre Confirmations Contract not set"
+            "preConfirmations Contract not set"
         );
 
         uint256 providerPendingCommitmentsCount = PreConfCommitmentStore(
@@ -222,6 +222,6 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         );
 
         (bool success, ) = provider.call{value: stake}("");
-        require(success, "Couldn't transfer stake to provider");
+        require(success, "couldn't transfer stake to provider");
     }
 }
