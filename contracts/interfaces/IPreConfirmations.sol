@@ -74,6 +74,8 @@ interface IPreConfCommitmentStore {
     function initiateSlash(bytes32 commitmentIndex) external;
 
     function initateReward(bytes32 commitmentIndex) external;
+    
+    function unlockBidFunds(bytes32 commitmentDigest) external;
 
     function updateOracle(address newOracle) external;
 

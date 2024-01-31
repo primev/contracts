@@ -412,6 +412,14 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
+        * @dev Initiate a return of funds for a bid that was not slashed.
+        * @param commitmentDigest The hash of the bid to be unlocked.
+     */
+     function unlockBidFunds(bytes32 commitmentDigest) public onlyOracle {
+        bidderRegistry.unlockFunds(commitmentDigest);
+     }
+
+    /**
      * @dev Initiate a reward for a commitment.
      * @param commitmentIndex The hash of the commitment to be rewarded.
      */
