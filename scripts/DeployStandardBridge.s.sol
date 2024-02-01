@@ -24,7 +24,7 @@ contract DeploySettlementGateway is Script, Create2Deployer {
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
-        address whitelistAddr = 0x5D1415C0973034d162F5FEcF19B50dA057057e29;
+        address whitelistAddr = 0x57508f0B0f3426758F1f3D63ad4935a7c9383620;
         address relayerAddr = vm.envAddress("RELAYER_ADDR");
 
         SettlementGateway gateway = new SettlementGateway{salt: salt}(
