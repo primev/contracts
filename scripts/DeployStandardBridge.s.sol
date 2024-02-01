@@ -9,7 +9,7 @@ contract DeploySettlementGateway is Script, Create2Deployer {
     function run() external {
 
         // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0xd7c994692d5ac39F1d3a4E653e576C346820F226;
+        address expectedAddr = 0x0D70A44c81a27f33a36C334bFEA8bBBD8A7d58AA;
         if (isContractDeployed(expectedAddr)) {
             console.log("Standard bridge gateway on settlement chain already deployed to:",
                 expectedAddr);
@@ -43,7 +43,7 @@ contract DeployL1Gateway is Script, Create2Deployer {
     function run() external {
 
         // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0xE3e28fFC8A90EE85db78815D22b33CbEe7E64A1d;
+        address expectedAddr = 0x38b7e046bd971B4123974Bc78DcB0D7C680d85d2;
         if (isContractDeployed(expectedAddr)) {
             console.log("Standard bridge gateway on l1 already deployed to:",
                 expectedAddr);
