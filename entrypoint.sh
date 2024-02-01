@@ -26,4 +26,20 @@ elif [ "$DEPLOY_TYPE" = "whitelist" ]; then
     fi
     echo "Deploying whitelist contract"
     HYP_ERC20_ADDR="$HYP_ERC20_ADDR" $FORGE_BIN_PATH script ${SCRIPT_PATH_PREFIX}DeployScripts.s.sol:DeployWhitelist --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv --use 0.8.23 $ROOT_OPTION
+
+elif [ "$DEPLOY_TYPE" = "settlement-gateway" ]; then
+    if [ -z "$RELAYER_ADDR" ]; then
+        echo "RELAYER_ADDR not specified"
+        exit 1
+    fi
+    echo "Deploying gateway contract on settlement chain"
+    RELAYER_ADDR="$RELAYER_ADDR" $FORGE_BIN_PATH script ${SCRIPT_PATH_PREFIX}DeployStandardBridge.s.sol:DeploySettlementGateway --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv --use 0.8.23 $ROOT_OPTION
+
+elif [ "$DEPLOY_TYPE" = "l1-gateway" ]; then
+    if [ -z "$RELAYER_ADDR" ]; then
+        echo "RELAYER_ADDR not specified"
+        exit 1
+    fi
+    echo "Deploying gateway contract on L1"
+    RELAYER_ADDR="$RELAYER_ADDR" $FORGE_BIN_PATH script ${SCRIPT_PATH_PREFIX}DeployStandardBridge.s.sol:DeployL1Gateway --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --chain-id $CHAIN_ID -vvvv --use 0.8.23 $ROOT_OPTION
 fi
