@@ -4,31 +4,12 @@ pragma solidity ^0.8.15;
 import "forge-std/Test.sol";
 import "../../contracts/standard-bridge/SettlementGateway.sol";
 import "../../contracts/interfaces/IWhitelist.sol";
-
-contract MockWhitelist is IWhitelist {
-    uint256 public mintIdx;
-    address public lastMintTo;
-    uint256 public lastMintAmount;
-
-    uint256 public burnIdx;
-    address public lastBurnFrom;
-    uint256 public lastBurnAmount;
-
-    function mint(address _to, uint256 _amount) external override {
-        ++mintIdx;
-    }
-
-    function burn(address _from, uint256 _amount) external override {
-        ++burnIdx;
-        lastBurnFrom = _from;
-        lastBurnAmount = _amount;
-    }
-}
+import "../../contracts/Whitelist.sol";
 
 contract SettlementGatewayTest is Test {
 
     SettlementGateway settlementGateway;
-    MockWhitelist mockWhitelist;
+    Whitelist whitelist;
 
     address owner;
     address relayer;
@@ -42,8 +23,10 @@ contract SettlementGatewayTest is Test {
         bridgeUser = address(0x101);
         finalizationFee = 0.05 ether;
         counterpartyFee = 0.1 ether;
-        mockWhitelist = new MockWhitelist();
-        settlementGateway = new SettlementGateway(address(mockWhitelist), owner, relayer, finalizationFee, counterpartyFee);
+        whitelist = new Whitelist(owner);
+        settlementGateway = new SettlementGateway(address(whitelist), owner, relayer, finalizationFee, counterpartyFee);
+        vm.prank(owner);
+        whitelist.addToWhitelist(address(settlementGateway));
     }
 
     function test_ConstructorSetsVariablesCorrectly() public {
@@ -52,7 +35,7 @@ contract SettlementGatewayTest is Test {
         assertEq(settlementGateway.relayer(), relayer);
         assertEq(settlementGateway.finalizationFee(), finalizationFee);
         assertEq(settlementGateway.counterpartyFee(), counterpartyFee);
-        assertEq(settlementGateway.whitelistAddr(), address(mockWhitelist));
+        assertEq(settlementGateway.whitelistAddr(), address(whitelist));
     }
 
     // Expected event signature emitted in initiateTransfer()
@@ -65,6 +48,8 @@ contract SettlementGatewayTest is Test {
 
         // Initial assertions
         assertEq(address(bridgeUser).balance, 100 ether);
+        assertEq(address(whitelist).balance, 0 ether);
+        assertEq(address(settlementGateway).balance, 0 ether);
         assertEq(settlementGateway.transferIdx(), 0);
 
         // Set up expectation for event
@@ -76,9 +61,9 @@ contract SettlementGatewayTest is Test {
         uint256 returnedIdx = settlementGateway.initiateTransfer{value: amount}(bridgeUser, amount);
 
         // Assertions after call
-        assertEq(mockWhitelist.burnIdx(), 1);
-        assertEq(mockWhitelist.lastBurnFrom(), bridgeUser);
-        assertEq(mockWhitelist.lastBurnAmount(), amount);
+        assertEq(address(bridgeUser).balance, 93 ether);
+        assertEq(address(whitelist).balance, 7 ether);
+        assertEq(address(settlementGateway).balance, 0 ether);
 
         assertEq(settlementGateway.transferIdx(), 1);
         assertEq(returnedIdx, 1); 
@@ -101,13 +86,14 @@ contract SettlementGatewayTest is Test {
         uint256 amount = 2 ether;
         uint256 counterpartyIdx = 8;
 
-        // Fund gateway and relayer
-        vm.deal(address(settlementGateway), 3 ether);
+        // Fund whitelist and relayer
+        vm.deal(address(whitelist), 3 ether);
         vm.deal(relayer, 3 ether);
 
         // Initial assertions
-        assertEq(address(settlementGateway).balance, 3 ether);
+        assertEq(address(whitelist).balance, 3 ether);
         assertEq(relayer.balance, 3 ether);
+        assertEq(address(settlementGateway).balance, 0 ether);
         assertEq(bridgeUser.balance, 0 ether);
         assertEq(settlementGateway.transferIdx(), 0);
 
@@ -119,7 +105,11 @@ contract SettlementGatewayTest is Test {
         vm.prank(relayer);
         settlementGateway.finalizeTransfer(bridgeUser, amount, counterpartyIdx);
 
-        assertEq(mockWhitelist.mintIdx(), 2);
+        // Final assertions
+        assertEq(address(whitelist).balance, 1 ether);
+        assertEq(relayer.balance, 3.05 ether);
+        assertEq(address(settlementGateway).balance, 0 ether);
+        assertEq(bridgeUser.balance, 1.95 ether);
         assertEq(settlementGateway.transferIdx(), 0);
     }
 

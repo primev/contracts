@@ -77,7 +77,7 @@ contract DeployScript is Script, Create2Deployer {
 contract DeployWhitelist is Script, Create2Deployer {
     function run() external {
 
-        address expectedWhiteListAddr = 0x5D1415C0973034d162F5FEcF19B50dA057057e29;
+        address expectedWhiteListAddr = 0x57508f0B0f3426758F1f3D63ad4935a7c9383620;
         if (isContractDeployed(expectedWhiteListAddr)) {
             console.log("Whitelist already deployed to:", expectedWhiteListAddr);
             return;
