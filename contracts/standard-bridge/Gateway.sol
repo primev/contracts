@@ -65,7 +65,7 @@ abstract contract Gateway is Ownable {
      * @param transferIdx Current index of this gateway.
      */
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 indexed transferIdx);
 
     /**
      * @dev Emitted when a transfer is finalized.
@@ -74,5 +74,5 @@ abstract contract Gateway is Ownable {
      * @param counterpartyIdx Index of counterpary gateway when transfer was initiated.
      */
     event TransferFinalized(
-        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
+        address indexed recipient, uint256 amount, uint256 indexed counterpartyIdx);
 }

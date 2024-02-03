@@ -30,7 +30,7 @@ contract L1GatewayTest is Test {
 
     // Expected event signature emitted in initiateTransfer()
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 indexed transferIdx);
 
     function test_InitiateTransfer() public {
         vm.deal(bridgeUser, 100 ether);
@@ -64,7 +64,7 @@ contract L1GatewayTest is Test {
     }
 
     event TransferFinalized(
-        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
+        address indexed recipient, uint256 amount, uint256 indexed counterpartyIdx);
 
     function test_FinalizeTransfer() public {
         // These values are trusted from relayer
@@ -94,6 +94,17 @@ contract L1GatewayTest is Test {
         assertEq(relayer.balance, 5.1 ether);
         assertEq(bridgeUser.balance, 3.9 ether);
         assertEq(l1Gateway.transferIdx(), 0);
+    }
+
+    // TODO: Look into why this error is not hit by standard bridge relayer.
+    // However this scenario shouldn't be possible if settlement genesis allocations are correct. 
+    function test_FinalizeTransferWithInsufficientContractBalance() public {
+        uint256 amount = 4 ether;
+        uint256 counterpartyIdx = 1;
+        vm.deal(address(l1Gateway), 0.09 ether);
+        vm.expectRevert("Insufficient contract balance");
+        vm.prank(relayer);
+        l1Gateway.finalizeTransfer(bridgeUser, amount, counterpartyIdx);
     }
 
     function test_OnlyRelayerCanCallFinalizeTransfer() public {

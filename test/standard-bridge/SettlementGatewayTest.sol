@@ -40,7 +40,7 @@ contract SettlementGatewayTest is Test {
 
     // Expected event signature emitted in initiateTransfer()
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 indexed transferIdx);
 
     function test_InitiateTransfer() public {
         vm.deal(bridgeUser, 100 ether);
@@ -79,7 +79,7 @@ contract SettlementGatewayTest is Test {
     }
 
     event TransferFinalized(
-        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
+        address indexed recipient, uint256 amount, uint256 indexed counterpartyIdx);
     
     function test_FinalizeTransfer() public {
         // These values are trusted from relayer
