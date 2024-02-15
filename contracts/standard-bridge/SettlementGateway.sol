@@ -29,7 +29,4 @@ contract SettlementGateway is Gateway{
     function _fund(uint256 _amount, address _toFund) internal override {
         IWhitelist(whitelistAddr).mint(_toFund, _amount);
     }
-
-    // Marked as payable so contract can be funded even after genesis
-    receive() external payable {}
 }
