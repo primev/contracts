@@ -8,9 +8,13 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  */
 abstract contract Gateway is Ownable {   
     
-    // @dev index for tracking transfers.
+    // @dev index for tracking transfer initiations.
     // Also total number of transfers initiated from this gateway.
-    uint256 public transferIdx;
+    uint256 public transferInitiatedIdx;
+
+    // @dev index for tracking transfer finalizations.
+    // Also total number of transfers finalized on this gateway.
+    uint256 public transferFinalizedIdx;
 
     // @dev Address of relayer account. 
     address public immutable relayer;
@@ -27,16 +31,18 @@ abstract contract Gateway is Ownable {
         relayer = _relayer;
         finalizationFee = _finalizationFee;
         counterpartyFee = _counterpartyFee;
+        transferInitiatedIdx = 0;
+        transferFinalizedIdx = 1; // First expected transfer index is 1
         _transferOwnership(_owner);
     }
 
     function initiateTransfer(address _recipient, uint256 _amount
     ) external payable returns (uint256 returnIdx) {
         require(_amount >= counterpartyFee, "Amount must cover counterpartys finalization fee");
-        ++transferIdx;
         _decrementMsgSender(_amount);
-        emit TransferInitiated(msg.sender, _recipient, _amount, transferIdx);
-        return transferIdx;
+        ++transferInitiatedIdx;
+        emit TransferInitiated(msg.sender, _recipient, _amount, transferInitiatedIdx);
+        return transferInitiatedIdx;
     }
     // @dev where _decrementMsgSender is implemented by inheriting contract.
     function _decrementMsgSender(uint256 _amount) internal virtual;
@@ -49,9 +55,11 @@ abstract contract Gateway is Ownable {
     function finalizeTransfer(address _recipient, uint256 _amount, uint256 _counterpartyIdx
     ) external onlyRelayer {
         require(_amount >= finalizationFee, "Amount must cover finalization fee");
+        require(_counterpartyIdx == transferFinalizedIdx, "Invalid counterparty index. Transfers must be relayed FIFO");
         uint256 amountAfterFee = _amount - finalizationFee;
         _fund(amountAfterFee, _recipient);
         _fund(finalizationFee, relayer);
+        ++transferFinalizedIdx;
         emit TransferFinalized(_recipient, _amount, _counterpartyIdx);
     }
     // @dev where _fund is implemented by inheriting contract.
@@ -65,7 +73,7 @@ abstract contract Gateway is Ownable {
      * @param transferIdx Current index of this gateway.
      */
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 indexed transferIdx);
 
     /**
      * @dev Emitted when a transfer is finalized.
@@ -74,5 +82,5 @@ abstract contract Gateway is Ownable {
      * @param counterpartyIdx Index of counterpary gateway when transfer was initiated.
      */
     event TransferFinalized(
-        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
+        address indexed recipient, uint256 amount, uint256 indexed counterpartyIdx);
 }

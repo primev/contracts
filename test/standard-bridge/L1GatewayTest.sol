@@ -30,15 +30,16 @@ contract L1GatewayTest is Test {
 
     // Expected event signature emitted in initiateTransfer()
     event TransferInitiated(
-        address indexed sender, address indexed recipient, uint256 amount, uint256 transferIdx);
+        address indexed sender, address indexed recipient, uint256 amount, uint256 indexed transferIdx);
 
-    function test_InitiateTransfer() public {
+    function test_InitiateTransferSuccess() public {
         vm.deal(bridgeUser, 100 ether);
         uint256 amount = 7 ether;
 
         // Initial assertions
         assertEq(address(bridgeUser).balance, 100 ether);
-        assertEq(l1Gateway.transferIdx(), 0);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
 
         // Set up expectation for event
         vm.expectEmit(true, true, true, true);
@@ -50,24 +51,66 @@ contract L1GatewayTest is Test {
 
         // Assertions after call
         assertEq(address(bridgeUser).balance, 93 ether); 
-        assertEq(l1Gateway.transferIdx(), 1);
+        assertEq(l1Gateway.transferInitiatedIdx(), 1);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
         assertEq(returnedIdx, 1);
     }
 
-    function TestAmountTooSmallForCounterpartyFee() public {
+    function test_InitiateTransferAmountTooSmallForCounterpartyFee() public {
         vm.deal(bridgeUser, 100 ether);
         vm.deal(address(l1Gateway), 1 ether);
+
         assertEq(address(bridgeUser).balance, 100 ether);
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
         vm.expectRevert("Amount must cover counterpartys finalization fee");
         vm.prank(bridgeUser);
         l1Gateway.initiateTransfer{value: 0.04 ether}(bridgeUser, 0.04 ether);
+
+        assertEq(address(bridgeUser).balance, 100 ether);
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+    }
+
+    function test_InitiateTransferUserInsufficientBalance() public {
+        vm.deal(bridgeUser, 0.01 ether);
+
+        assertEq(address(bridgeUser).balance, 0.01 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
+        vm.expectRevert();
+        vm.prank(bridgeUser);
+        l1Gateway.initiateTransfer{value: 0.9 ether}(bridgeUser, 0.9 ether);
+
+        assertEq(address(bridgeUser).balance, 0.01 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+    }
+
+    function test_InitiateTransferValueMismatch() public {
+        vm.deal(bridgeUser, 100 ether);
+
+        assertEq(address(bridgeUser).balance, 100 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
+        vm.expectRevert("Incorrect Ether value sent");
+        vm.prank(bridgeUser);
+        l1Gateway.initiateTransfer{value: 0.8 ether}(bridgeUser, 0.9 ether);
+
+        assertEq(address(bridgeUser).balance, 100 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
     }
 
     event TransferFinalized(
-        address indexed recipient, uint256 amount, uint256 counterpartyIdx);
+        address indexed recipient, uint256 amount, uint256 indexed counterpartyIdx);
 
-    function test_FinalizeTransfer() public {
-        // These values are trusted from relayer
+    function test_FinalizeTransferSuccess() public {
         uint256 amount = 4 ether;
         uint256 counterpartyIdx = 1;
 
@@ -79,7 +122,8 @@ contract L1GatewayTest is Test {
         assertEq(address(l1Gateway).balance, 5 ether);
         assertEq(relayer.balance, 5 ether);
         assertEq(bridgeUser.balance, 0 ether);
-        assertEq(l1Gateway.transferIdx(), 0);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
 
         // Set up expectation for event
         vm.expectEmit(true, true, true, true);
@@ -93,23 +137,79 @@ contract L1GatewayTest is Test {
         assertEq(address(l1Gateway).balance, 1 ether);
         assertEq(relayer.balance, 5.1 ether);
         assertEq(bridgeUser.balance, 3.9 ether);
-        assertEq(l1Gateway.transferIdx(), 0);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 2);
     }
 
     function test_OnlyRelayerCanCallFinalizeTransfer() public {
         uint256 amount = 0.1 ether;
         vm.deal(address(l1Gateway), 1 ether);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
         vm.expectRevert("Only relayer can call this function");
         vm.prank(bridgeUser);
         l1Gateway.finalizeTransfer(address(0x101), amount, 1);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
     }
 
     // This scenario shouldn't be possible since initiateTransfer() should have prevented it.
-    function test_AmountTooSmallForFinalizationFee() public {
+    function test_FinalizeTranferAmountTooSmallForFinalizationFee() public {
         uint256 amount = 0.09 ether;
         vm.deal(address(l1Gateway), 1 ether);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
         vm.expectRevert("Amount must cover finalization fee");
         vm.prank(relayer);
         l1Gateway.finalizeTransfer(address(0x101), amount, 1);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+    }
+
+    function test_FinalizeTransferInvalidCounterpartyIdx() public {
+        uint256 amount = 0.1 ether;
+        vm.deal(address(l1Gateway), 1 ether);
+        vm.deal(relayer, 1 ether);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(relayer.balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+
+        vm.expectRevert("Invalid counterparty index. Transfers must be relayed FIFO");
+        vm.prank(relayer);
+        l1Gateway.finalizeTransfer(address(0x101), amount, 2);
+
+        assertEq(address(l1Gateway).balance, 1 ether);
+        assertEq(relayer.balance, 1 ether);
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+    }
+
+    function test_FinalizeTransferWithInsufficientContractBalance() public {
+        uint256 amount = 4 ether;
+        uint256 counterpartyIdx = 1; // First transfer idx
+        vm.deal(address(l1Gateway), 0.09 ether);
+        assertEq(address(l1Gateway).balance, 0.09 ether);
+
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
+        
+        vm.expectRevert("Insufficient contract balance");
+        vm.prank(relayer);
+        l1Gateway.finalizeTransfer(bridgeUser, amount, counterpartyIdx);
+
+        assertEq(l1Gateway.transferInitiatedIdx(), 0);
+        assertEq(l1Gateway.transferFinalizedIdx(), 1);
     }
 }

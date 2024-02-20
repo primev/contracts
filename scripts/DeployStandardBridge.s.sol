@@ -9,7 +9,7 @@ contract DeploySettlementGateway is Script, Create2Deployer {
     function run() external {
 
         // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0x0D70A44c81a27f33a36C334bFEA8bBBD8A7d58AA;
+        address expectedAddr = 0xc1f93bE11D7472c9B9a4d87B41dD0a491F1fbc75;
         if (isContractDeployed(expectedAddr)) {
             console.log("Standard bridge gateway on settlement chain already deployed to:",
                 expectedAddr);
@@ -24,11 +24,11 @@ contract DeploySettlementGateway is Script, Create2Deployer {
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
-        address whitelistAddr = 0x5D1415C0973034d162F5FEcF19B50dA057057e29;
+        address expectedWhitelistAddr = 0x57508f0B0f3426758F1f3D63ad4935a7c9383620;
         address relayerAddr = vm.envAddress("RELAYER_ADDR");
 
         SettlementGateway gateway = new SettlementGateway{salt: salt}(
-            whitelistAddr,
+            expectedWhitelistAddr,
             msg.sender, // Owner
             relayerAddr,
             1, 1); // Fees set to 1 wei for now
@@ -43,7 +43,7 @@ contract DeployL1Gateway is Script, Create2Deployer {
     function run() external {
 
         // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0x38b7e046bd971B4123974Bc78DcB0D7C680d85d2;
+        address expectedAddr = 0x1a18dfEc4f2B66207b1Ad30aB5c7A0d62Ef4A40b;
         if (isContractDeployed(expectedAddr)) {
             console.log("Standard bridge gateway on l1 already deployed to:",
                 expectedAddr);
