@@ -196,8 +196,6 @@ contract L1GatewayTest is Test {
         assertEq(l1Gateway.transferFinalizedIdx(), 1);
     }
 
-    // TODO: Look into why this error is not observed by standard bridge relayer.
-    // However this scenario shouldn't be possible if settlement genesis allocations are correct. 
     function test_FinalizeTransferWithInsufficientContractBalance() public {
         uint256 amount = 4 ether;
         uint256 counterpartyIdx = 1; // First transfer idx
