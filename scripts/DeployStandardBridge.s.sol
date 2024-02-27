@@ -4,17 +4,10 @@ import "forge-std/Script.sol";
 import {Create2Deployer} from "scripts/DeployScripts.s.sol";
 import {SettlementGateway} from "contracts/standard-bridge/SettlementGateway.sol";
 import {L1Gateway} from "contracts/standard-bridge/L1Gateway.sol";
+import {Whitelist} from "contracts/Whitelist.sol";
 
 contract DeploySettlementGateway is Script, Create2Deployer {
     function run() external {
-
-        // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0xc1f93bE11D7472c9B9a4d87B41dD0a491F1fbc75;
-        if (isContractDeployed(expectedAddr)) {
-            console.log("Standard bridge gateway on settlement chain already deployed to:",
-                expectedAddr);
-            return;
-        }
 
         vm.startBroadcast();
 
@@ -25,8 +18,12 @@ contract DeploySettlementGateway is Script, Create2Deployer {
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
         address expectedWhitelistAddr = 0x57508f0B0f3426758F1f3D63ad4935a7c9383620;
-        address relayerAddr = vm.envAddress("RELAYER_ADDR");
+        if (isContractDeployed(expectedWhitelistAddr)) {
+            console.log("Whitelist must not be deployed to execute DeploySettlementGateway script. Exiting...");
+            return;
+        }
 
+        address relayerAddr = vm.envAddress("RELAYER_ADDR");
         SettlementGateway gateway = new SettlementGateway{salt: salt}(
             expectedWhitelistAddr,
             msg.sender, // Owner
@@ -35,20 +32,23 @@ contract DeploySettlementGateway is Script, Create2Deployer {
         console.log("Standard bridge gateway for settlement chain deployed to:",
             address(gateway));
 
+        Whitelist whitelist = new Whitelist{salt: salt}(msg.sender);
+        console.log("Whitelist deployed to:", address(whitelist)); 
+
+        if (!isContractDeployed(expectedWhitelistAddr)) {
+            console.log("Whitelist not deployed to expected address:", expectedWhitelistAddr);
+            return;
+        }
+
+        whitelist.addToWhitelist(address(gateway));
+        console.log("Settlement gateway has been whitelisted. Gateway contract address:", address(gateway));
+
         vm.stopBroadcast();
     }
 }
 
 contract DeployL1Gateway is Script, Create2Deployer {
     function run() external {
-
-        // Note this addr is dependant on values given to contract constructor
-        address expectedAddr = 0x1a18dfEc4f2B66207b1Ad30aB5c7A0d62Ef4A40b;
-        if (isContractDeployed(expectedAddr)) {
-            console.log("Standard bridge gateway on l1 already deployed to:",
-                expectedAddr);
-            return;
-        }
 
         vm.startBroadcast();
 
