@@ -5,6 +5,7 @@ import {Create2Deployer} from "scripts/DeployScripts.s.sol";
 import {SettlementGateway} from "contracts/standard-bridge/SettlementGateway.sol";
 import {L1Gateway} from "contracts/standard-bridge/L1Gateway.sol";
 import {Whitelist} from "contracts/Whitelist.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract DeploySettlementGateway is Script, Create2Deployer {
     function run() external {
@@ -33,7 +34,7 @@ contract DeploySettlementGateway is Script, Create2Deployer {
             address(gateway));
 
         Whitelist whitelist = new Whitelist{salt: salt}(msg.sender);
-        console.log("Whitelist deployed to:", address(whitelist)); 
+        console.log("Whitelist deployed to:", address(whitelist));
 
         if (!isContractDeployed(expectedWhitelistAddr)) {
             console.log("Whitelist not deployed to expected address:", expectedWhitelistAddr);
@@ -42,6 +43,15 @@ contract DeploySettlementGateway is Script, Create2Deployer {
 
         whitelist.addToWhitelist(address(gateway));
         console.log("Settlement gateway has been whitelisted. Gateway contract address:", address(gateway));
+
+        string memory jsonOutput = string.concat(
+            '{"settlement_gateway_addr": "',
+            Strings.toHexString(address(gateway)),
+            '", "whitelist_addr": "',
+            Strings.toHexString(address(whitelist)),
+            '"}'
+        );
+        console.log("JSON_DEPLOY_ARTIFACT:", jsonOutput); 
 
         vm.stopBroadcast();
     }
@@ -66,6 +76,13 @@ contract DeployL1Gateway is Script, Create2Deployer {
             1, 1); // Fees set to 1 wei for now
         console.log("Standard bridge gateway for l1 deployed to:",
             address(gateway));
+        
+        string memory jsonOutput = string.concat(
+            '{"l1_gateway_addr": "',
+            Strings.toHexString(address(gateway)),
+            '"}'
+        );
+        console.log("JSON_DEPLOY_ARTIFACT:", jsonOutput);
 
         vm.stopBroadcast();
     }
