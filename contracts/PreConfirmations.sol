@@ -8,6 +8,8 @@ import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title PreConfCommitmentStore - A contract for managing preconfirmation commitments and bids.
  * @notice This contract allows bidders to make precommitments and bids and provides a mechanism for the oracle to verify and process them.
@@ -18,12 +20,12 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev EIP-712 Type Hash for preconfirmation commitment
     bytes32 public constant EIP712_COMMITMENT_TYPEHASH =
         keccak256(
-            "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,string bidHash,string signature)"
+            "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,string bidHash,string signature)"
         );
 
     /// @dev EIP-712 Type Hash for preconfirmation bid
-    bytes32 public constant EIP712_MESSAGE_TYPEHASH =
-        keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber)");
+    bytes32 public constant EIP712_BID_TYPEHASH =
+        keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)");
 
     /// @dev commitment counter
     uint256 public commitmentCount;
@@ -67,6 +69,8 @@ contract PreConfCommitmentStore is Ownable {
         uint64 bid;
         uint64 blockNumber;
         bytes32 bidHash;
+        uint64 decayStartTimeStamp;
+        uint64 decayEndTimeStamp;
         string txnHash;
         bytes32 commitmentHash;
         bytes bidSignature;
@@ -149,17 +153,21 @@ contract PreConfCommitmentStore is Ownable {
     function getBidHash(
         string memory _txnHash,
         uint64 _bid,
-        uint64 _blockNumber
+        uint64 _blockNumber,
+        uint64 _decayStartTimeStamp,
+        uint64 _decayEndTimeStamp
     ) public view returns (bytes32) {
         return
             ECDSA.toTypedDataHash(
                 DOMAIN_SEPARATOR_BID,
                 keccak256(
                     abi.encode(
-                        EIP712_MESSAGE_TYPEHASH,
+                        EIP712_BID_TYPEHASH,
                         keccak256(abi.encodePacked(_txnHash)),
                         _bid,
-                        _blockNumber
+                        _blockNumber,
+                        _decayStartTimeStamp,
+                        _decayEndTimeStamp
                     )
                 )
             );
@@ -177,6 +185,8 @@ contract PreConfCommitmentStore is Ownable {
         string memory _txnHash,
         uint64 _bid,
         uint64 _blockNumber,
+        uint64 _decayStartTimeStamp,
+        uint64 _decayEndTimeStamp,
         bytes32 _bidHash,
         string memory _bidSignature
     ) public view returns (bytes32) {
@@ -189,6 +199,8 @@ contract PreConfCommitmentStore is Ownable {
                         keccak256(abi.encodePacked(_txnHash)),
                         _bid,
                         _blockNumber,
+                        _decayStartTimeStamp,
+                        _decayEndTimeStamp,
                         keccak256(
                             abi.encodePacked(_bytes32ToHexString(_bidHash))
                         ),
@@ -212,6 +224,8 @@ contract PreConfCommitmentStore is Ownable {
     function verifyBid(
         uint64 bid,
         uint64 blockNumber,
+        uint64 decayStartTimeStamp,
+        uint64 decayEndTimeStamp,
         string memory txnHash,
         bytes calldata bidSignature
     )
@@ -219,9 +233,13 @@ contract PreConfCommitmentStore is Ownable {
         view
         returns (bytes32 messageDigest, address recoveredAddress, uint256 stake)
     {
-        messageDigest = getBidHash(txnHash, bid, blockNumber);
+        messageDigest = getBidHash(txnHash, bid, blockNumber, decayStartTimeStamp, decayEndTimeStamp);
+        console.logBytes32(messageDigest);
         recoveredAddress = messageDigest.recover(bidSignature);
         stake = bidderRegistry.getAllowance(recoveredAddress);
+        console.logAddress(recoveredAddress);
+        console.logUint(stake);
+        console.logUint(bid);
         require(stake > (10 * bid), "Invalid bid");
     }
 
@@ -240,6 +258,8 @@ contract PreConfCommitmentStore is Ownable {
         string memory txnHash,
         uint64 bid,
         uint64 blockNumber,
+        uint64 decayStartTimeStamp,
+        uint64 decayEndTimeStamp,
         bytes32 bidHash,
         bytes memory bidSignature,
         bytes memory commitmentSignature
@@ -252,6 +272,8 @@ contract PreConfCommitmentStore is Ownable {
             txnHash,
             bid,
             blockNumber,
+            decayStartTimeStamp,
+            decayEndTimeStamp,
             bidHash,
             _bytesToHexString(bidSignature)
         );
@@ -283,12 +305,16 @@ contract PreConfCommitmentStore is Ownable {
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
+        uint64 decayStartTimeStamp,
+        uint64 decayEndTimeStamp,
         bytes calldata bidSignature,
         bytes memory commitmentSignature
     ) public returns (bytes32 commitmentIndex) {
         (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
             bid,
             blockNumber,
+            decayStartTimeStamp,
+            decayEndTimeStamp,
             txnHash,
             bidSignature
         );
@@ -298,6 +324,8 @@ contract PreConfCommitmentStore is Ownable {
                 txnHash,
                 bid,
                 blockNumber,
+                decayStartTimeStamp,
+                decayEndTimeStamp,
                 bHash,
                 _bytesToHexString(bidSignature)
             );
@@ -305,7 +333,7 @@ contract PreConfCommitmentStore is Ownable {
             address commiterAddress = commitmentDigest.recover(commitmentSignature);
 
             require(stake > (10 * bid), "Stake too low");
-
+            
             PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,
                 bidderAddress,
@@ -313,6 +341,8 @@ contract PreConfCommitmentStore is Ownable {
                 bid,
                 blockNumber,
                 bHash,
+                decayStartTimeStamp,
+                decayEndTimeStamp,
                 txnHash,
                 commitmentDigest,
                 bidSignature,
