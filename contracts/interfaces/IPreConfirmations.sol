@@ -16,6 +16,8 @@ interface IPreConfCommitmentStore {
         uint64 bid;
         uint64 blockNumber;
         bytes32 bidHash;
+        uint64 decayStartTimeStamp;
+        uint64 decayEndTimeStamp;
         string txnHash;
         bytes32 commitmentHash;
         bytes bidSignature;

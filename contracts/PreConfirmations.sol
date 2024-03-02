@@ -234,12 +234,8 @@ contract PreConfCommitmentStore is Ownable {
         returns (bytes32 messageDigest, address recoveredAddress, uint256 stake)
     {
         messageDigest = getBidHash(txnHash, bid, blockNumber, decayStartTimeStamp, decayEndTimeStamp);
-        console.logBytes32(messageDigest);
         recoveredAddress = messageDigest.recover(bidSignature);
         stake = bidderRegistry.getAllowance(recoveredAddress);
-        console.logAddress(recoveredAddress);
-        console.logUint(stake);
-        console.logUint(bid);
         require(stake > (10 * bid), "Invalid bid");
     }
 

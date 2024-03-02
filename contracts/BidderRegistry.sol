@@ -201,7 +201,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         BidPayment[bidID].state = State.Withdrawn;
         BidPayment[bidID].bidAmt = 0;
-
+        
         emit FundsRetrieved(bidID, amt);
     }
 
