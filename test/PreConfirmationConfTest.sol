@@ -29,14 +29,10 @@ contract TestPreConfCommitmentStore is Test {
     address internal provider;
     address internal feeRecipient;
     ProviderRegistry internal providerRegistry;
-    uint256 testNumber;
-    uint64 testNumber2;
 
     BidderRegistry internal bidderRegistry;
 
     function setUp() public {
-        testNumber = 2;
-        testNumber2 = 2;
         _testCommitmentAliceBob = TestCommitment(
             2,
             2,
@@ -143,8 +139,6 @@ contract TestPreConfCommitmentStore is Test {
     }
 
     function test_GetBidHash() public {
-        string memory txnhash = "0xkartik";
-
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
             _testCommitmentAliceBob.txnHash,
             _testCommitmentAliceBob.bid,
@@ -159,7 +153,7 @@ contract TestPreConfCommitmentStore is Test {
     }
 
     function test_GetCommitmentDigest() public {
-        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
+        (, uint256 bidderPk) = makeAddrAndKey("alice");
 
 
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
@@ -395,69 +389,64 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(storedCommitment.decayStartTimeStamp, _testCommitmentAliceBob.decayStartTimestamp);
     }
 
-    // function test_InitiateSlash() public {
-    //     // Assuming you have a stored commitment
-    //     {
-    //         address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-    //         vm.deal(signer, 5 ether);
-    //         vm.prank(signer);
-    //         bidderRegistry.prepay{value: 2 ether}();
-    //         string memory txnHash = "0xkartik";
-    //         bytes
-    //             memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
-    //         uint64 bid = 2;
-    //         uint64 blockNumber = 2;
-    //         bytes memory bidSignature = bytes(
-    //             hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
-    //         );
-    //         address commiter = 0xE3E9cc6677B1b7f05C483168bf25B4D9604c6763;
-    //         bytes
-    //             memory commitmentSignature = hex"306eb646b8882c8cd918d4aff61cbf6814a152becbc84b52abb4aad963dbaa2465c0c27837b5f8c943cb1c523f54961c0c8775c48d9dbf7ae9883b14925794941c";
+    function test_InitiateSlash() public {
+        // Assuming you have a stored commitment
+        {
+            (address bidder, ) = makeAddrAndKey("alice");
+            vm.deal(bidder, 5 ether);
+            vm.prank(bidder);
+            bidderRegistry.prepay{value: 2 ether}();
+            
+            // Step 1: Verify that the commitment has not been used before
+            bytes32 bidHash = verifyCommitmentNotUsed(
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                _testCommitmentAliceBob.bidSignature
+            );
 
-    //         // Step 1: Verify that the commitment has not been used before
-    //         bytes32 bidHash = verifyCommitmentNotUsed(
-    //             txnHash,
-    //             bid,
-    //             blockNumber,
-    //             signature
-    //         );
+            bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                bidHash,
+                _bytesToHexString(_testCommitmentAliceBob.bidSignature)
+            );
 
-    //         bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-    //             txnHash,
-    //             bid,
-    //             blockNumber,
-    //             bidHash,
-    //             _bytesToHexString(bidSignature)
-    //         );
+            // Verify that the commitment has not been used before
+            (bool commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+                .commitments(preConfHash);
+            assert(commitmentUsed == false);
+            bytes32 index = preConfCommitmentStore.storeCommitment(
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                _testCommitmentAliceBob.bidSignature,
+                _testCommitmentAliceBob.commitmentSignature
+            );
+            providerRegistry.setPreconfirmationsContract(
+                address(preConfCommitmentStore)
+            );
+            (address commiter, ) = makeAddrAndKey("bob");
+            vm.deal(commiter, 5 ether);
+            vm.prank(commiter);
+            providerRegistry.registerAndStake{value: 4 ether}();
+            vm.prank(feeRecipient);
+            preConfCommitmentStore.initiateSlash(index);
 
-    //         // Verify that the commitment has not been used before
-    //         (bool commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-    //             .commitments(preConfHash);
-    //         assert(commitmentUsed == false);
-    //         bytes32 index = preConfCommitmentStore.storeCommitment(
-    //             bid,
-    //             blockNumber,
-    //             txnHash,
-    //             bidSignature,
-    //             commitmentSignature
-    //         );
-    //         providerRegistry.setPreconfirmationsContract(
-    //             address(preConfCommitmentStore)
-    //         );
-
-    //         vm.deal(commiter, 5 ether);
-    //         vm.prank(commiter);
-    //         providerRegistry.registerAndStake{value: 4 ether}();
-    //         vm.prank(feeRecipient);
-    //         preConfCommitmentStore.initiateSlash(index);
-
-    //         (commitmentUsed, , , , , , , , , ) = preConfCommitmentStore
-    //             .commitments(index);
-    //         // Verify that the commitment has been marked as used
-    //         assert(commitmentUsed == true);
-    //     }
-    //     // commitmentHash value is internal to contract and not asserted
-    // }
+            (commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+                .commitments(index);
+            // Verify that the commitment has been marked as used
+            assert(commitmentUsed == true);
+        }
+        // commitmentHash value is internal to contract and not asserted
+    }
 
     function test_alice() public {
         (address alice, uint256 alicePk) = makeAddrAndKey("bob");
