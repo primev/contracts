@@ -9,6 +9,20 @@ import "../contracts/ProviderRegistry.sol";
 import "../contracts/BidderRegistry.sol";
 
 contract TestPreConfCommitmentStore is Test {
+
+    struct TestCommitment {
+        uint64 bid;
+        uint64 blockNumber;
+        string txnHash;
+        uint64 decayStartTimestamp;
+        uint64 decayEndTimestamp;
+        bytes32 bidDigest;
+        bytes32 commitmentDigest;
+        bytes bidSignature;
+        bytes commitmentSignature;
+    }
+
+    TestCommitment internal _testCommitmentAliceBob;
     PreConfCommitmentStore internal preConfCommitmentStore;
     uint16 internal feePercent;
     uint256 internal minStake;
@@ -23,6 +37,17 @@ contract TestPreConfCommitmentStore is Test {
     function setUp() public {
         testNumber = 2;
         testNumber2 = 2;
+        _testCommitmentAliceBob = TestCommitment(
+            2,
+            2,
+            "0xkartik",
+            10,
+            20,
+            0xa0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100,
+            0x54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc,
+            hex"876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b",
+            hex"ec0f11f77a9e96bb9c2345f031a5d12dca8d01de8a2e957cf635be14802f9ad01c6183688f0c2672639e90cc2dce0662d9bea3337306ca7d4b56dd80326aaa231b"
+        );
 
         feePercent = 10;
         minStake = 1e18 wei;
@@ -60,13 +85,12 @@ contract TestPreConfCommitmentStore is Test {
 
     function test_CreateCommitment() public {
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            "0xkartik",
-            200 wei,
-            3000,
-            10,
-            30
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp
         );
-        console.logBytes32(bidHash);
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         // Wallet memory kartik = vm.createWallet('test wallet');
         (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
@@ -76,13 +100,27 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(bidder);
         bidderRegistry.prepay{value: 1e18 wei}();
         console.logAddress(bidder);
-        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(200 wei, 3000, 10, 30, "0xkartik", signature);
+        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(
+            _testCommitmentAliceBob.bid, 
+            _testCommitmentAliceBob.blockNumber, 
+            _testCommitmentAliceBob.decayStartTimestamp, 
+            _testCommitmentAliceBob.decayEndTimestamp, 
+            _testCommitmentAliceBob.txnHash, 
+            signature);
         
         assertEq(stake, 1e18 wei);
         assertEq(bidder, recoveredAddress);
         assertEq(digest, bidHash);
 
-        preConfCommitmentStore.storeCommitment(200 wei, 3000, "0xkartik",10,30, signature, signature);
+        preConfCommitmentStore.storeCommitment(
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            signature,
+            _testCommitmentAliceBob.commitmentSignature
+        );
 
     }
 
@@ -437,6 +475,11 @@ contract TestPreConfCommitmentStore is Test {
     //     // commitmentHash value is internal to contract and not asserted
     // }
 
+    function test_alice() public {
+        (address alice, uint256 alicePk) = makeAddrAndKey("bob");
+        console.logAddress(alice);
+        console.logUint(alicePk);
+    }
     // function test_InitiateReward() public {
     //     // Assuming you have a stored commitment
     //     {
