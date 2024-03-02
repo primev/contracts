@@ -146,28 +146,28 @@ contract TestPreConfCommitmentStore is Test {
         string memory txnhash = "0xkartik";
 
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnhash,
-            testNumber2,
-            testNumber2,
-            10,
-            20
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp
         );
         assertEq(
             bidHash,
-            0xa0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100
+            _testCommitmentAliceBob.bidDigest
         );
     }
 
     function test_GetCommitmentDigest() public {
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
 
-        string memory txnhash = "0xkartik";
+
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnhash,
-            testNumber2,
-            testNumber2,
-            10,
-            20
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp
         );
 
         (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
@@ -175,36 +175,20 @@ contract TestPreConfCommitmentStore is Test {
         console.logString(_bytesToHexString(signature));
 
         bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-            txnhash,
-            testNumber2,
-            testNumber2,
-            10,
-            20,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
             bidHash,
             _bytesToHexString(signature)
         );
         assertEq(
             preConfHash,
-            0x54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc
+            _testCommitmentAliceBob.commitmentDigest
         );
     }
 
-    // function test_GetPreConfHash() public {
-    //     string memory hash = "0xkartik";
-    //     string
-    //         memory signsing = "33683da4605067c9491d665864b2e4e7ade8bc57921da9f192a1b8246a941eaa2fb90f72031a2bf6008fa590158591bb5218c9aace78ad8cf4d1f2f4d74bc3e901";
-    //     bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
-    //         hash,
-    //         testNumber2,
-    //         testNumber2,
-    //         0x86ac45fb1e987a6c8115494cd4fd82f6756d359022cdf5ea19fd2fac1df6e7f0,
-    //         signsing
-    //     );
-    //     assertEq(
-    //         preConfHash,
-    //         0x31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc
-    //     );
-    // }
 
     function _bytes32ToHexString(
         bytes32 _bytes32
@@ -218,48 +202,48 @@ contract TestPreConfCommitmentStore is Test {
         return string(_string);
     }
 
-    // function test_StoreCommitment() public {
-    //     address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-    //     vm.deal(signer, 5 ether);
-    //     vm.prank(signer);
-    //     bidderRegistry.prepay{value: 2 ether}();
-    //     string memory txnHash = "0xkartik";
-    //     bytes
-    //         memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
-    //     uint64 bid = 2;
-    //     uint64 blockNumber = 2;
-    //     bytes memory bidSignature = bytes(
-    //         hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
-    //     );
-    //     bytes
-    //         memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
+    function test_StoreCommitment() public {
+        (address bidder, ) = makeAddrAndKey("alice");
+        vm.deal(bidder, 5 ether);
+        vm.prank(bidder);
+        bidderRegistry.prepay{value: 2 ether}();
+        
+        // Step 1: Verify that the commitment has not been used before
+        verifyCommitmentNotUsed(
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            _testCommitmentAliceBob.bidSignature
+        );
 
-    //     // Step 1: Verify that the commitment has not been used before
-    //     verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
+        // Step 2: Store the commitment
+        bytes32 index = storeCommitment(
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            _testCommitmentAliceBob.bidSignature,
+            _testCommitmentAliceBob.commitmentSignature
+        );
 
-    //     // Step 2: Store the commitment
-    //     bytes32 index = storeCommitment(
-    //         bid,
-    //         blockNumber,
-    //         txnHash,
-    //         bidSignature,
-    //         commitmentSignature
-    //     );
+        // Step 3: Verify the stored commitment
+        verifyStoredCommitment(
+            index,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bidSignature,
+            _testCommitmentAliceBob.commitmentSignature
+        );
 
-    //     // Step 3: Verify the stored commitment
-    //     verifyStoredCommitment(
-    //         index,
-    //         bid,
-    //         blockNumber,
-    //         txnHash,
-    //         bidSignature,
-    //         commitmentSignature
-    //     );
-
-    //     string memory commitmentTxnHash = preConfCommitmentStore.getTxnHashFromCommitment(index);
-    //     assertEq(commitmentTxnHash, "0xkartik");
-    //     // commitmentHash value is internal to contract and not asserted
-    // }
+        string memory commitmentTxnHash = preConfCommitmentStore.getTxnHashFromCommitment(index);
+        assertEq(commitmentTxnHash, _testCommitmentAliceBob.txnHash);
+    }
 
     function verifyCommitmentNotUsed(
         string memory txnHash,
@@ -373,43 +357,43 @@ contract TestPreConfCommitmentStore is Test {
         );
     }
 
-    // function test_GetCommitment() public {
-    //     address signer = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;
-    //     vm.deal(signer, 5 ether);
-    //     vm.prank(signer);
-    //     bidderRegistry.prepay{value: 2 ether}();
-    //     string memory txnHash = "0xkartik";
-    //     bytes
-    //         memory signature = "0xb170d082db1bf77fa0b589b9438444010dcb1e6dd326b661b02eb92abe4c066e243bb0d214b01667750ba2c53ff1ab445fd784b441dbc1f30280c379f002cc571c";
-    //     uint64 bid = 2;
-    //     uint64 blockNumber = 2;
-    //     bytes memory bidSignature = bytes(
-    //         hex"c10688ea554c1dae605619fa7f75103fb483ab6b5ad424e4e232f5da4449503a27ef6aed49b85bfd0e598650831c861a55a5eb197d9279d6a5667efaa46ab8831c"
-    //     );
-    //     bytes
-    //         memory commitmentSignature = hex"ff7e00cf5c2d0fa9ef7c5efdca68b285a664a3aab927eb779b464207f537551f4ff81b085acf78b58ecb8c96c9a4efcb2172a0287f5bf5819b49190f6e2d2d1e1b";
-
-    //     // Step 1: Verify that the commitment has not been used before
-    //     verifyCommitmentNotUsed(txnHash, bid, blockNumber, signature);
-
-    //     // Step 2: Store the commitment
-    //     bytes32 commitmentIndex = storeCommitment(
-    //         bid,
-    //         blockNumber,
-    //         txnHash,
-    //         bidSignature,
-    //         commitmentSignature
-    //     );
-    //     PreConfCommitmentStore.PreConfCommitment
-    //         memory storedCommitment = preConfCommitmentStore.getCommitment(
-    //             commitmentIndex
-    //         );
+    function test_GetCommitment() public {
+        (address bidder, ) = makeAddrAndKey("alice");
+        vm.deal(bidder, 5 ether);
+        vm.prank(bidder);
+        bidderRegistry.prepay{value: 2 ether}();
+        // Step 1: Verify that the commitment has not been used before
+        verifyCommitmentNotUsed(
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            _testCommitmentAliceBob.bidSignature
+        );
+        // Step 2: Store the commitment
+        bytes32 commitmentIndex = storeCommitment(
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            _testCommitmentAliceBob.bidSignature,
+            _testCommitmentAliceBob.commitmentSignature
+        );
+        PreConfCommitmentStore.PreConfCommitment
+            memory storedCommitment = preConfCommitmentStore.getCommitment(
+                commitmentIndex
+            );
         
-    //     assertEq(storedCommitment.bid, bid);
-    //     assertEq(storedCommitment.blockNumber, blockNumber);
-    //     assertEq(storedCommitment.txnHash, txnHash);
-    //     // commitmentHash value is internal to contract and not asserted
-    // }
+        assertEq(storedCommitment.bid, _testCommitmentAliceBob.bid);
+        assertEq(storedCommitment.blockNumber, _testCommitmentAliceBob.blockNumber);
+        assertEq(storedCommitment.txnHash, _testCommitmentAliceBob.txnHash);
+        assertEq(storedCommitment.bidSignature, _testCommitmentAliceBob.bidSignature);
+        assertEq(storedCommitment.commitmentSignature, _testCommitmentAliceBob.commitmentSignature);
+        assertEq(storedCommitment.decayEndTimeStamp, _testCommitmentAliceBob.decayEndTimestamp);
+        assertEq(storedCommitment.decayStartTimeStamp, _testCommitmentAliceBob.decayStartTimestamp);
+    }
 
     // function test_InitiateSlash() public {
     //     // Assuming you have a stored commitment
