@@ -18,7 +18,7 @@ contract Create2Deployer {
 
     function checkDeployer() internal view {
         if (msg.sender != expectedDeployer) {
-            
+            console.log("Warning: deployer is not expected address of 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266. Contracts addresses will not match documentation");
         }
     }
 
@@ -49,25 +49,25 @@ contract DeployScript is Script, Create2Deployer {
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
         BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
-        
+        console.log("BidderRegistry deployed to:", address(bidderRegistry));
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
-        
+        console.log("ProviderRegistry deployed to:", address(providerRegistry));
 
         PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(bidderRegistry), feeRecipient, msg.sender);
-        
+        console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
-        
+        console.log("ProviderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
-        
+        console.log("BidderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
         Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);
-        
+        console.log("Oracle deployed to:", address(oracle));
 
         preConfCommitmentStore.updateOracle(address(oracle));
-        
+        console.log("PreConfCommitmentStore updated with Oracle address:", address(oracle));
 
         vm.stopBroadcast();
     }
@@ -77,11 +77,11 @@ contract DeployScript is Script, Create2Deployer {
 contract DeployWhitelist is Script, Create2Deployer {
     function run() external {
 
-        
+        console.log("Warning: DeployWhitelist is deprecated and only for backwards compatibility with hyperlane");
 
         address expectedWhiteListAddr = 0x57508f0B0f3426758F1f3D63ad4935a7c9383620;
         if (isContractDeployed(expectedWhiteListAddr)) {
-            
+            console.log("Whitelist already deployed to:", expectedWhiteListAddr);
             return;
         }
 
@@ -97,10 +97,10 @@ contract DeployWhitelist is Script, Create2Deployer {
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
         Whitelist whitelist = new Whitelist{salt: salt}(msg.sender);
-        
+        console.log("Whitelist deployed to:", address(whitelist));
 
         whitelist.addToWhitelist(address(hypERC20Addr));
-        
+        console.log("Whitelist updated with hypERC20 address:", address(hypERC20Addr));
 
         vm.stopBroadcast();
     }
