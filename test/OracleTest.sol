@@ -148,7 +148,7 @@ contract OracleTest is Test {
         string[] memory txnList = new string[](1);
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
-        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, _testCommitmentAliceBob.blockNumber, "k builder", false, 100);
+        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, _testCommitmentAliceBob.blockNumber, "k builder", false, 50);
         vm.stopPrank();
         assertEq(bidderRegistry.getProviderAmount(provider), 0);
         assertEq(providerRegistry.checkStake(provider), 250 ether);
@@ -177,9 +177,9 @@ contract OracleTest is Test {
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
 
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false,100);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false, 50);
         vm.stopPrank();
-        assertEq(bidderRegistry.getProviderAmount(provider), bid);
+        assertEq(bidderRegistry.getProviderAmount(provider), bid*(50)/100);
 
     }
 
@@ -187,7 +187,7 @@ contract OracleTest is Test {
     function test_process_commitment_slash() public {
         string memory txn = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         uint64 blockNumber = 200;
-        uint64 bid = 2;
+        uint64 bid = 200;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
@@ -209,9 +209,9 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index, true);
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true,100);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true,50);
         vm.stopPrank();
-        assertEq(providerRegistry.checkStake(provider) + bid, 250 ether);
+        assertEq(providerRegistry.checkStake(provider) + ((bid * 50)/100), 250 ether);
     }
 
 
@@ -219,10 +219,12 @@ contract OracleTest is Test {
         string memory txn1 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         string memory txn2 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d09";
         uint64 blockNumber = 201;
-        uint64 bid = 5;
+        uint64 bid = 100;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
+
+        uint256 residualAfterDecay = 50;
 
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
@@ -246,10 +248,10 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, false);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,100);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,50);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether - bid);
-        assertEq(bidderRegistry.getProviderAmount(provider), bid);
+        assertEq(bidderRegistry.getProviderAmount(provider), (bid * (100 - feePercent) /100) * residualAfterDecay /100 );
     }
 
 
