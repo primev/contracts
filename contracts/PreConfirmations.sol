@@ -75,6 +75,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
+        uint256 blockCommitedAt;
     }
 
     /// @dev Event to log successful verifications
@@ -342,7 +343,8 @@ contract PreConfCommitmentStore is Ownable {
                 txnHash,
                 commitmentDigest,
                 bidSignature,
-                commitmentSignature
+                commitmentSignature,
+                block.number
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);

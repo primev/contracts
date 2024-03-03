@@ -22,7 +22,9 @@ interface IPreConfCommitmentStore {
         bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
+        uint256 blockCommitedAt;
     }
+
 
 
     event SignatureVerified(

@@ -263,7 +263,7 @@ contract TestPreConfCommitmentStore is Test {
             _bytesToHexString(bidSignature)
         );
 
-        (bool commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+        (bool commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
             .commitments(preConfHash);
         assertEq(commitmentUsed, false);
 
@@ -417,7 +417,7 @@ contract TestPreConfCommitmentStore is Test {
             );
 
             // Verify that the commitment has not been used before
-            (bool commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+            (bool commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
             bytes32 index = preConfCommitmentStore.storeCommitment(
@@ -439,7 +439,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(feeRecipient);
             preConfCommitmentStore.initiateSlash(index, 100);
 
-            (commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+            (commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
@@ -475,7 +475,7 @@ contract TestPreConfCommitmentStore is Test {
             );
 
             // Verify that the commitment has not been used before
-            (bool commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+            (bool commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
             bytes32 index = preConfCommitmentStore.storeCommitment(
@@ -494,7 +494,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(feeRecipient);
             preConfCommitmentStore.initiateReward(index, 100);
 
-            (commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
+            (commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
             // Verify that the commitment has been marked as used
             assert(commitmentUsed == true);
