@@ -437,7 +437,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initiateSlash(index);
+            preConfCommitmentStore.initiateSlash(index, 100);
 
             (commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
@@ -492,7 +492,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initateReward(index);
+            preConfCommitmentStore.initiateReward(index, 100);
 
             (commitmentUsed, , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);

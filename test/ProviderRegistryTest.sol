@@ -152,7 +152,7 @@ contract ProviderRegistryTest is Test {
         providerRegistry.registerAndStake{value: 2 ether}();
         address bidder = vm.addr(4);
 
-        providerRegistry.slash(1 ether, provider, payable(bidder));
+        providerRegistry.slash(1 ether, provider, payable(bidder),100);
 
         assertEq(providerRegistry.bidderAmount(bidder), 900000000000000000 wei);
         assertEq(providerRegistry.feeRecipientAmount(), 100000000000000000 wei);
@@ -169,7 +169,7 @@ contract ProviderRegistryTest is Test {
         providerRegistry.registerAndStake{value: 2 ether}();
         address bidder = vm.addr(4);
 
-        providerRegistry.slash(1 ether, provider, payable(bidder));
+        providerRegistry.slash(1 ether, provider, payable(bidder),100);
 
         assertEq(providerRegistry.bidderAmount(bidder), 900000000000000000 wei);
         assertEq(providerRegistry.providerStakes(provider), 1 ether);
@@ -181,7 +181,7 @@ contract ProviderRegistryTest is Test {
         providerRegistry.registerAndStake{value: 2 ether}();
         address bidder = vm.addr(4);
         vm.expectRevert(bytes(""));
-        providerRegistry.slash(1 ether, provider, payable(bidder));
+        providerRegistry.slash(1 ether, provider, payable(bidder),100);
     }
 
     function testFail_shouldRetrieveFundsGreaterThanStake() public {
@@ -195,7 +195,7 @@ contract ProviderRegistryTest is Test {
         vm.expectRevert(bytes(""));
         vm.prank(address(this));
 
-        providerRegistry.slash(3 ether, provider, payable(bidder));
+        providerRegistry.slash(3 ether, provider, payable(bidder),100);
     }
 
     function test_FeeRecipientAmount() public {
@@ -205,7 +205,7 @@ contract ProviderRegistryTest is Test {
 
         providerRegistry.registerAndStake{value: 2 ether}();
         providerRegistry.setPreconfirmationsContract(address(this));
-        providerRegistry.slash(1e18 wei, provider, payable(provider));
+        providerRegistry.slash(1e18 wei, provider, payable(provider),100);
         assertEq(
             providerRegistry.feeRecipientAmount(),
             10e16 wei,
@@ -226,7 +226,7 @@ contract ProviderRegistryTest is Test {
         providerRegistry.registerAndStake{value: 2 ether}();
 
         providerRegistry.setPreconfirmationsContract(address(this));
-        providerRegistry.slash(1e18 wei, bidder, payable(bidder));
+        providerRegistry.slash(1e18 wei, bidder, payable(bidder),100);
         vm.prank(bidder);
         providerRegistry.withdrawBidderAmount(bidder);
         assertEq(
@@ -246,7 +246,7 @@ contract ProviderRegistryTest is Test {
             address(preConfCommitmentStore)
         );
         vm.prank(address(preConfCommitmentStore));
-        providerRegistry.slash(1e18 wei, newProvider, payable(newProvider));
+        providerRegistry.slash(1e18 wei, newProvider, payable(newProvider),100);
         vm.prank(newProvider);
         providerRegistry.withdrawStakedAmount(payable(newProvider));
         assertEq(
@@ -296,7 +296,7 @@ contract ProviderRegistryTest is Test {
             address(preConfCommitmentStore)
         );
         vm.prank(address(preConfCommitmentStore));
-        providerRegistry.slash(1e18 wei, newProvider, payable(newProvider));
+        providerRegistry.slash(1e18 wei, newProvider, payable(newProvider),100);
         vm.prank(newProvider);
         providerRegistry.withdrawStakedAmount(payable(newProvider));
         assertEq(

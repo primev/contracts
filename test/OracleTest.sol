@@ -148,7 +148,7 @@ contract OracleTest is Test {
         string[] memory txnList = new string[](1);
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
-        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, _testCommitmentAliceBob.blockNumber, "k builder", false);
+        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, _testCommitmentAliceBob.blockNumber, "k builder", false, 100);
         vm.stopPrank();
         assertEq(bidderRegistry.getProviderAmount(provider), 0);
         assertEq(providerRegistry.checkStake(provider), 250 ether);
@@ -177,7 +177,7 @@ contract OracleTest is Test {
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
 
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false,100);
         vm.stopPrank();
         assertEq(bidderRegistry.getProviderAmount(provider), bid);
 
@@ -209,7 +209,7 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index, true);
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider) + bid, 250 ether);
     }
@@ -242,11 +242,11 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, true);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true,100);
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, false);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether - bid);
         assertEq(bidderRegistry.getProviderAmount(provider), bid);
@@ -285,16 +285,16 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, true);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, true);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index3, true);
-        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index4, true);
-        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, true,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether - bid*4);
         assertEq(bidderRegistry.getProviderAmount(provider), 0);
@@ -335,16 +335,16 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, false);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, false);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index3, false);
-        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index4, false);
-        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, false,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether);
         assertEq(bidderRegistry.getProviderAmount(provider), 4*bid);

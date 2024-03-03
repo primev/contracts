@@ -142,7 +142,8 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @dev Slash funds from the provider and send the slashed amount to the bidder.
-     * @dev reenterancy not necessary but still putting here for precaution
+     * @dev reenterancy not necessary but still putting here for precaution.
+     * @dev Note we slash the funds irrespective of decay, this is to prevent timing games.
      * @param amt The amount to slash from the provider's stake.
      * @param provider The address of the provider.
      * @param bidder The address to transfer the slashed funds to.
@@ -150,13 +151,15 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     function slash(
         uint256 amt,
         address provider,
-        address payable bidder
+        address payable bidder,
+        uint256 residualBidAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
-        require(providerStakes[provider] >= amt, "Insufficient funds to slash");
-        providerStakes[provider] -= amt;
+        uint256 residualAmt = (amt * residualBidAfterDecay * PRECISION) / PERCENT;
+        require(providerStakes[provider] >= residualAmt, "Insufficient funds to slash");
+        providerStakes[provider] -= residualAmt;
 
-        uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
-        uint256 amtMinusFee = amt - feeAmt;
+        uint256 feeAmt = (residualAmt * uint256(feePercent) * PRECISION) / PERCENT;
+        uint256 amtMinusFee = residualAmt - feeAmt;
 
         if (feeRecipient != address(0)) {
             feeRecipientAmount += feeAmt;
