@@ -205,10 +205,10 @@ contract ProviderRegistryTest is Test {
 
         providerRegistry.registerAndStake{value: 2 ether}();
         providerRegistry.setPreconfirmationsContract(address(this));
-        providerRegistry.slash(1e18 wei, provider, payable(provider),100);
+        providerRegistry.slash(1e18 wei, provider, payable(provider),50);
         assertEq(
             providerRegistry.feeRecipientAmount(),
-            10e16 wei,
+            5e16 wei,
             "FeeRecipientAmount should match"
         );
         providerRegistry.withdrawFeeRecipientAmount();

@@ -434,7 +434,7 @@ contract PreConfCommitmentStore is Ownable {
             commitment.bid,
             commitment.commiter,
             payable(commitment.bidder),
-            100
+            residualDecayAfterBid
         );
 
         bidderRegistry.unlockFunds(commitment.commitmentHash);
