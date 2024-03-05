@@ -502,6 +502,65 @@ contract TestPreConfCommitmentStore is Test {
         }
     }
 
+
+    function test_InitiateRewardFullyDecayed() public {
+        // Assuming you have a stored commitment
+        {
+            (address bidder, ) = makeAddrAndKey("alice");
+            vm.deal(bidder, 5 ether);
+            vm.prank(bidder);
+            bidderRegistry.prepay{value: 2 ether}();
+            
+            // Step 1: Verify that the commitment has not been used before
+            bytes32 bidHash = verifyCommitmentNotUsed(
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                _testCommitmentAliceBob.bidSignature
+            );
+            bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                bidHash,
+                _bytesToHexString(_testCommitmentAliceBob.bidSignature)
+            );
+
+            // Verify that the commitment has not been used before
+            (bool commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
+                .commitments(preConfHash);
+            assert(commitmentUsed == false);
+            bytes32 index = preConfCommitmentStore.storeCommitment(
+                _testCommitmentAliceBob.bid,
+                _testCommitmentAliceBob.blockNumber,
+                _testCommitmentAliceBob.txnHash,
+                _testCommitmentAliceBob.decayStartTimestamp,
+                _testCommitmentAliceBob.decayEndTimestamp,
+                _testCommitmentAliceBob.bidSignature,
+                _testCommitmentAliceBob.commitmentSignature
+            );
+            (address commiter, ) = makeAddrAndKey("bob");
+            vm.deal(commiter, 5 ether);
+            vm.prank(commiter);
+            providerRegistry.registerAndStake{value: 4 ether}();
+            vm.prank(feeRecipient);
+            preConfCommitmentStore.initiateReward(index, 0);
+
+            (commitmentUsed, , , , , , , , , , , , ) = preConfCommitmentStore
+                .commitments(index);
+            // Verify that the commitment has been marked as used
+            assert(commitmentUsed == true);
+            // commitmentHash value is internal to contract and not asserted
+
+            assert(bidderRegistry.bidderPrepaidBalances(bidder) == 2 ether);
+            assert(bidderRegistry.providerAmount(commiter) == 0 ether);
+        }
+
+    }
     function _bytesToHexString(
         bytes memory _bytes
     ) public pure returns (string memory) {

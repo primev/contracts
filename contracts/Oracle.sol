@@ -100,7 +100,7 @@ contract Oracle is Ownable {
     ) external onlyOwner {
         // Check graffiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
-        
+        require(residualBidAfterDecay <= 100, "Residual bid after decay cannot be greater than 100 percent");
         IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
         if (commitment.commiter == builder && commitment.blockNumber == blockNumber) {
                 processCommitment(commitmentIndex, isSlash, residualBidAfterDecay);
