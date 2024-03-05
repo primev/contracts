@@ -34,7 +34,7 @@ interface IBidderRegistry {
     function retrieveFunds(
         bytes32 commitmentDigest,
         address payable provider,
-        uint256 risidualBidAfterDecay
+        uint256 residualBidAfterDecay
     ) external;
 
     function unlockFunds(bytes32 bidID) external;

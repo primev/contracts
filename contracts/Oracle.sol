@@ -96,14 +96,14 @@ contract Oracle is Ownable {
         uint256 blockNumber,
         string calldata blockBuilderName,
         bool isSlash,
-        uint256 risidualBidAfterDecay
+        uint256 residualBidAfterDecay
     ) external onlyOwner {
         // Check graffiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
         
         IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
         if (commitment.commiter == builder && commitment.blockNumber == blockNumber) {
-                processCommitment(commitmentIndex, isSlash, risidualBidAfterDecay);
+                processCommitment(commitmentIndex, isSlash, residualBidAfterDecay);
         }
 
     }
@@ -138,11 +138,11 @@ contract Oracle is Ownable {
      * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.
      */
-    function processCommitment(bytes32 commitmentIndex, bool isSlash, uint256 risidualBidAfterDecay) private {
+    function processCommitment(bytes32 commitmentIndex, bool isSlash, uint256 residualBidAfterDecay) private {
         if (isSlash) {
-            preConfContract.initiateSlash(commitmentIndex, risidualBidAfterDecay);
+            preConfContract.initiateSlash(commitmentIndex, residualBidAfterDecay);
         } else {
-            preConfContract.initiateReward(commitmentIndex, risidualBidAfterDecay);
+            preConfContract.initiateReward(commitmentIndex, residualBidAfterDecay);
         }
         // Emit an event that a commitment has been processed
         emit CommitmentProcessed(commitmentIndex, isSlash);
