@@ -330,6 +330,7 @@ contract PreConfCommitmentStore is Ownable {
             address commiterAddress = commitmentDigest.recover(commitmentSignature);
 
             require(stake > (10 * bid), "Stake too low");
+            require(decayStartTimeStamp < decayEndTimeStamp, "Invalid decay time");
             
             PreConfCommitment memory newCommitment =  PreConfCommitment(
                 false,
