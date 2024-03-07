@@ -96,14 +96,14 @@ contract Oracle is Ownable {
         uint256 blockNumber,
         string calldata blockBuilderName,
         bool isSlash,
-        uint256 residualBidAfterDecay
+        uint256 residualBidPercentAfterDecay
     ) external onlyOwner {
         // Check graffiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
-        require(residualBidAfterDecay <= 100, "Residual bid after decay cannot be greater than 100 percent");
+        require(residualBidPercentAfterDecay <= 100, "Residual bid after decay cannot be greater than 100 percent");
         IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
         if (commitment.commiter == builder && commitment.blockNumber == blockNumber) {
-                processCommitment(commitmentIndex, isSlash, residualBidAfterDecay);
+                processCommitment(commitmentIndex, isSlash, residualBidPercentAfterDecay);
         }
 
     }
@@ -138,11 +138,11 @@ contract Oracle is Ownable {
      * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.
      */
-    function processCommitment(bytes32 commitmentIndex, bool isSlash, uint256 residualBidAfterDecay) private {
+    function processCommitment(bytes32 commitmentIndex, bool isSlash, uint256 residualBidPercentAfterDecay) private {
         if (isSlash) {
-            preConfContract.initiateSlash(commitmentIndex, residualBidAfterDecay);
+            preConfContract.initiateSlash(commitmentIndex, residualBidPercentAfterDecay);
         } else {
-            preConfContract.initiateReward(commitmentIndex, residualBidAfterDecay);
+            preConfContract.initiateReward(commitmentIndex, residualBidPercentAfterDecay);
         }
         // Emit an event that a commitment has been processed
         emit CommitmentProcessed(commitmentIndex, isSlash);

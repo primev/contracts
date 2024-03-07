@@ -12,6 +12,6 @@ interface IProviderRegistry {
         uint256 amt,
         address provider,
         address payable bidder,
-        uint256 residualBidAfterDecay
+        uint256 residualBidPercentAfterDecay
     ) external;
 }

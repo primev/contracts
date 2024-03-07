@@ -152,9 +152,9 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         uint256 amt,
         address provider,
         address payable bidder,
-        uint256 residualBidAfterDecay
+        uint256 residualBidPercentAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
-        uint256 residualAmt = (amt * residualBidAfterDecay * PRECISION) / PERCENT;
+        uint256 residualAmt = (amt * residualBidPercentAfterDecay * PRECISION) / PERCENT;
         require(providerStakes[provider] >= residualAmt, "Insufficient funds to slash");
         providerStakes[provider] -= residualAmt;
 
