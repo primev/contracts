@@ -420,7 +420,7 @@ contract PreConfCommitmentStore is Ownable {
      * @dev Initiate a slash for a commitment.
      * @param commitmentIndex The hash of the commitment to be slashed.
      */
-    function initiateSlash(bytes32 commitmentIndex, uint256 residualDecayAfterBid) public onlyOracle {
+    function initiateSlash(bytes32 commitmentIndex, uint256 residualBidAfterDecay) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
             !commitments[commitmentIndex].commitmentUsed,
@@ -435,7 +435,7 @@ contract PreConfCommitmentStore is Ownable {
             commitment.bid,
             commitment.commiter,
             payable(commitment.bidder),
-            residualDecayAfterBid
+            residualBidAfterDecay
         );
 
         bidderRegistry.unlockFunds(commitment.commitmentHash);
