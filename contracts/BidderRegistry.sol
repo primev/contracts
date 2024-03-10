@@ -163,14 +163,16 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      */
     function retrieveFunds(
         bytes32 commitmentDigest,
-        address payable provider
+        address payable provider,
+        uint256 residualBidPercentAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
 
         BidState memory bidState = BidPayment[commitmentDigest];
         require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
-        uint256 amt = bidState.bidAmt;
-        uint256 feeAmt = (amt * uint256(feePercent) * PRECISION) / PERCENT;
-        uint256 amtMinusFee = amt - feeAmt;
+        uint256 decayedAmt = ( bidState.bidAmt * residualBidPercentAfterDecay * PRECISION) / PERCENT;
+
+        uint256 feeAmt = (decayedAmt * uint256(feePercent) * PRECISION) / PERCENT;
+        uint256 amtMinusFeeAndDecay = decayedAmt - feeAmt;
 
         if (feeRecipient != address(0)) {
             feeRecipientAmount += feeAmt;
@@ -178,13 +180,15 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
             protocolFeeAmount += feeAmt;
         }
 
-        providerAmount[provider] += amtMinusFee;
+        providerAmount[provider] += amtMinusFeeAndDecay;
 
-        // TODO(@ckartik): Ensure we throughly test this flow
+        // Ensures the bidder gets back the bid amount - decayed reward given to provider and protocol
+        bidderPrepaidBalances[bidState.bidder] += bidState.bidAmt - decayedAmt;
+
         BidPayment[commitmentDigest].state = State.Withdrawn;
         BidPayment[commitmentDigest].bidAmt = 0;
 
-        emit FundsRetrieved(commitmentDigest, amt);
+        emit FundsRetrieved(commitmentDigest, decayedAmt);
     }
 
     /**
@@ -201,7 +205,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
         BidPayment[bidID].state = State.Withdrawn;
         BidPayment[bidID].bidAmt = 0;
-
+        
         emit FundsRetrieved(bidID, amt);
     }
 

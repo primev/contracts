@@ -19,13 +19,13 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
-        run: forge test -vvv
+        run: forge test -vvv --via-ir
 
       - name: Run snapshot
-        run: forge snapshot
+        run: forge snapshot --via-ir
 
       - name: Run coverage
-        run: forge coverage
+        run: forge coverage --ir-minimum
 
   build:
     name: Hardhat Checks and Scripts

@@ -20,7 +20,19 @@ contract OracleTest is Test {
     uint256 testNumber;
     uint64 testNumber2;
     BidderRegistry internal bidderRegistry;
+    TestCommitment internal _testCommitmentAliceBob;
 
+    struct TestCommitment {
+        uint64 bid;
+        uint64 blockNumber;
+        string txnHash;
+        uint64 decayStartTimestamp;
+        uint64 decayEndTimestamp;
+        bytes32 bidDigest;
+        bytes32 commitmentDigest;
+        bytes bidSignature;
+        bytes commitmentSignature;
+    }
 
     // Events to match against
     event BlockDataRequested(uint256 blockNumber);
@@ -31,6 +43,18 @@ contract OracleTest is Test {
     function setUp() public {
         testNumber = 2;
         testNumber2 = 2;
+
+        _testCommitmentAliceBob = TestCommitment(
+            2,
+            2,
+            "0xkartik",
+            10,
+            20,
+            0xa0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100,
+            0x54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc,
+            hex"876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b",
+            hex"ec0f11f77a9e96bb9c2345f031a5d12dca8d01de8a2e957cf635be14802f9ad01c6183688f0c2672639e90cc2dce0662d9bea3337306ca7d4b56dd80326aaa231b"
+        );
 
         feePercent = 10;
         minStake = 1e18 wei;
@@ -87,14 +111,11 @@ contract OracleTest is Test {
     function test_builderUnidentified() public {
         vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
         // Unregistered Builder
-        (address bidder, uint256 bidderPk) = makeAddrAndKey("k builder");
-        (address provider, uint256 providerPk) = makeAddrAndKey("primev builder");
+        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
+        (address provider, uint256 providerPk) = makeAddrAndKey("bob");
 
         (address builder3,) = makeAddrAndKey("titan builder");
         (address builder4,) = makeAddrAndKey("zk builder");
-
-        uint64 blockNumber = 2;
-        uint64 bid = 2;
 
         oracle.addBuilderAddress("titan builder", builder3);
         oracle.addBuilderAddress("zk builder", builder4);
@@ -114,12 +135,20 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 commitmentIndex = constructAndStoreCommitment(bid, blockNumber, "0xkartik", bidderPk, providerPk);
+        bytes32 commitmentIndex = constructAndStoreCommitment(
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            bidderPk,
+            providerPk
+        );
 
         string[] memory txnList = new string[](1);
         txnList[0] = string(abi.encodePacked(keccak256("0xkartik")));
         vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
-        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, blockNumber, "k builder", false);
+        oracle.processBuilderCommitmentForBlockNumber(commitmentIndex, _testCommitmentAliceBob.blockNumber, "k builder", false, 50);
         vm.stopPrank();
         assertEq(bidderRegistry.getProviderAmount(provider), 0);
         assertEq(providerRegistry.checkStake(provider), 250 ether);
@@ -143,14 +172,14 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, bidderPk, providerPk);
+        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, 10, 20, bidderPk, providerPk);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
 
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, false, 50);
         vm.stopPrank();
-        assertEq(bidderRegistry.getProviderAmount(provider), bid);
+        assertEq(bidderRegistry.getProviderAmount(provider), bid*(50)/100);
 
     }
 
@@ -158,7 +187,7 @@ contract OracleTest is Test {
     function test_process_commitment_slash() public {
         string memory txn = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         uint64 blockNumber = 200;
-        uint64 bid = 2;
+        uint64 bid = 200;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
@@ -173,16 +202,16 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, bidderPk, providerPk);
+        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, 10, 20, bidderPk, providerPk);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index, true);
-        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index, blockNumber, blockBuilderName, true,50);
         vm.stopPrank();
-        assertEq(providerRegistry.checkStake(provider) + bid, 250 ether);
+        assertEq(providerRegistry.checkStake(provider) + ((bid * 50)/100), 250 ether);
     }
 
 
@@ -190,10 +219,12 @@ contract OracleTest is Test {
         string memory txn1 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         string memory txn2 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d09";
         uint64 blockNumber = 201;
-        uint64 bid = 5;
+        uint64 bid = 100;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
+
+        uint256 residualAfterDecay = 50;
 
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
@@ -205,22 +236,22 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, bidderPk, providerPk);
-        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, bidderPk, providerPk);
+        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, 10, 20, bidderPk, providerPk);
+        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, 10, 20, bidderPk, providerPk);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
         oracle.addBuilderAddress(blockBuilderName, provider);
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, true);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true,100);
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, false);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,50);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether - bid);
-        assertEq(bidderRegistry.getProviderAmount(provider), bid);
+        assertEq(bidderRegistry.getProviderAmount(provider), (bid * (100 - feePercent) /100) * residualAfterDecay /100 );
     }
 
 
@@ -245,10 +276,10 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, bidderPk, providerPk);
-        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, bidderPk, providerPk);
-        bytes32 index3 = constructAndStoreCommitment(bid, blockNumber, txn3, bidderPk, providerPk);
-        bytes32 index4 = constructAndStoreCommitment(bid, blockNumber, txn4, bidderPk, providerPk);
+        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, 10, 20, bidderPk, providerPk);
+        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, 10, 20, bidderPk, providerPk);
+        bytes32 index3 = constructAndStoreCommitment(bid, blockNumber, txn3, 10, 20, bidderPk, providerPk);
+        bytes32 index4 = constructAndStoreCommitment(bid, blockNumber, txn4, 10, 20, bidderPk, providerPk);
 
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
@@ -256,16 +287,16 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, true);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, true);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index3, true);
-        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, true,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index4, true);
-        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, true);
+        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, true,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether - bid*4);
         assertEq(bidderRegistry.getProviderAmount(provider), 0);
@@ -292,13 +323,13 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, bidderPk, providerPk);
+        bytes32 index1 = constructAndStoreCommitment(bid, blockNumber, txn1, 10, 20, bidderPk, providerPk);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - bid);
-        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, bidderPk, providerPk);
+        bytes32 index2 = constructAndStoreCommitment(bid, blockNumber, txn2, 10, 20, bidderPk, providerPk);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 2*bid);
-        bytes32 index3 = constructAndStoreCommitment(bid, blockNumber, txn3, bidderPk, providerPk);
+        bytes32 index3 = constructAndStoreCommitment(bid, blockNumber, txn3, 10, 20, bidderPk, providerPk);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 3*bid);
-        bytes32 index4 = constructAndStoreCommitment(bid, blockNumber, txn4, bidderPk, providerPk);
+        bytes32 index4 = constructAndStoreCommitment(bid, blockNumber, txn4, 10, 20, bidderPk, providerPk);
         assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether - 4*bid);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
@@ -306,16 +337,16 @@ contract OracleTest is Test {
 
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index1, false);
-        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index1, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index2, false);
-        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index2, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index3, false);
-        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index3, blockNumber, blockBuilderName, false,100);
         vm.expectEmit(true, false, false, true);
         emit CommitmentProcessed(index4, false);
-        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, false);
+        oracle.processBuilderCommitmentForBlockNumber(index4, blockNumber, blockBuilderName, false,100);
         vm.stopPrank();
         assertEq(providerRegistry.checkStake(provider), 250 ether);
         assertEq(bidderRegistry.getProviderAmount(provider), 4*bid);
@@ -339,7 +370,7 @@ contract OracleTest is Test {
         providerRegistry.registerAndStake{value: 250 ether}();
         vm.stopPrank();
 
-        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, bidderPk, providerPk);
+        bytes32 index = constructAndStoreCommitment(bid, blockNumber, txn, 10, 20, bidderPk, providerPk);
         PreConfCommitmentStore.PreConfCommitment memory commitment = preConfCommitmentStore.getCommitment(index);
 
         vm.startPrank(address(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3));
@@ -363,13 +394,17 @@ contract OracleTest is Test {
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
+        uint64 decayStartTimestamp,
+        uint64 decayEndTimestamp,
         uint256 bidderPk,
         uint256 signerPk
     ) public returns (bytes32 commitmentIndex) {
         bytes32 bidHash = preConfCommitmentStore.getBidHash(
             txnHash,
             bid,
-            blockNumber
+            blockNumber,
+            decayStartTimestamp,
+            decayEndTimestamp
         );
 
 
@@ -380,6 +415,8 @@ contract OracleTest is Test {
             txnHash,
             bid,
             blockNumber,
+            decayStartTimestamp,
+            decayEndTimestamp,
             bidHash,
             _bytesToHexString(bidSignature)
         );
@@ -391,6 +428,8 @@ contract OracleTest is Test {
             bid,
             blockNumber,
             txnHash,
+            decayStartTimestamp,
+            decayEndTimestamp,
             bidSignature,
             commitmentSignature
         );

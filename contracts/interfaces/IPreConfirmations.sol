@@ -16,11 +16,15 @@ interface IPreConfCommitmentStore {
         uint64 bid;
         uint64 blockNumber;
         bytes32 bidHash;
+        uint64 decayStartTimeStamp;
+        uint64 decayEndTimeStamp;
         string txnHash;
         bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
+        uint256 blockCommitedAt;
     }
+
 
 
     event SignatureVerified(
@@ -71,9 +75,9 @@ interface IPreConfCommitmentStore {
 
     function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
 
-    function initiateSlash(bytes32 commitmentIndex) external;
+    function initiateSlash(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
 
-    function initateReward(bytes32 commitmentIndex) external;
+    function initiateReward(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
     
     function unlockBidFunds(bytes32 commitmentDigest) external;
 

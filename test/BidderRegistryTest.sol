@@ -135,7 +135,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.prepay{value: 2 ether}();
         address provider = vm.addr(4);
         bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider),100);
         uint256 providerAmount = bidderRegistry.providerAmount(provider);
         uint256 feeRecipientAmount = bidderRegistry.feeRecipientAmount();
 
@@ -157,7 +157,7 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider),100);
 
         uint256 feerecipientValueAfter = bidderRegistry.feeRecipientAmount();
         uint256 providerAmount = bidderRegistry.providerAmount(provider);
@@ -175,7 +175,7 @@ contract BidderRegistryTest is Test {
         vm.expectRevert(bytes(""));
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider),100);
     }
 
     function testFail_shouldRetrieveFundsGreaterThanStake() public {
@@ -190,7 +190,7 @@ contract BidderRegistryTest is Test {
         vm.prank(address(this));
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 3 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider),100);
     }
 
     function test_withdrawFeeRecipientAmount() public {
@@ -201,7 +201,7 @@ contract BidderRegistryTest is Test {
         uint256 balanceBefore = feeRecipient.balance;
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider),100);
         bidderRegistry.withdrawFeeRecipientAmount();
         uint256 balanceAfter = feeRecipient.balance;
         assertEq(balanceAfter - balanceBefore, 100000000000000000);
@@ -222,7 +222,7 @@ contract BidderRegistryTest is Test {
         uint256 balanceBefore = address(provider).balance;
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 2 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider), 100);
         bidderRegistry.withdrawProviderAmount(payable(provider));
         uint256 balanceAfter = address(provider).balance;
         assertEq(balanceAfter - balanceBefore, 1800000000000000000);
@@ -271,7 +271,7 @@ contract BidderRegistryTest is Test {
         uint256 balanceBefore = address(bidder).balance;
         bytes32 bidID = keccak256("1234");
         bidderRegistry.LockBidFunds(bidID, 2 ether, bidder);
-        bidderRegistry.retrieveFunds(bidID, payable(provider));
+        bidderRegistry.retrieveFunds(bidID, payable(provider), 100);
         vm.prank(bidderRegistry.owner());
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
         uint256 balanceAfter = address(bidder).balance;
