@@ -25,7 +25,13 @@ interface IPreConfCommitmentStore {
         uint256 blockCommitedAt;
     }
 
-
+    struct EncrPreConfCommitment {
+        bool commitmentUsed;
+        address commiter;
+        bytes32 commitmentDigest;
+        bytes commitmentSignature;
+        uint256 blockCommitedAt;
+    }
 
     event SignatureVerified(
         address indexed signer,
@@ -70,11 +76,18 @@ interface IPreConfCommitmentStore {
         bytes memory commitmentSignature
     ) external returns (uint256);
 
+    function storeEncryptedCommitment(
+        bytes32 commitmentDigest,
+        bytes memory commitmentSignature
+    ) external returns (uint256);
+
     function getCommitmentsByBlockNumber(uint256 blockNumber) external view returns (bytes32[] memory);
 
 
     function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
 
+    function getEncryptedCommitment(bytes32 commitmentIndex) external view returns (EncrPreConfCommitment memory);
+    
     function initiateSlash(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
 
     function initiateReward(bytes32 commitmentIndex, uint256 residualDecayedBid) external;

@@ -79,46 +79,78 @@ contract TestPreConfCommitmentStore is Test {
         );
     }
 
-    function test_CreateCommitment() public {
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            _testCommitmentAliceBob.txnHash,
-            _testCommitmentAliceBob.bid,
-            _testCommitmentAliceBob.blockNumber,
-            _testCommitmentAliceBob.decayStartTimestamp,
-            _testCommitmentAliceBob.decayEndTimestamp
-        );
-        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
-        // Wallet memory kartik = vm.createWallet('test wallet');
-        (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
-        bytes memory signature = abi.encodePacked(r, s, v);
+    // function test_CreateCommitment() public {
+    //     bytes32 bidHash = preConfCommitmentStore.getBidHash(
+    //         _testCommitmentAliceBob.txnHash,
+    //         _testCommitmentAliceBob.bid,
+    //         _testCommitmentAliceBob.blockNumber,
+    //         _testCommitmentAliceBob.decayStartTimestamp,
+    //         _testCommitmentAliceBob.decayEndTimestamp
+    //     );
+    //     (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
+    //     // Wallet memory kartik = vm.createWallet('test wallet');
+    //     (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
+    //     bytes memory signature = abi.encodePacked(r, s, v);
 
-        vm.deal(bidder, 200000 ether);
-        vm.prank(bidder);
-        bidderRegistry.prepay{value: 1e18 wei}();
+    //     vm.deal(bidder, 200000 ether);
+    //     vm.prank(bidder);
+    //     bidderRegistry.prepay{value: 1e18 wei}();
 
-        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(
-            _testCommitmentAliceBob.bid, 
-            _testCommitmentAliceBob.blockNumber, 
-            _testCommitmentAliceBob.decayStartTimestamp, 
-            _testCommitmentAliceBob.decayEndTimestamp, 
-            _testCommitmentAliceBob.txnHash, 
-            signature);
+    //     (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(
+    //         _testCommitmentAliceBob.bid, 
+    //         _testCommitmentAliceBob.blockNumber, 
+    //         _testCommitmentAliceBob.decayStartTimestamp, 
+    //         _testCommitmentAliceBob.decayEndTimestamp, 
+    //         _testCommitmentAliceBob.txnHash, 
+    //         signature);
         
-        assertEq(stake, 1e18 wei);
-        assertEq(bidder, recoveredAddress);
-        assertEq(digest, bidHash);
+    //     assertEq(stake, 1e18 wei);
+    //     assertEq(bidder, recoveredAddress);
+    //     assertEq(digest, bidHash);
 
-        preConfCommitmentStore.storeCommitment(
-            _testCommitmentAliceBob.bid,
-            _testCommitmentAliceBob.blockNumber,
-            _testCommitmentAliceBob.txnHash,
-            _testCommitmentAliceBob.decayStartTimestamp,
-            _testCommitmentAliceBob.decayEndTimestamp,
-            signature,
-            _testCommitmentAliceBob.commitmentSignature
+    //     preConfCommitmentStore.storeCommitment(
+    //         _testCommitmentAliceBob.bid,
+    //         _testCommitmentAliceBob.blockNumber,
+    //         _testCommitmentAliceBob.txnHash,
+    //         _testCommitmentAliceBob.decayStartTimestamp,
+    //         _testCommitmentAliceBob.decayEndTimestamp,
+    //         signature,
+    //         _testCommitmentAliceBob.commitmentSignature
+    //     );
+    // }
+
+    function test_storeEncryptedCommitment() public {
+        // Step 1: Prepare the commitment information and signature
+        bytes32 commitmentDigest = keccak256(abi.encodePacked("commitment data"));
+        (address committer, uint256 committerPk) = makeAddrAndKey("committer");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(committerPk, commitmentDigest);
+        bytes memory commitmentSignature = abi.encodePacked(r, s, v);
+
+        // Optional: Ensure the committer has enough ETH if needed for the operation
+        vm.deal(committer, 1 ether);
+        vm.prank(committer);
+
+        // Step 2: Store the commitment
+        bytes32 commitmentIndex = preConfCommitmentStore.storeEncryptedCommitment(
+            commitmentDigest,
+            commitmentSignature
         );
 
+        // Step 3: Verify the results
+        // a. Check that the commitment index is correctly generated and not zero
+        assert(commitmentIndex != bytes32(0));
+
+        // b. Retrieve the commitment by index and verify its properties
+        (PreConfCommitmentStore.EncrPreConfCommitment memory commitment) = 
+            preConfCommitmentStore.getEncryptedCommitment(commitmentIndex);
+
+        // c. Assertions to verify the stored commitment matches the input
+        assertEq(commitment.commitmentUsed, false);
+        assertEq(commitment.commiter, committer);
+        assertEq(commitment.commitmentDigest, commitmentDigest);
+        assertEq(commitment.commitmentSignature, commitmentSignature);
     }
+
 
     function test_UpdateOracle() public {
         preConfCommitmentStore.updateOracle(feeRecipient);

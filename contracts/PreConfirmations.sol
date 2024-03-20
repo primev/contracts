@@ -25,7 +25,9 @@ contract PreConfCommitmentStore is Ownable {
 
     /// @dev EIP-712 Type Hash for preconfirmation bid
     bytes32 public constant EIP712_BID_TYPEHASH =
-        keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)");
+        keccak256(
+            "PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)"
+        );
 
     /// @dev commitment counter
     uint256 public commitmentCount;
@@ -51,8 +53,10 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
 
-    /// @dev Mapping from address to commitmentss list
+    /// @dev Mapping from address to commitments list
     mapping(address => bytes32[]) public providerCommitments;
+
+    mapping(address => bytes32[]) public providerEncryptedCommitments;
 
     /// @dev Mapping for blocknumber to list of hash of commitments
     mapping(uint256 => bytes32[]) public blockCommitments;
@@ -60,6 +64,8 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev Commitment Hash -> Commitemnt
     /// @dev Only stores valid commitments
     mapping(bytes32 => PreConfCommitment) public commitments;
+
+    mapping(bytes32 => EncrPreConfCommitment) public encryptedCommitments;
 
     /// @dev Struct for all the information around preconfirmations commitment
     struct PreConfCommitment {
@@ -74,6 +80,14 @@ contract PreConfCommitmentStore is Ownable {
         string txnHash;
         bytes32 commitmentHash;
         bytes bidSignature;
+        bytes commitmentSignature;
+        uint256 blockCommitedAt;
+    }
+
+    struct EncrPreConfCommitment {
+        bool commitmentUsed;
+        address commiter;
+        bytes32 commitmentDigest;
         bytes commitmentSignature;
         uint256 blockCommitedAt;
     }
@@ -118,7 +132,7 @@ contract PreConfCommitmentStore is Ownable {
     constructor(
         address _providerRegistry,
         address _bidderRegistry,
-        address _oracle, 
+        address _oracle,
         address _owner
     ) {
         oracle = _oracle;
@@ -211,7 +225,6 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
-
     /**
      * @dev Internal function to verify a bid
      * @param bid bid id.
@@ -234,7 +247,13 @@ contract PreConfCommitmentStore is Ownable {
         view
         returns (bytes32 messageDigest, address recoveredAddress, uint256 stake)
     {
-        messageDigest = getBidHash(txnHash, bid, blockNumber, decayStartTimeStamp, decayEndTimeStamp);
+        messageDigest = getBidHash(
+            txnHash,
+            bid,
+            blockNumber,
+            decayStartTimeStamp,
+            decayEndTimeStamp
+        );
         recoveredAddress = messageDigest.recover(bidSignature);
         stake = bidderRegistry.getAllowance(recoveredAddress);
         require(stake > (10 * bid), "Invalid bid");
@@ -260,11 +279,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes32 bidHash,
         bytes memory bidSignature,
         bytes memory commitmentSignature
-    )
-        public
-        view
-        returns (bytes32 preConfHash, address commiterAddress)
-    {
+    ) public view returns (bytes32 preConfHash, address commiterAddress) {
         preConfHash = getPreConfHash(
             txnHash,
             bid,
@@ -280,13 +295,26 @@ contract PreConfCommitmentStore is Ownable {
 
     function getCommitmentIndex(
         PreConfCommitment memory commitment
-    )  public pure returns (bytes32){
-        return keccak256(
-            abi.encodePacked(
-                commitment.commitmentHash,
-                commitment.commitmentSignature
-            )
-        );
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    commitment.commitmentHash,
+                    commitment.commitmentSignature
+                )
+            );
+    }
+
+    function getEncryptedCommitmentIndex(
+        EncrPreConfCommitment memory commitment
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    commitment.commitmentDigest,
+                    commitment.commitmentSignature
+                )
+            );
     }
 
     /**
@@ -327,12 +355,17 @@ contract PreConfCommitmentStore is Ownable {
                 _bytesToHexString(bidSignature)
             );
 
-            address commiterAddress = commitmentDigest.recover(commitmentSignature);
+            address commiterAddress = commitmentDigest.recover(
+                commitmentSignature
+            );
 
             require(stake > (10 * bid), "Stake too low");
-            require(decayStartTimeStamp < decayEndTimeStamp, "Invalid decay time");
-            
-            PreConfCommitment memory newCommitment =  PreConfCommitment(
+            require(
+                decayStartTimeStamp < decayEndTimeStamp,
+                "Invalid decay time"
+            );
+
+            PreConfCommitment memory newCommitment = PreConfCommitment(
                 false,
                 bidderAddress,
                 commiterAddress,
@@ -356,42 +389,68 @@ contract PreConfCommitmentStore is Ownable {
             // Push pointers to other mappings
             providerCommitments[commiterAddress].push(commitmentIndex);
             blockCommitments[blockNumber].push(commitmentIndex);
-            
+
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
 
             // Check if Bid has bid-amt stored
             bidderRegistry.LockBidFunds(commitmentDigest, bid, bidderAddress);
-
         }
 
         return commitmentIndex;
     }
 
-        /**
+    function storeEncryptedCommitment(
+        bytes32 commitmentDigest,
+        bytes memory commitmentSignature
+    ) public returns (bytes32 commitmentIndex) {
+        {
+            address commiterAddress = commitmentDigest.recover(
+                commitmentSignature
+            );
+
+            EncrPreConfCommitment memory newCommitment = EncrPreConfCommitment(
+                false,
+                commiterAddress,
+                commitmentDigest,
+                commitmentSignature,
+                block.number
+            );
+
+            commitmentIndex = getEncryptedCommitmentIndex(newCommitment);
+
+            // Store commitment
+            encryptedCommitments[commitmentIndex] = newCommitment;
+
+            // Push pointers to other mappings
+            providerEncryptedCommitments[commiterAddress].push(commitmentIndex);
+
+            commitmentCount++;
+            commitmentsCount[commiterAddress] += 1;
+        }
+
+        return commitmentIndex;
+    }
+
+    /**
      * @dev Retrieves the list of commitments for a given committer.
      * @param commiter The address of the committer.
      * @return A list of PreConfCommitment structures for the specified committer.
      */
-    function getCommitmentsByCommitter(address commiter)
-        public
-        view
-        returns (bytes32[] memory)
-    {
+    function getCommitmentsByCommitter(
+        address commiter
+    ) public view returns (bytes32[] memory) {
         return providerCommitments[commiter];
     }
 
-
-    /** 
+    /**
      * @dev Retrieves the list of commitments for a given block number.
-    * @param blockNumber The block number.
-    * @return A list of indexes referencing preconfimration structures for the specified block number.
-    */
-    function getCommitmentsByBlockNumber(uint256 blockNumber)
-        public
-        view
-        returns (bytes32[] memory)
-    {
+     * @param blockNumber The block number.
+     * @return A list of indexes referencing preconfimration structures for the specified block number.
+     */
+    function getCommitmentsByBlockNumber(
+        uint256 blockNumber
+    ) public view returns (bytes32[] memory) {
         return blockCommitments[blockNumber];
     }
 
@@ -400,8 +459,9 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentIndex The index of the commitment.
      * @return txnHash The transaction hash.
      */
-    function getTxnHashFromCommitment(bytes32 commitmentIndex) public view returns (string memory txnHash)
-    {
+    function getTxnHashFromCommitment(
+        bytes32 commitmentIndex
+    ) public view returns (string memory txnHash) {
         return commitments[commitmentIndex].txnHash;
     }
 
@@ -416,11 +476,20 @@ contract PreConfCommitmentStore is Ownable {
         return commitments[commitmentIndex];
     }
 
+    function getEncryptedCommitment(
+        bytes32 commitmentIndex
+    ) public view returns (EncrPreConfCommitment memory) {
+        return encryptedCommitments[commitmentIndex];
+    }
+
     /**
      * @dev Initiate a slash for a commitment.
      * @param commitmentIndex The hash of the commitment to be slashed.
      */
-    function initiateSlash(bytes32 commitmentIndex, uint256 residualBidPercentAfterDecay) public onlyOracle {
+    function initiateSlash(
+        bytes32 commitmentIndex,
+        uint256 residualBidPercentAfterDecay
+    ) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
             !commitments[commitmentIndex].commitmentUsed,
@@ -442,18 +511,21 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
-        * @dev Initiate a return of funds for a bid that was not slashed.
-        * @param commitmentDigest The hash of the bid to be unlocked.
+     * @dev Initiate a return of funds for a bid that was not slashed.
+     * @param commitmentDigest The hash of the bid to be unlocked.
      */
-     function unlockBidFunds(bytes32 commitmentDigest) public onlyOracle {
+    function unlockBidFunds(bytes32 commitmentDigest) public onlyOracle {
         bidderRegistry.unlockFunds(commitmentDigest);
-     }
+    }
 
     /**
      * @dev Initiate a reward for a commitment.
      * @param commitmentIndex The hash of the commitment to be rewarded.
      */
-    function initiateReward(bytes32 commitmentIndex, uint256 residualBidPercentAfterDecay) public onlyOracle {
+    function initiateReward(
+        bytes32 commitmentIndex,
+        uint256 residualBidPercentAfterDecay
+    ) public onlyOracle {
         PreConfCommitment memory commitment = commitments[commitmentIndex];
         require(
             !commitments[commitmentIndex].commitmentUsed,
@@ -493,7 +565,9 @@ contract PreConfCommitmentStore is Ownable {
      * @dev Updates the address of the bidder registry.
      * @param newBidderRegistry The new bidder registry address.
      */
-    function updateBidderRegistry(address newBidderRegistry) external onlyOwner {
+    function updateBidderRegistry(
+        address newBidderRegistry
+    ) external onlyOwner {
         bidderRegistry = IBidderRegistry(newBidderRegistry);
     }
 
