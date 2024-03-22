@@ -79,7 +79,7 @@ contract ValidatorRegistryTest is Test {
         address[] memory fromAddrs = new address[](1);
         fromAddrs[0] = user1;
         validatorRegistry.unstake(fromAddrs);
-        vm.expectRevert("Not authorized to unstake. Must be stake originator or EOA who's staked");
+        vm.expectRevert("Not authorized to unstake. Must be stake originator or EOA whos staked");
         vm.stopPrank();
     }
 
