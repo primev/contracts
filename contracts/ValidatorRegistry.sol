@@ -52,7 +52,7 @@ contract ValidatorRegistry is Ownable {
     function unstake(address[] calldata fromAddrs) external {
         for (uint256 i = 0; i < fromAddrs.length; i++) {
             require(stakedBalances[fromAddrs[i]] > 0, "No balance to unstake");
-            require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to unstake. Must be stake originator or EOA who's staked");
+            require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to unstake. Must be stake originator or EOA whos staked");
 
             unstakeBlockNums[fromAddrs[i]] = block.number;
             emit Unstaked(msg.sender, stakedBalances[fromAddrs[i]]);
@@ -62,7 +62,7 @@ contract ValidatorRegistry is Ownable {
     function withdraw(address[] calldata fromAddrs) external {
         for (uint256 i = 0; i < fromAddrs.length; i++) {
             require(stakedBalances[fromAddrs[i]] > 0, "No staked balance to withdraw");
-            require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to withdraw. Must be stake originator or EOA who's staked");
+            require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to withdraw. Must be stake originator or EOA whos staked");
             require(block.number >= unstakeBlockNums[fromAddrs[i]] + unstakePeriodBlocks, "withdrawal not allowed yet. Blocks requirement not met.");
 
             uint256 amount = stakedBalances[fromAddrs[i]];
