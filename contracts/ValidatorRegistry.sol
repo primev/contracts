@@ -5,26 +5,24 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ValidatorRegistry is Ownable {
 
-    address public slashRecipient;
     uint256 public minStake;
+    uint256 public unstakePeriodBlocks;
+
+    constructor(uint256 _minStake, uint256 _unstakePeriodBlocks) {
+        require(_minStake > 0, "Minimum stake must be greater than 0");
+        require(_unstakePeriodBlocks > 0, "Unstake period must be greater than 0");
+        minStake = _minStake;
+        unstakePeriodBlocks = _unstakePeriodBlocks;
+    }
 
     mapping(address => uint256) public stakedBalances;
     mapping(address => address) public stakeOriginators;
+    mapping(address => uint256) public unstakeBlockNums;
 
-    event SelfStake(address indexed staker, uint256 amount);
-    event StakeSplit(address indexed staker, address[] recipients, uint256 totalAmount);
+    event SelfStaked(address indexed staker, uint256 amount);
+    event SplitStaked(address indexed staker, address[] recipients, uint256 totalAmount);
+    event Unstaked(address indexed staker, uint256 amount);
     event StakeWithdrawn(address indexed staker, uint256 amount);
-
-    constructor(
-        uint256 _minStake,
-        address _slashRecipient
-    ) {
-        require(_minStake > 0, "Minimum stake must be greater than 0");
-        require(_slashRecipient != address(0), "Slash recipient must be a valid address");
-
-        minStake = _minStake;
-        slashRecipient = _slashRecipient;
-    }
 
     function selfStake() external payable {
         require(msg.value >= minStake, "Stake amount must meet the minimum requirement");
@@ -33,7 +31,7 @@ contract ValidatorRegistry is Ownable {
         stakedBalances[msg.sender] += msg.value;
         stakeOriginators[msg.sender] = msg.sender;
 
-        emit SelfStake(msg.sender, msg.value);
+        emit SelfStaked(msg.sender, msg.value);
     }
 
     function splitStake(address[] calldata recipients) external payable {
@@ -48,13 +46,24 @@ contract ValidatorRegistry is Ownable {
             stakeOriginators[recipients[i]] = msg.sender;
         }
 
-        emit StakeSplit(msg.sender, recipients, msg.value);
+        emit SplitStaked(msg.sender, recipients, msg.value);
+    }
+
+    function unstake(address[] calldata fromAddrs) external {
+        for (uint256 i = 0; i < fromAddrs.length; i++) {
+            require(stakedBalances[fromAddrs[i]] > 0, "No balance to unstake");
+            require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to unstake. Must be stake originator or EOA who's staked");
+
+            unstakeBlockNums[fromAddrs[i]] = block.number;
+            emit Unstaked(msg.sender, stakedBalances[fromAddrs[i]]);
+        }
     }
 
     function withdraw(address[] calldata fromAddrs) external {
         for (uint256 i = 0; i < fromAddrs.length; i++) {
             require(stakedBalances[fromAddrs[i]] > 0, "No staked balance to withdraw");
             require(stakeOriginators[fromAddrs[i]] == msg.sender || fromAddrs[i] == msg.sender, "Not authorized to withdraw. Must be stake originator or EOA who's staked");
+            require(block.number >= unstakeBlockNums[fromAddrs[i]] + unstakePeriodBlocks, "withdrawal not allowed yet. Blocks requirement not met.");
 
             uint256 amount = stakedBalances[fromAddrs[i]];
             stakedBalances[fromAddrs[i]] -= amount;
