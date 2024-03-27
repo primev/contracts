@@ -82,7 +82,24 @@ contract PreConfCommitmentStore is Ownable {
         bytes bidSignature;
         bytes commitmentSignature;
         uint256 blockCommitedAt;
+        bytes sharedSecretKey;
     }
+
+    event CommitmentStored(
+        address bidder,
+        address commiter,
+        uint64 bid,
+        uint64 blockNumber,
+        bytes32 bidHash,
+        uint64 decayStartTimeStamp,
+        uint64 decayEndTimeStamp,
+        string txnHash,
+        bytes32 commitmentHash,
+        bytes bidSignature,
+        bytes commitmentSignature,
+        uint256 blockCommitedAt,
+        bytes sharedSecretKey
+    );
 
     struct EncrPreConfCommitment {
         bool commitmentUsed;
@@ -203,7 +220,8 @@ contract PreConfCommitmentStore is Ownable {
         uint64 _decayStartTimeStamp,
         uint64 _decayEndTimeStamp,
         bytes32 _bidHash,
-        string memory _bidSignature
+        string memory _bidSignature,
+        string memory _sharedSecretKey
     ) public view returns (bytes32) {
         return
             ECDSA.toTypedDataHash(
@@ -219,7 +237,8 @@ contract PreConfCommitmentStore is Ownable {
                         keccak256(
                             abi.encodePacked(_bytes32ToHexString(_bidHash))
                         ),
-                        keccak256(abi.encodePacked(_bidSignature))
+                        keccak256(abi.encodePacked(_bidSignature)),
+                        keccak256(abi.encodePacked(_sharedSecretKey))
                     )
                 )
             );
@@ -233,7 +252,6 @@ contract PreConfCommitmentStore is Ownable {
      * @param bidSignature bid signature.
      * @return messageDigest returns the bid hash for given bid id.
      * @return recoveredAddress the address from the bid hash.
-     * @return stake the stake amount of the address for bid id bidder.
      */
     function verifyBid(
         uint64 bid,
@@ -245,7 +263,7 @@ contract PreConfCommitmentStore is Ownable {
     )
         public
         view
-        returns (bytes32 messageDigest, address recoveredAddress, uint256 stake)
+        returns (bytes32 messageDigest, address recoveredAddress)
     {
         messageDigest = getBidHash(
             txnHash,
@@ -255,43 +273,41 @@ contract PreConfCommitmentStore is Ownable {
             decayEndTimeStamp
         );
         recoveredAddress = messageDigest.recover(bidSignature);
-        stake = bidderRegistry.getAllowance(recoveredAddress);
-        require(stake > (10 * bid), "Invalid bid");
     }
 
-    /**
-     * @dev Verifies a pre-confirmation commitment by computing the hash and recovering the committer's address.
-     * @param txnHash The transaction hash associated with the commitment.
-     * @param bid The bid amount.
-     * @param blockNumber The block number at the time of the bid.
-     * @param bidHash The hash of the bid details.
-     * @param bidSignature The signature of the bid.
-     * @param commitmentSignature The signature of the commitment.
-     * @return preConfHash The hash of the pre-confirmation commitment.
-     * @return commiterAddress The address of the committer recovered from the commitment signature.
-     */
-    function verifyPreConfCommitment(
-        string memory txnHash,
-        uint64 bid,
-        uint64 blockNumber,
-        uint64 decayStartTimeStamp,
-        uint64 decayEndTimeStamp,
-        bytes32 bidHash,
-        bytes memory bidSignature,
-        bytes memory commitmentSignature
-    ) public view returns (bytes32 preConfHash, address commiterAddress) {
-        preConfHash = getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            decayStartTimeStamp,
-            decayEndTimeStamp,
-            bidHash,
-            _bytesToHexString(bidSignature)
-        );
+    // /**
+    //  * @dev Verifies a pre-confirmation commitment by computing the hash and recovering the committer's address.
+    //  * @param txnHash The transaction hash associated with the commitment.
+    //  * @param bid The bid amount.
+    //  * @param blockNumber The block number at the time of the bid.
+    //  * @param bidHash The hash of the bid details.
+    //  * @param bidSignature The signature of the bid.
+    //  * @param commitmentSignature The signature of the commitment.
+    //  * @return preConfHash The hash of the pre-confirmation commitment.
+    //  * @return commiterAddress The address of the committer recovered from the commitment signature.
+    //  */
+    // function verifyPreConfCommitment(
+    //     string memory txnHash,
+    //     uint64 bid,
+    //     uint64 blockNumber,
+    //     uint64 decayStartTimeStamp,
+    //     uint64 decayEndTimeStamp,
+    //     bytes32 bidHash,
+    //     bytes memory bidSignature,
+    //     bytes memory commitmentSignature
+    // ) public view returns (bytes32 preConfHash, address commiterAddress) {
+    //     preConfHash = getPreConfHash(
+    //         txnHash,
+    //         bid,
+    //         blockNumber,
+    //         decayStartTimeStamp,
+    //         decayEndTimeStamp,
+    //         bidHash,
+    //         _bytesToHexString(bidSignature)
+    //     );
 
-        commiterAddress = preConfHash.recover(commitmentSignature);
-    }
+    //     commiterAddress = preConfHash.recover(commitmentSignature);
+    // }
 
     function getCommitmentIndex(
         PreConfCommitment memory commitment
@@ -326,16 +342,18 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentSignature The signature of the commitment.
      * @return commitmentIndex The index of the stored commitment
      */
-    function storeCommitment(
+    function storeOpenCommitment(
+        bytes32 encryptedCommitmentIndex,
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
         uint64 decayStartTimeStamp,
         uint64 decayEndTimeStamp,
         bytes calldata bidSignature,
-        bytes memory commitmentSignature
+        bytes memory commitmentSignature,
+        bytes memory sharedSecretKey
     ) public returns (bytes32 commitmentIndex) {
-        (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
+        (bytes32 bHash, address bidderAddress) = verifyBid(
             bid,
             blockNumber,
             decayStartTimeStamp,
@@ -352,14 +370,21 @@ contract PreConfCommitmentStore is Ownable {
                 decayStartTimeStamp,
                 decayEndTimeStamp,
                 bHash,
-                _bytesToHexString(bidSignature)
+                _bytesToHexString(bidSignature),
+                _bytesToHexString(sharedSecretKey)
             );
+            EncrPreConfCommitment memory encryptedCommitment = encryptedCommitments[encryptedCommitmentIndex];
+            require(
+                !encryptedCommitment.commitmentUsed,
+                "Commitment already used"
+            );
+            
+            require(encryptedCommitment.commitmentDigest == commitmentDigest, "Invalid commitment digest");
 
             address commiterAddress = commitmentDigest.recover(
                 commitmentSignature
             );
 
-            require(stake > (10 * bid), "Stake too low");
             require(
                 decayStartTimeStamp < decayEndTimeStamp,
                 "Invalid decay time"
@@ -378,7 +403,8 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentDigest,
                 bidSignature,
                 commitmentSignature,
-                block.number
+                block.number,
+                sharedSecretKey
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);
@@ -390,11 +416,21 @@ contract PreConfCommitmentStore is Ownable {
             providerCommitments[commiterAddress].push(commitmentIndex);
             blockCommitments[blockNumber].push(commitmentIndex);
 
-            commitmentCount++;
-            commitmentsCount[commiterAddress] += 1;
-
-            // Check if Bid has bid-amt stored
-            bidderRegistry.LockBidFunds(commitmentDigest, bid, bidderAddress);
+            emit CommitmentStored(
+                bidderAddress,
+                commiterAddress,
+                bid,
+                blockNumber,
+                bHash,
+                decayStartTimeStamp,
+                decayEndTimeStamp,
+                txnHash,
+                commitmentDigest,
+                bidSignature,
+                commitmentSignature,
+                block.number,
+                sharedSecretKey
+            );
         }
 
         return commitmentIndex;
@@ -507,22 +543,23 @@ contract PreConfCommitmentStore is Ownable {
             residualBidPercentAfterDecay
         );
 
-        bidderRegistry.unlockFunds(commitment.commitmentHash);
+        // bidderRegistry.unlockFunds(commitment.commitmentHash);
     }
 
     /**
      * @dev Initiate a return of funds for a bid that was not slashed.
      * @param commitmentDigest The hash of the bid to be unlocked.
      */
-    function unlockBidFunds(bytes32 commitmentDigest) public onlyOracle {
-        bidderRegistry.unlockFunds(commitmentDigest);
-    }
+    // function unlockBidFunds(bytes32 commitmentDigest) public onlyOracle {
+    //     bidderRegistry.unlockFunds(commitmentDigest);
+    // }
 
     /**
      * @dev Initiate a reward for a commitment.
      * @param commitmentIndex The hash of the commitment to be rewarded.
      */
     function initiateReward(
+        uint256 windowToSettle,
         bytes32 commitmentIndex,
         uint256 residualBidPercentAfterDecay
     ) public onlyOracle {
@@ -537,6 +574,7 @@ contract PreConfCommitmentStore is Ownable {
         commitmentsCount[commitment.commiter] -= 1;
 
         bidderRegistry.retrieveFunds(
+            windowToSettle,
             commitment.commitmentHash,
             payable(commitment.commiter),
             residualBidPercentAfterDecay

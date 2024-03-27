@@ -27,15 +27,16 @@ interface IBidderRegistry {
 
     function prepay() external payable;
 
-    function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external;
+    // function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external;
 
-    function getAllowance(address bidder) external view returns (uint256);
+    // function getAllowance(address bidder) external view returns (uint256);
 
     function retrieveFunds(
+        uint256 windowToSettle,
         bytes32 commitmentDigest,
         address payable provider,
         uint256 residualBidPercentAfterDecay
     ) external;
 
-    function unlockFunds(bytes32 bidID) external;
+    // function unlockFunds(bytes32 bidID) external;
 }

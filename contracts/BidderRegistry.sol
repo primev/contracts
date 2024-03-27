@@ -4,6 +4,7 @@ pragma solidity ^0.8.15;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
+import {IBlockTracker} from "./interfaces/IBlockTracker.sol";
 
 /// @title Bidder Registry
 /// @author Kartik Chopra
@@ -28,6 +29,8 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
+    IBlockTracker public blockTrackerContract;
+
     /// @dev Fee recipient
     address public feeRecipient;
 
@@ -35,7 +38,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     mapping(address => bool) public bidderRegistered;
 
     /// @dev Mapping from bidder addresses to their prepayed amount
-    mapping(address => uint256) public bidderPrepaidBalances;
+    // mapping(address => uint256) public bidderPrepaidBalances;
+
+    // Mapping from bidder addresses and window numbers to their locked funds
+    mapping(address => mapping(uint256 => uint256)) public lockedFunds;
 
     /// @dev Mapping from bidder addresses to their locked amount based on bidID (commitmentDigest)
     mapping(bytes32 => BidState) public BidPayment;
@@ -44,10 +50,14 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     mapping(address => uint256) public providerAmount;
 
     /// @dev Event emitted when a bidder is registered with their prepayed amount
-    event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
+    // event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
+    event BidderRegistered(address indexed bidder, uint256 prepaidAmount, uint256 windowNumber);
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
     event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 amount);
+
+    /// @dev Event emitted when a bidder withdraws their prepay
+    event BidderWithdrawal(address indexed bidder, uint256 window, uint256 amount);
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -75,11 +85,13 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         uint256 _minAllowance,
         address _feeRecipient,
         uint16 _feePercent,
-        address _owner 
+        address _owner,
+        address _blockTracker
     ) {
         minAllowance = _minAllowance;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
+        blockTrackerContract = IBlockTracker(_blockTracker);
         _transferOwnership(_owner);
     }
 
@@ -128,10 +140,15 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     function prepay() public payable {
         require(msg.value >= minAllowance, "Insufficient prepay");
 
-        bidderPrepaidBalances[msg.sender] += msg.value;
         bidderRegistered[msg.sender] = true;
 
-        emit BidderRegistered(msg.sender, bidderPrepaidBalances[msg.sender]);
+        uint256 currentWindow = blockTrackerContract.getCurrentWindow();
+        uint256 nextWindow = currentWindow + 1;
+
+        // Lock the funds for the next window
+        lockedFunds[msg.sender][nextWindow] += msg.value;
+
+        emit BidderRegistered(msg.sender, msg.value, nextWindow);
     }
 
     /**
@@ -139,20 +156,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param bidder The address of the bidder.
      * @return The prepayed amount for the bidder.
      */
-    function getAllowance(address bidder) external view returns (uint256) {
-        return bidderPrepaidBalances[bidder];
-    }
-
-    function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external onlyPreConfirmationEngine(){
-        BidState memory bidState = BidPayment[commitmentDigest];
-        if (bidState.state == State.Undefined) {
-            BidPayment[commitmentDigest] = BidState({
-                bidAmt: bid,
-                state: State.PreConfirmed,
-                bidder: bidder
-            });
-            bidderPrepaidBalances[bidder] -= bid;
-        }
+    function getAllowance(address bidder, uint256 window) external view returns (uint256) {
+        // return bidderPrepaidBalances[bidder];
+        return lockedFunds[bidder][window];
     }
 
     /**
@@ -162,6 +168,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
+        uint256 windowToSettle,
         bytes32 commitmentDigest,
         address payable provider,
         uint256 residualBidPercentAfterDecay
@@ -183,7 +190,8 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         providerAmount[provider] += amtMinusFeeAndDecay;
 
         // Ensures the bidder gets back the bid amount - decayed reward given to provider and protocol
-        bidderPrepaidBalances[bidState.bidder] += bidState.bidAmt - decayedAmt;
+        lockedFunds[bidState.bidder][windowToSettle] += bidState.bidAmt - decayedAmt;
+        // bidderPrepaidBalances[bidState.bidder] += bidState.bidAmt - decayedAmt;
 
         BidPayment[commitmentDigest].state = State.Withdrawn;
         BidPayment[commitmentDigest].bidAmt = 0;
@@ -196,18 +204,18 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @dev reenterancy not necessary but still putting here for precaution
      * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
      */
-    function unlockFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
-        BidState memory bidState = BidPayment[bidID];
-        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
-        uint256 amt = bidState.bidAmt;
-        bidderPrepaidBalances[bidState.bidder] += amt;
+    // function unlockFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
+    //     BidState memory bidState = BidPayment[bidID];
+    //     require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+    //     uint256 amt = bidState.bidAmt;
+    //     bidderPrepaidBalances[bidState.bidder] += amt;
 
 
-        BidPayment[bidID].state = State.Withdrawn;
-        BidPayment[bidID].bidAmt = 0;
+    //     BidPayment[bidID].state = State.Withdrawn;
+    //     BidPayment[bidID].bidAmt = 0;
         
-        emit FundsRetrieved(bidID, amt);
-    }
+    //     emit FundsRetrieved(bidID, amt);
+    // }
 
     /**
      * @notice Sets the new fee recipient
@@ -246,14 +254,32 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(success, "couldn't transfer to provider");
     }
 
-    function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
-        uint256 prepaidAmount = bidderPrepaidBalances[bidder];
-        bidderPrepaidBalances[bidder] = 0;
-        require(msg.sender == bidder, "only bidder can unprepay");
-        require(prepaidAmount > 0, "bidder prepaid Amount is zero");
+    // function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
+    //     uint256 prepaidAmount = bidderPrepaidBalances[bidder];
+    //     bidderPrepaidBalances[bidder] = 0;
+    //     require(msg.sender == bidder, "only bidder can unprepay");
+    //     require(prepaidAmount > 0, "bidder prepaid Amount is zero");
 
-        (bool success, ) = bidder.call{value: prepaidAmount}("");
-        require(success, "couldn't transfer prepay to bidder");
+    //     (bool success, ) = bidder.call{value: prepaidAmount}("");
+    //     require(success, "couldn't transfer prepay to bidder");
+    // }
+
+    function withdrawBidderAmountFromWindow(
+        address payable bidder,
+        uint256 window
+    ) external nonReentrant {
+        require(msg.sender == bidder, "only bidder can withdraw funds from window");
+        uint256 currentWindow = blockTrackerContract.getCurrentWindow();
+        // withdraw is enabled only is closed and settled
+        require(window + 1 < currentWindow, "funds can only be withdrawn after the window is settled");
+        uint256 amount = lockedFunds[bidder][window];
+        lockedFunds[bidder][window] = 0;
+        require(amount > 0, "bidder Amount is zero");
+
+        (bool success, ) = bidder.call{value: amount}("");
+        require(success, "couldn't transfer to bidder");
+
+        emit BidderWithdrawal(bidder, window, amount);
     }
 
     function withdrawProtocolFee(

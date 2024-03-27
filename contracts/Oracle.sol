@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-import {IPreConfCommitmentStore} from './interfaces/IPreConfirmations.sol';
-import {IBidderRegistry} from './interfaces/IBidderRegistry.sol';
-
+import {IPreConfCommitmentStore} from "./interfaces/IPreConfirmations.sol";
+import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
+import {IBlockTracker} from "./interfaces/IBlockTracker.sol";
 
 /// @title Oracle Contract
 /// @author Kartik Chopra
@@ -20,15 +20,7 @@ contract Oracle is Ownable {
     /// @dev Maps builder names to their respective Ethereum addresses.
     mapping(string => address) public blockBuilderNameToAddress;
 
-    /// @dev Stores the block number that is next in line to be requested.
-    uint256 public nextRequestedBlockNumber;
 
-    /**
-     * @dev Returns the next block number that is set to be requested.
-     */
-    function getNextRequestedBlockNumber() external view returns (uint256) {
-        return nextRequestedBlockNumber;
-    }
 
     // To shutup the compiler
     /// @dev Empty receive function to silence compiler warnings about missing payable functions.
@@ -46,20 +38,22 @@ contract Oracle is Ownable {
     /// @dev Reference to the PreConfCommitmentStore contract interface.
     IPreConfCommitmentStore private preConfContract;
 
+    IBlockTracker private blockTrackerContract;
 
     /**
      * @dev Constructor to initialize the contract with a PreConfirmations contract.
      * @param _preConfContract The address of the pre-confirmations contract.
-     * @param _nextRequestedBlockNumber The next block number to be requested.
      * @param _owner Owner of the contract, explicitly needed since contract is deployed with create2 factory.
      */
     constructor(
         address _preConfContract,
-        uint256 _nextRequestedBlockNumber,
+        address _blockTrackerContract,
+        // uint256 _nextRequestedBlockNumber,
         address _owner
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
-        nextRequestedBlockNumber = _nextRequestedBlockNumber;
+        // nextRequestedBlockNumber = _nextRequestedBlockNumber;
+        blockTrackerContract = IBlockTracker(_blockTrackerContract);
         _transferOwnership(_owner);
     }
 
@@ -71,7 +65,10 @@ contract Oracle is Ownable {
      * @param builderName The name of the block builder as it appears on extra data.
      * @param builderAddress The Ethereum address of the builder.
      */
-    function addBuilderAddress(string memory builderName, address builderAddress) external onlyOwner {
+    function addBuilderAddress(
+        string memory builderName,
+        address builderAddress
+    ) external onlyOwner {
         blockBuilderNameToAddress[builderName] = builderAddress;
     }
 
@@ -79,7 +76,9 @@ contract Oracle is Ownable {
      * @dev Returns the builder's address corresponding to the given name.
      * @param builderNameGrafiti The name (or graffiti) of the block builder.
      */
-    function getBuilder(string calldata builderNameGrafiti) external view returns (address) {
+    function getBuilder(
+        string calldata builderNameGrafiti
+    ) external view returns (address) {
         return blockBuilderNameToAddress[builderNameGrafiti];
     }
 
@@ -100,32 +99,27 @@ contract Oracle is Ownable {
     ) external onlyOwner {
         // Check graffiti against registered builder IDs
         address builder = blockBuilderNameToAddress[blockBuilderName];
-        require(residualBidPercentAfterDecay <= 100, "Residual bid after decay cannot be greater than 100 percent");
-        IPreConfCommitmentStore.PreConfCommitment memory commitment = preConfContract.getCommitment(commitmentIndex);
-        if (commitment.commiter == builder && commitment.blockNumber == blockNumber) {
-                processCommitment(commitmentIndex, isSlash, residualBidPercentAfterDecay);
+        require(
+            residualBidPercentAfterDecay <= 100,
+            "Residual bid after decay cannot be greater than 100 percent"
+        );
+        IPreConfCommitmentStore.PreConfCommitment
+            memory commitment = preConfContract.getCommitment(commitmentIndex);
+        if (
+            commitment.commiter == builder &&
+            commitment.blockNumber == blockNumber
+        ) {
+            processCommitment(
+                commitmentIndex,
+                isSlash,
+                residualBidPercentAfterDecay
+            );
         }
-
     }
 
     /**
-     * @dev Sets the next block number to be requested.
-     * @param newBlockNumber The new block number to be set.
-     */
-    function setNextBlock(uint64 newBlockNumber) external onlyOwner {
-        nextRequestedBlockNumber = newBlockNumber;
-    }
-
-    /**
-     * @dev Increments the `nextRequestedBlockNumber` by one.
-     */
-    function moveToNextBlock() external onlyOwner {
-        nextRequestedBlockNumber++;
-    }
-
-    /**
-        * @dev unlocks funds to the bidders assosciated with BidIDs in the input array.
-        * @param bidIDs The array of BidIDs to unlock funds for.
+     * @dev unlocks funds to the bidders assosciated with BidIDs in the input array.
+     * @param bidIDs The array of BidIDs to unlock funds for.
      */
     function unlockFunds(bytes32[] memory bidIDs) external onlyOwner {
         for (uint256 i = 0; i < bidIDs.length; i++) {
@@ -138,11 +132,24 @@ contract Oracle is Ownable {
      * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.
      */
-    function processCommitment(bytes32 commitmentIndex, bool isSlash, uint256 residualBidPercentAfterDecay) private {
+    function processCommitment(
+        bytes32 commitmentIndex,
+        bool isSlash,
+        uint256 residualBidPercentAfterDecay
+    ) private {
         if (isSlash) {
-            preConfContract.initiateSlash(commitmentIndex, residualBidPercentAfterDecay);
+            preConfContract.initiateSlash(
+                commitmentIndex,
+                residualBidPercentAfterDecay
+            );
         } else {
-            preConfContract.initiateReward(commitmentIndex, residualBidPercentAfterDecay);
+            // processing commitment after window has been settled
+            uint256 windowToSettle = blockTrackerContract.getCurrentWindow() - 1;
+            preConfContract.initiateReward(
+                windowToSettle,
+                commitmentIndex,
+                residualBidPercentAfterDecay
+            );
         }
         // Emit an event that a commitment has been processed
         emit CommitmentProcessed(commitmentIndex, isSlash);
