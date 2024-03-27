@@ -29,7 +29,7 @@ interface IBidderRegistry {
 
     // function LockBidFunds(bytes32 commitmentDigest, uint64 bid, address bidder) external;
 
-    // function getAllowance(address bidder) external view returns (uint256);
+    function getAllowance(address bidder, uint256 window) external view returns (uint256);
 
     function retrieveFunds(
         uint256 windowToSettle,
