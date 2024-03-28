@@ -5,7 +5,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 import {IBlockTracker} from "./interfaces/IBlockTracker.sol";
-import "forge-std/console.sol";
 
 /// @title Bidder Registry
 /// @author Kartik Chopra
@@ -30,6 +29,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Address of the pre-confirmations contract
     address public preConfirmationsContract;
 
+    /// @dev Block tracker contract
     IBlockTracker public blockTrackerContract;
 
     /// @dev Fee recipient
@@ -37,9 +37,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /// @dev Mapping for if bidder is registered
     mapping(address => bool) public bidderRegistered;
-
-    /// @dev Mapping from bidder addresses to their prepayed amount
-    // mapping(address => uint256) public bidderPrepaidBalances;
 
     // Mapping from bidder addresses and window numbers to their locked funds
     mapping(address => mapping(uint256 => uint256)) public lockedFunds;
@@ -175,7 +172,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         address bidder,
         uint256 window
     ) external view returns (uint256) {
-        // return bidderPrepaidBalances[bidder];
         return lockedFunds[bidder][window];
     }
 
@@ -216,7 +212,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         lockedFunds[bidState.bidder][windowToSettle] +=
             bidState.bidAmt -
             decayedAmt;
-        // bidderPrepaidBalances[bidState.bidder] += bidState.bidAmt - decayedAmt;
 
         BidPayment[commitmentDigest].state = State.Withdrawn;
         BidPayment[commitmentDigest].bidAmt = 0;
@@ -300,16 +295,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         (bool success, ) = provider.call{value: amount}("");
         require(success, "couldn't transfer to provider");
     }
-
-    // function withdrawPrepaidAmount(address payable bidder) external nonReentrant {
-    //     uint256 prepaidAmount = bidderPrepaidBalances[bidder];
-    //     bidderPrepaidBalances[bidder] = 0;
-    //     require(msg.sender == bidder, "only bidder can unprepay");
-    //     require(prepaidAmount > 0, "bidder prepaid Amount is zero");
-
-    //     (bool success, ) = bidder.call{value: prepaidAmount}("");
-    //     require(success, "couldn't transfer prepay to bidder");
-    // }
 
     function withdrawBidderAmountFromWindow(
         address payable bidder,

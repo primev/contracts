@@ -311,6 +311,11 @@ contract PreConfCommitmentStore is Ownable {
         commiterAddress = preConfHash.recover(commitmentSignature);
     }
 
+    /**
+     * @dev Get the index of a commitment.
+     * @param commitment The commitment to get the index for.
+     * @return The index of the commitment.
+     */
     function getCommitmentIndex(
         PreConfCommitment memory commitment
     ) public pure returns (bytes32) {
@@ -323,6 +328,11 @@ contract PreConfCommitmentStore is Ownable {
             );
     }
 
+    /**
+     * @dev Get the index of an encrypted commitment.
+     * @param commitment The commitment to get the index for.
+     * @return The index of the commitment.
+     */
     function getEncryptedCommitmentIndex(
         EncrPreConfCommitment memory commitment
     ) public pure returns (bytes32) {
@@ -440,6 +450,12 @@ contract PreConfCommitmentStore is Ownable {
         return commitmentIndex;
     }
 
+    /**
+     * @dev Store an encrypted commitment.
+     * @param commitmentDigest The digest of the commitment.
+     * @param commitmentSignature The signature of the commitment.
+     * @return commitmentIndex The index of the stored commitment
+     */
     function storeEncryptedCommitment(
         bytes32 commitmentDigest,
         bytes memory commitmentSignature
@@ -516,6 +532,11 @@ contract PreConfCommitmentStore is Ownable {
         return commitments[commitmentIndex];
     }
 
+    /**
+     * @dev Get a commitments' enclosed transaction by its commitmentIndex.
+     * @param commitmentIndex The index of the commitment.
+     * @return txnHash The transaction hash.
+     */
     function getEncryptedCommitment(
         bytes32 commitmentIndex
     ) public view returns (EncrPreConfCommitment memory) {

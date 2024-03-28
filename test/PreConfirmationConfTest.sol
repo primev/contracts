@@ -225,10 +225,10 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.sharedSecretKey
         );
 
-        // Step 4: Move to the next window
+        // Step 3: Move to the next window
         blockTracker.recordL1Block(2, address(this));
 
-        // Step 5: Open the commitment
+        // Step 4: Open the commitment
         bytes32 index = openCommitment(
             encryptedIndex,
             _testCommitmentAliceBob.bid,
@@ -241,7 +241,7 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.sharedSecretKey
         );
 
-        // Step 3: Verify the stored commitment
+        // Step 5: Verify the stored commitment
         verifyStoredCommitment(
             index,
             _testCommitmentAliceBob.bid,
@@ -463,13 +463,6 @@ contract TestPreConfCommitmentStore is Test {
         
         assertEq(storedCommitment.commitmentDigest, _testCommitmentAliceBob.commitmentDigest);
         assertEq(storedCommitment.commitmentSignature, _testCommitmentAliceBob.commitmentSignature);
-        // assertEq(storedCommitment.bid, _testCommitmentAliceBob.bid);
-        // assertEq(storedCommitment.blockNumber, _testCommitmentAliceBob.blockNumber);
-        // assertEq(storedCommitment.txnHash, _testCommitmentAliceBob.txnHash);
-        // assertEq(storedCommitment.bidSignature, _testCommitmentAliceBob.bidSignature);
-        // assertEq(storedCommitment.commitmentSignature, _testCommitmentAliceBob.commitmentSignature);
-        // assertEq(storedCommitment.decayEndTimeStamp, _testCommitmentAliceBob.decayEndTimestamp);
-        // assertEq(storedCommitment.decayStartTimeStamp, _testCommitmentAliceBob.decayStartTimestamp);
     }
 
     function test_InitiateSlash() public {
@@ -505,16 +498,6 @@ contract TestPreConfCommitmentStore is Test {
             (bool commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
-            // bytes32 index = preConfCommitmentStore.storeCommitment(
-            //     _testCommitmentAliceBob.bid,
-            //     _testCommitmentAliceBob.blockNumber,
-            //     _testCommitmentAliceBob.txnHash,
-            //     _testCommitmentAliceBob.decayStartTimestamp,
-            //     _testCommitmentAliceBob.decayEndTimestamp,
-            //     _testCommitmentAliceBob.bidSignature,
-            //     _testCommitmentAliceBob.commitmentSignature,
-            //     _testCommitmentAliceBob.sharedSecretKey
-            // );
             bytes32 encryptedIndex = storeCommitment(
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,
@@ -589,16 +572,6 @@ contract TestPreConfCommitmentStore is Test {
             (bool commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
-            // bytes32 index = preConfCommitmentStore.storeCommitment(
-            //     _testCommitmentAliceBob.bid,
-            //     _testCommitmentAliceBob.blockNumber,
-            //     _testCommitmentAliceBob.txnHash,
-            //     _testCommitmentAliceBob.decayStartTimestamp,
-            //     _testCommitmentAliceBob.decayEndTimestamp,
-            //     _testCommitmentAliceBob.bidSignature,
-            //     _testCommitmentAliceBob.commitmentSignature,
-            //     _testCommitmentAliceBob.sharedSecretKey
-            // );
             bytes32 encryptedIndex = storeCommitment(
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,
@@ -671,16 +644,6 @@ contract TestPreConfCommitmentStore is Test {
             (bool commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(preConfHash);
             assert(commitmentUsed == false);
-            // bytes32 index = preConfCommitmentStore.storeCommitment(
-            //     _testCommitmentAliceBob.bid,
-            //     _testCommitmentAliceBob.blockNumber,
-            //     _testCommitmentAliceBob.txnHash,
-            //     _testCommitmentAliceBob.decayStartTimestamp,
-            //     _testCommitmentAliceBob.decayEndTimestamp,
-            //     _testCommitmentAliceBob.bidSignature,
-            //     _testCommitmentAliceBob.commitmentSignature,
-            //     _testCommitmentAliceBob.sharedSecretKey
-            // );
             bytes32 encryptedIndex = storeCommitment(
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,

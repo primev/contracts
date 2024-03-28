@@ -5,7 +5,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
-import "forge-std/console.sol";
 
 /// @title Provider Registry
 /// @author Kartik Chopra
@@ -116,7 +115,6 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     function registerAndStake() public payable {
         require(!providerRegistered[msg.sender], "Provider already registered");
         require(msg.value >= minStake, "Insufficient stake");
-        console.log(msg.sender);
         providerStakes[msg.sender] = msg.value;
         providerRegistered[msg.sender] = true;
 
@@ -148,6 +146,7 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
      * @param amt The amount to slash from the provider's stake.
      * @param provider The address of the provider.
      * @param bidder The address to transfer the slashed funds to.
+     * @param residualBidPercentAfterDecay The residual bid percent after decay.
      */
     function slash(
         uint256 amt,
@@ -156,8 +155,6 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         uint256 residualBidPercentAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
         uint256 residualAmt = (amt * residualBidPercentAfterDecay * PRECISION) / PERCENT;
-        console.log(residualAmt);
-        console.log(providerStakes[provider]);
         require(providerStakes[provider] >= residualAmt, "Insufficient funds to slash");
         providerStakes[provider] -= residualAmt;
 
@@ -191,12 +188,19 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         feePercent = newFeePercent;
     }
 
+    /**
+     * @dev Reward funds to the fee receipt.
+     */
     function withdrawFeeRecipientAmount() external nonReentrant {
         feeRecipientAmount = 0;
         (bool successFee, ) = feeRecipient.call{value: feeRecipientAmount}("");
         require(successFee, "Couldn't transfer to fee Recipient");
     }
 
+    /**
+     * @dev Withdraw funds to the bidder.
+     * @param bidder The address of the bidder.
+     */
     function withdrawBidderAmount(address bidder) external nonReentrant {
         require(bidderAmount[bidder] > 0, "Bidder Amount is zero");
 

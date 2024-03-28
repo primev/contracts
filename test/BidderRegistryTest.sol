@@ -160,7 +160,6 @@ contract BidderRegistryTest is Test {
         assertEq(bidderRegistry.getFeeRecipientAmount(), 100000000000000000);
         
         assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 1 ether);
-        // assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 1 ether);
     }
 
     function test_shouldRetrieveFundsWithoutFeeRecipient() public {
@@ -180,7 +179,6 @@ contract BidderRegistryTest is Test {
         blockTracker.recordL1Block(blockNumber, provider);
         bytes32 bidID = keccak256("1234");
         bidderRegistry.OpenBid(bidID, 1 ether, bidder);
-        // bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
 
         uint256 feerecipientValueAfter = bidderRegistry.feeRecipientAmount();
@@ -190,7 +188,6 @@ contract BidderRegistryTest is Test {
         assertEq(feerecipientValueAfter, feerecipientValueBefore);
 
         assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 1 ether);
-        // assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 1 ether);
     }
 
     function testFail_shouldRetrieveFundsNotPreConf() public {
@@ -202,7 +199,6 @@ contract BidderRegistryTest is Test {
         vm.expectRevert(bytes(""));
         bytes32 bidID = keccak256("1234");
         bidderRegistry.OpenBid(bidID, 1 ether, bidder);
-        // bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
     }
 
@@ -220,7 +216,6 @@ contract BidderRegistryTest is Test {
         vm.prank(address(this));
         bytes32 bidID = keccak256("1234");
         bidderRegistry.OpenBid(bidID, 3 ether, bidder);
-        // bidderRegistry.LockBidFunds(bidID, 3 ether, bidder);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
     }
 
@@ -233,7 +228,6 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
         bytes32 bidID = keccak256("1234");
-        // bidderRegistry.LockBidFunds(bidID, 1 ether, bidder);
         uint256 blockNumber = 2;
         blockTracker.recordL1Block(blockNumber, provider);
 
@@ -264,7 +258,6 @@ contract BidderRegistryTest is Test {
         blockTracker.recordL1Block(blockNumber, provider);
 
         bidderRegistry.OpenBid(bidID, 2 ether, bidder);
-        // bidderRegistry.LockBidFunds(bidID, 2 ether, bidder);
         
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
         bidderRegistry.withdrawProviderAmount(payable(provider));
@@ -294,7 +287,6 @@ contract BidderRegistryTest is Test {
         uint256 blockNumber = 2;
         blockTracker.recordL1Block(blockNumber, provider);
 
-        // bidderRegistry.LockBidFunds(bidID, 2 ether, bidder);
         bidderRegistry.OpenBid(bidID, 2 ether, bidder);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
         vm.prank(bidderRegistry.owner());

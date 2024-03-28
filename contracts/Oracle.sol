@@ -20,8 +20,6 @@ contract Oracle is Ownable {
     /// @dev Maps builder names to their respective Ethereum addresses.
     mapping(string => address) public blockBuilderNameToAddress;
 
-
-
     // To shutup the compiler
     /// @dev Empty receive function to silence compiler warnings about missing payable functions.
     receive() external payable {
@@ -38,6 +36,7 @@ contract Oracle is Ownable {
     /// @dev Reference to the PreConfCommitmentStore contract interface.
     IPreConfCommitmentStore private preConfContract;
 
+    /// @dev Reference to the BlockTracker contract interface.
     IBlockTracker private blockTrackerContract;
 
     /**

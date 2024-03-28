@@ -390,7 +390,6 @@ contract OracleTest is Test {
 
         assertEq(providerRegistry.checkStake(provider) , 250 ether);
         assertEq(bidderRegistry.lockedFunds(bidder, currentWindow), 250 ether);
-        // assertEq(bidderRegistry.bidderPrepaidBalances(bidder), 250 ether);
     }
 
 
