@@ -121,9 +121,9 @@ contract Oracle is Ownable {
      * @dev unlocks funds to the bidders assosciated with BidIDs in the input array.
      * @param bidIDs The array of BidIDs to unlock funds for.
      */
-    function unlockFunds(bytes32[] memory bidIDs) external onlyOwner {
+    function unlockFunds(uint256 window, bytes32[] memory bidIDs) external onlyOwner {
         for (uint256 i = 0; i < bidIDs.length; i++) {
-            preConfContract.unlockBidFunds(bidIDs[i]);
+            preConfContract.unlockBidFunds(window, bidIDs[i]);
         }
     }
 
@@ -137,14 +137,15 @@ contract Oracle is Ownable {
         bool isSlash,
         uint256 residualBidPercentAfterDecay
     ) private {
+        // processing commitment after window has been settled
+        uint256 windowToSettle = blockTrackerContract.getCurrentWindow() - 1;
         if (isSlash) {
             preConfContract.initiateSlash(
+                windowToSettle,
                 commitmentIndex,
                 residualBidPercentAfterDecay
             );
         } else {
-            // processing commitment after window has been settled
-            uint256 windowToSettle = blockTrackerContract.getCurrentWindow() - 1;
             preConfContract.initiateReward(
                 windowToSettle,
                 commitmentIndex,

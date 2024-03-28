@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {PreConfCommitmentStore} from "./PreConfirmations.sol";
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
+import "forge-std/console.sol";
 
 /// @title Provider Registry
 /// @author Kartik Chopra
@@ -115,7 +116,7 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     function registerAndStake() public payable {
         require(!providerRegistered[msg.sender], "Provider already registered");
         require(msg.value >= minStake, "Insufficient stake");
-
+        console.log(msg.sender);
         providerStakes[msg.sender] = msg.value;
         providerRegistered[msg.sender] = true;
 
@@ -155,6 +156,8 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         uint256 residualBidPercentAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
         uint256 residualAmt = (amt * residualBidPercentAfterDecay * PRECISION) / PERCENT;
+        console.log(residualAmt);
+        console.log(providerStakes[provider]);
         require(providerStakes[provider] >= residualAmt, "Insufficient funds to slash");
         providerStakes[provider] -= residualAmt;
 

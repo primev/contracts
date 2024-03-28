@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
 import {IBlockTracker} from "./interfaces/IBlockTracker.sol";
+import "forge-std/console.sol";
 
 /// @title Bidder Registry
 /// @author Kartik Chopra
@@ -51,13 +52,21 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /// @dev Event emitted when a bidder is registered with their prepayed amount
     // event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
-    event BidderRegistered(address indexed bidder, uint256 prepaidAmount, uint256 windowNumber);
+    event BidderRegistered(
+        address indexed bidder,
+        uint256 prepaidAmount,
+        uint256 windowNumber
+    );
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
-    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 amount);
+    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 window, uint256 amount);
 
     /// @dev Event emitted when a bidder withdraws their prepay
-    event BidderWithdrawal(address indexed bidder, uint256 window, uint256 amount);
+    event BidderWithdrawal(
+        address indexed bidder,
+        uint256 window,
+        uint256 amount
+    );
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.
@@ -123,14 +132,16 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /**
      * @dev Get the amount assigned to a provider.
      */
-    function getProviderAmount(address provider) external view returns (uint256) {
+    function getProviderAmount(
+        address provider
+    ) external view returns (uint256) {
         return providerAmount[provider];
     }
-    
+
     /**
      * @dev Get the amount assigned to the fee recipient (treasury).
      */
-    function getFeeRecipientAmount() external onlyOwner view returns (uint256) {
+    function getFeeRecipientAmount() external view onlyOwner returns (uint256) {
         return feeRecipientAmount;
     }
 
@@ -148,7 +159,11 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         // Lock the funds for the next window
         lockedFunds[msg.sender][nextWindow] += msg.value;
 
-        emit BidderRegistered(msg.sender, msg.value, nextWindow);
+        emit BidderRegistered(
+            msg.sender,
+            lockedFunds[msg.sender][nextWindow],
+            nextWindow
+        );
     }
 
     /**
@@ -156,7 +171,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param bidder The address of the bidder.
      * @return The prepayed amount for the bidder.
      */
-    function getAllowance(address bidder, uint256 window) external view returns (uint256) {
+    function getAllowance(
+        address bidder,
+        uint256 window
+    ) external view returns (uint256) {
         // return bidderPrepaidBalances[bidder];
         return lockedFunds[bidder][window];
     }
@@ -173,12 +191,17 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         address payable provider,
         uint256 residualBidPercentAfterDecay
     ) external nonReentrant onlyPreConfirmationEngine {
-
         BidState memory bidState = BidPayment[commitmentDigest];
-        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
-        uint256 decayedAmt = ( bidState.bidAmt * residualBidPercentAfterDecay * PRECISION) / PERCENT;
+        require(
+            bidState.state == State.PreConfirmed,
+            "The bid was not preconfirmed"
+        );
+        uint256 decayedAmt = (bidState.bidAmt *
+            residualBidPercentAfterDecay *
+            PRECISION) / PERCENT;
 
-        uint256 feeAmt = (decayedAmt * uint256(feePercent) * PRECISION) / PERCENT;
+        uint256 feeAmt = (decayedAmt * uint256(feePercent) * PRECISION) /
+            PERCENT;
         uint256 amtMinusFeeAndDecay = decayedAmt - feeAmt;
 
         if (feeRecipient != address(0)) {
@@ -190,13 +213,15 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         providerAmount[provider] += amtMinusFeeAndDecay;
 
         // Ensures the bidder gets back the bid amount - decayed reward given to provider and protocol
-        lockedFunds[bidState.bidder][windowToSettle] += bidState.bidAmt - decayedAmt;
+        lockedFunds[bidState.bidder][windowToSettle] +=
+            bidState.bidAmt -
+            decayedAmt;
         // bidderPrepaidBalances[bidState.bidder] += bidState.bidAmt - decayedAmt;
 
         BidPayment[commitmentDigest].state = State.Withdrawn;
         BidPayment[commitmentDigest].bidAmt = 0;
 
-        emit FundsRetrieved(commitmentDigest, decayedAmt);
+        emit FundsRetrieved(commitmentDigest, windowToSettle, decayedAmt);
     }
 
     /**
@@ -204,18 +229,40 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @dev reenterancy not necessary but still putting here for precaution
      * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
      */
-    // function unlockFunds(bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
-    //     BidState memory bidState = BidPayment[bidID];
-    //     require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
-    //     uint256 amt = bidState.bidAmt;
-    //     bidderPrepaidBalances[bidState.bidder] += amt;
+    function unlockFunds(uint256 window, bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
+        BidState memory bidState = BidPayment[bidID];
+        require(bidState.state == State.PreConfirmed, "The bid was not preconfirmed");
+        uint256 amt = bidState.bidAmt;
+        lockedFunds[bidState.bidder][window] += amt;
 
+        BidPayment[bidID].state = State.Withdrawn;
+        BidPayment[bidID].bidAmt = 0;
 
-    //     BidPayment[bidID].state = State.Withdrawn;
-    //     BidPayment[bidID].bidAmt = 0;
-        
-    //     emit FundsRetrieved(bidID, amt);
-    // }
+        emit FundsRetrieved(bidID, window, amt);
+    }
+
+    /**
+     * @dev Open a bid (only callable by the pre-confirmations contract).
+     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and prepayment
+     * @param bid The bid amount.
+     * @param bidder The address of the bidder.
+     */
+    function OpenBid(
+        bytes32 commitmentDigest,
+        uint64 bid,
+        address bidder
+    ) external onlyPreConfirmationEngine {
+        BidState memory bidState = BidPayment[commitmentDigest];
+        if (bidState.state == State.Undefined) {
+            BidPayment[commitmentDigest] = BidState({
+                state: State.PreConfirmed,
+                bidder: bidder,
+                bidAmt: bid
+            });
+            uint256 currentWindow = blockTrackerContract.getCurrentWindow();
+            lockedFunds[bidder][currentWindow] -= bid;
+        }
+    }
 
     /**
      * @notice Sets the new fee recipient
@@ -268,10 +315,16 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         address payable bidder,
         uint256 window
     ) external nonReentrant {
-        require(msg.sender == bidder, "only bidder can withdraw funds from window");
+        require(
+            msg.sender == bidder,
+            "only bidder can withdraw funds from window"
+        );
         uint256 currentWindow = blockTrackerContract.getCurrentWindow();
         // withdraw is enabled only is closed and settled
-        require(window + 1 < currentWindow, "funds can only be withdrawn after the window is settled");
+        require(
+            window + 1 < currentWindow,
+            "funds can only be withdrawn after the window is settled"
+        );
         uint256 amount = lockedFunds[bidder][window];
         lockedFunds[bidder][window] = 0;
         require(amount > 0, "bidder Amount is zero");
