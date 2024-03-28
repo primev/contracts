@@ -26,8 +26,8 @@ contract BidderRegistryTest is Test {
         bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent, address(this), address(blockTracker));
 
         bidder = vm.addr(1);
-        vm.deal(bidder, 100 ether);
-        vm.deal(address(this), 100 ether);
+        vm.deal(bidder, 1000 ether);
+        vm.deal(address(this), 1000 ether);
     }
 
     function test_VerifyInitialContractState() public {
@@ -144,7 +144,7 @@ contract BidderRegistryTest is Test {
         uint256 nextWindow = currentWindow + 1;
 
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 64 ether}();
         address provider = vm.addr(4);
         uint256 blockNumber = 2;
         blockTracker.recordL1Block(blockNumber, provider);
@@ -159,7 +159,7 @@ contract BidderRegistryTest is Test {
         assertEq(feeRecipientAmount, 100000000000000000);
         assertEq(bidderRegistry.getFeeRecipientAmount(), 100000000000000000);
         
-        assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 1 ether);
+        assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 63 ether);
     }
 
     function test_shouldRetrieveFundsWithoutFeeRecipient() public {
@@ -172,7 +172,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 64 ether}();
 
         address provider = vm.addr(4);
         uint256 blockNumber = 2;
@@ -187,7 +187,7 @@ contract BidderRegistryTest is Test {
         assertEq(providerAmount, 900000000000000000);
         assertEq(feerecipientValueAfter, feerecipientValueBefore);
 
-        assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 1 ether);
+        assertEq(bidderRegistry.lockedFunds(bidder, nextWindow), 63 ether);
     }
 
     function testFail_shouldRetrieveFundsNotPreConf() public {
@@ -222,7 +222,7 @@ contract BidderRegistryTest is Test {
     function test_withdrawFeeRecipientAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2 ether}();
+        bidderRegistry.prepay{value: 64 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         address provider = vm.addr(4);
@@ -248,7 +248,7 @@ contract BidderRegistryTest is Test {
     function test_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 128 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         address provider = vm.addr(4);
@@ -279,7 +279,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 5 ether}();
+        bidderRegistry.prepay{value: 128 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         uint256 balanceBefore = address(bidder).balance;

@@ -75,6 +75,7 @@ contract OracleTest is Test {
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
             address(bidderRegistry), // User Registry
+            address(blockTracker), // Block Tracker
             feeRecipient, // Oracle
             address(this) // Owner
         );
@@ -161,7 +162,7 @@ contract OracleTest is Test {
 
     function test_process_commitment_payment_payout() public {
         string memory txn = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
-        uint64 blockNumber = 200;
+        uint64 blockNumber = 2;
         uint64 bid = 2;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
@@ -223,7 +224,7 @@ contract OracleTest is Test {
     function test_process_commitment_slash_and_reward() public {
         string memory txn1 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
         string memory txn2 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d09";
-        uint64 blockNumber = 201;
+        uint64 blockNumber = 2;
         uint64 bid = 100;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
@@ -312,7 +313,7 @@ contract OracleTest is Test {
         string memory txn2 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d09";
         string memory txn3 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d10";
         string memory txn4 = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d11";
-        uint64 blockNumber = 201;
+        uint64 blockNumber = 2;
         uint64 bid = 5;
         string memory blockBuilderName = "kartik builder";
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
@@ -360,7 +361,7 @@ contract OracleTest is Test {
 
     function test_process_commitment_and_return() public {
         string memory txn = "0x6d9c53ad81249775f8c082b11ac293b2e19194ff791bd1c4fd37683310e90d08";
-        uint64 blockNumber = 200;
+        uint64 blockNumber = 2;
         uint64 bid = 2;
         (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
@@ -386,10 +387,8 @@ contract OracleTest is Test {
         emit FundsRetrieved(commitment.commitmentHash, window, bid);
         oracle.unlockFunds(window, commitments);
         
-        uint256 currentWindow = blockTracker.getCurrentWindow();
-
         assertEq(providerRegistry.checkStake(provider) , 250 ether);
-        assertEq(bidderRegistry.lockedFunds(bidder, currentWindow), 250 ether);
+        assertEq(bidderRegistry.lockedFunds(bidder, window), 250 ether);
     }
 
 
@@ -436,10 +435,10 @@ contract OracleTest is Test {
             commitmentHash,
             commitmentSignature
         );
-        uint256 l1BlockNumber = 2;
         vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
-        blockTracker.recordL1Block(l1BlockNumber, provider);
+        blockTracker.recordL1Block(blockNumber, provider);
         vm.stopPrank();
+        vm.startPrank(provider);
         commitmentIndex = preConfCommitmentStore.openCommitment(
             encryptedCommitmentIndex,
             bid,
@@ -451,6 +450,7 @@ contract OracleTest is Test {
             commitmentSignature,
             sharedSecretKey
         );
+        vm.stopPrank();
 
         return commitmentIndex;
     }

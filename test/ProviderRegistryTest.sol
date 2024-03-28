@@ -37,6 +37,7 @@ contract ProviderRegistryTest is Test {
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
             address(bidderRegistry), // User Registry
+            address(blockTracker), // Block Tracker
             feeRecipient, // Oracle
             address(this) // Owner
         );

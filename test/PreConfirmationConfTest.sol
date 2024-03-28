@@ -64,6 +64,7 @@ contract TestPreConfCommitmentStore is Test {
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
             address(bidderRegistry), // User Registry
+            address(blockTracker), // Block Tracker
             feeRecipient, // Oracle
             address(this) // Owner
         );
@@ -230,6 +231,7 @@ contract TestPreConfCommitmentStore is Test {
 
         // Step 4: Open the commitment
         bytes32 index = openCommitment(
+            bidder,
             encryptedIndex,
             _testCommitmentAliceBob.bid,
             _testCommitmentAliceBob.blockNumber,
@@ -329,6 +331,7 @@ contract TestPreConfCommitmentStore is Test {
     }
 
     function openCommitment(
+        address msgSender,
         bytes32 encryptedCommitmentIndex,
         uint64 bid,
         uint64 blockNumber,
@@ -358,6 +361,7 @@ contract TestPreConfCommitmentStore is Test {
             _bytesToHexString(sharedSecretKey)
         );
 
+        vm.prank(msgSender);
         bytes32 commitmentIndex = preConfCommitmentStore.openCommitment(
             encryptedCommitmentIndex,
             bid,
@@ -518,6 +522,7 @@ contract TestPreConfCommitmentStore is Test {
             uint256 blockNumber = 2;
             blockTracker.recordL1Block(blockNumber, commiter);
             bytes32 index = openCommitment(
+                commiter,
                 encryptedIndex,
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,
@@ -586,9 +591,9 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
-            uint256 blockNumber = 2;
-            blockTracker.recordL1Block(blockNumber, commiter);
+            blockTracker.recordL1Block(_testCommitmentAliceBob.blockNumber, commiter);
             bytes32 index = openCommitment(
+                commiter,
                 encryptedIndex,
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,
@@ -658,9 +663,9 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
-            uint256 blockNumber = 2;
-            blockTracker.recordL1Block(blockNumber, commiter);
+            blockTracker.recordL1Block(_testCommitmentAliceBob.blockNumber, commiter);
             bytes32 index = openCommitment(
+                commiter,
                 encryptedIndex,
                 _testCommitmentAliceBob.bid,
                 _testCommitmentAliceBob.blockNumber,

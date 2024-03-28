@@ -6,6 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IProviderRegistry} from "./interfaces/IProviderRegistry.sol";
 import {IBidderRegistry} from "./interfaces/IBidderRegistry.sol";
+import {IBlockTracker} from "./interfaces/IBlockTracker.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "forge-std/console.sol";
@@ -49,6 +50,9 @@ contract PreConfCommitmentStore is Ownable {
 
     /// @dev Address of bidderRegistry
     IBidderRegistry public bidderRegistry;
+
+    /// @dev Address of blockTracker
+    IBlockTracker public blockTracker;
 
     /// @dev Mapping from provider to commitments count
     mapping(address => uint256) public commitmentsCount;
@@ -143,16 +147,19 @@ contract PreConfCommitmentStore is Ownable {
      * @dev Initializes the contract with the specified registry addresses, oracle, name, and version.
      * @param _providerRegistry The address of the provider registry.
      * @param _bidderRegistry The address of the bidder registry.
+     * @param _blockTracker The address of the block tracker.
      * @param _oracle The address of the oracle.
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
         address _providerRegistry,
         address _bidderRegistry,
+        address _blockTracker,
         address _oracle,
         address _owner
     ) {
         oracle = _oracle;
+        blockTracker = IBlockTracker(_blockTracker);
         providerRegistry = IProviderRegistry(_providerRegistry);
         bidderRegistry = IBidderRegistry(_bidderRegistry);
         _transferOwnership(_owner);
@@ -346,13 +353,17 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
-     * @dev Store a commitment.
-     * @param bid The bid amount.
-     * @param blockNumber The block number.
-     * @param txnHash The transaction hash.
-     * @param bidSignature The signature of the bid.
-     * @param commitmentSignature The signature of the commitment.
-     * @return commitmentIndex The index of the stored commitment
+        @dev Open a commitment
+        @param encryptedCommitmentIndex The index of the encrypted commitment
+        @param bid The bid amount
+        @param blockNumber The block number
+        @param txnHash The transaction hash
+        @param decayStartTimeStamp The start time of the decay
+        @param decayEndTimeStamp The end time of the decay
+        @param bidSignature The signature of the bid
+        @param commitmentSignature The signature of the commitment
+        @param sharedSecretKey The shared secret key
+        @return commitmentIndex The index of the stored commitment
      */
     function openCommitment(
         bytes32 encryptedCommitmentIndex,
@@ -401,6 +412,9 @@ contract PreConfCommitmentStore is Ownable {
                 decayStartTimeStamp < decayEndTimeStamp,
                 "Invalid decay time"
             );
+            
+            address winner = blockTracker.getBlockWinner(blockNumber);
+            require(msg.sender == winner || msg.sender == bidderAddress, "Caller is not a winner provider or bidder");
 
             PreConfCommitment memory newCommitment = PreConfCommitment(
                 false,

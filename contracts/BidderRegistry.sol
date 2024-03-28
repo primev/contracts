@@ -249,12 +249,19 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     ) external onlyPreConfirmationEngine {
         BidState memory bidState = BidPayment[commitmentDigest];
         if (bidState.state == State.Undefined) {
+            uint256 currentWindow = blockTrackerContract.getCurrentWindow();
+            // @todo delete this, when oracle will do the calculation
+            // bidder cannot bid more than allowed for the round
+            uint256 numberOfRounds = blockTrackerContract.getBlocksPerWindow();
+            uint256 windowAmount = lockedFunds[bidder][currentWindow] / numberOfRounds;
+            if (windowAmount < bid) {
+                bid = uint64(windowAmount);
+            }
             BidPayment[commitmentDigest] = BidState({
                 state: State.PreConfirmed,
                 bidder: bidder,
                 bidAmt: bid
             });
-            uint256 currentWindow = blockTrackerContract.getCurrentWindow();
             lockedFunds[bidder][currentWindow] -= bid;
         }
     }

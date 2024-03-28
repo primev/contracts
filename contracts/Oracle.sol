@@ -47,11 +47,9 @@ contract Oracle is Ownable {
     constructor(
         address _preConfContract,
         address _blockTrackerContract,
-        // uint256 _nextRequestedBlockNumber,
         address _owner
     ) Ownable() {
         preConfContract = IPreConfCommitmentStore(_preConfContract);
-        // nextRequestedBlockNumber = _nextRequestedBlockNumber;
         blockTrackerContract = IBlockTracker(_blockTrackerContract);
         _transferOwnership(_owner);
     }
