@@ -8,7 +8,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract BlockTracker is Ownable {
     /// @dev Event emitted when a new L1 block is tracked.
-    event NewL1Block(uint256 indexed blockNumber, address indexed winner);
+    event NewL1Block(uint256 indexed blockNumber, address indexed winner, uint256 indexed window);
 
     /// @dev Event emitted when a new window is created.
     event NewWindow(uint256 indexed window);
@@ -77,13 +77,13 @@ contract BlockTracker is Ownable {
         lastL1BlockNumber = _blockNumber;
         lastL1BlockWinner = _winner;
         recordBlockWinner(_blockNumber, _winner);
-        emit NewL1Block(_blockNumber, _winner);
         uint256 newWindow = (_blockNumber - 1) / blocksPerWindow + 1;
         if (newWindow > currentWindow) {
             // We've entered a new window
             currentWindow = newWindow;
             emit NewWindow(currentWindow);
         }
+        emit NewL1Block(_blockNumber, _winner, currentWindow);
     }
 
     // Function to record a new block winner
