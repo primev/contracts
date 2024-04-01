@@ -90,6 +90,7 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     event CommitmentStored(
+        bytes32 commitmentIndex,
         address bidder,
         address commiter,
         uint64 bid,
@@ -112,6 +113,14 @@ contract PreConfCommitmentStore is Ownable {
         bytes commitmentSignature;
         uint256 blockCommitedAt;
     }
+
+    event EncryptedCommitmentStored(
+        bytes32 commitmentIndex,
+        address commiter,
+        bytes32 commitmentDigest,
+        bytes commitmentSignature,
+        uint256 blockCommitedAt
+    );
 
     /// @dev Event to log successful verifications
     event SignatureVerified(
@@ -445,6 +454,7 @@ contract PreConfCommitmentStore is Ownable {
             bidderRegistry.OpenBid(commitmentDigest, bid, bidderAddress);
 
             emit CommitmentStored(
+                commitmentIndex,
                 bidderAddress,
                 commiterAddress,
                 bid,
@@ -497,6 +507,14 @@ contract PreConfCommitmentStore is Ownable {
 
             commitmentCount++;
             commitmentsCount[commiterAddress] += 1;
+
+            emit EncryptedCommitmentStored(
+                commitmentIndex,
+                commiterAddress,
+                commitmentDigest,
+                commitmentSignature,
+                block.number
+            );
         }
 
         return commitmentIndex;
