@@ -90,7 +90,7 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     event CommitmentStored(
-        bytes32 commitmentIndex,
+        bytes32 indexed commitmentIndex,
         address bidder,
         address commiter,
         uint64 bid,
@@ -115,7 +115,7 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     event EncryptedCommitmentStored(
-        bytes32 commitmentIndex,
+        bytes32 indexed commitmentIndex,
         address commiter,
         bytes32 commitmentDigest,
         bytes commitmentSignature,
