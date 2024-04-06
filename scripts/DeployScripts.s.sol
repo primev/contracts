@@ -6,6 +6,7 @@ import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
 import "contracts/Oracle.sol";
 import "contracts/Whitelist.sol";
+import "contracts/BlockTracker.sol";
 
 // Deploy scripts should inherit this contract if they deploy using create2 deterministic addrs.
 contract Create2Deployer {

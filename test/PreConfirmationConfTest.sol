@@ -350,17 +350,6 @@ contract TestPreConfCommitmentStore is Test {
             decayEndTimestamp
         );
 
-        bytes32 commitmentHash = preConfCommitmentStore.getPreConfHash(
-            txnHash,
-            bid,
-            blockNumber,
-            decayStartTimestamp,
-            decayEndTimestamp,
-            bidHash,
-            _bytesToHexString(bidSignature),
-            _bytesToHexString(sharedSecretKey)
-        );
-
         vm.prank(msgSender);
         bytes32 commitmentIndex = preConfCommitmentStore.openCommitment(
             encryptedCommitmentIndex,
