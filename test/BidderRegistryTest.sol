@@ -146,7 +146,7 @@ contract BidderRegistryTest is Test {
         vm.prank(bidder);
         bidderRegistry.prepay{value: 64 ether}();
         address provider = vm.addr(4);
-        uint256 blockNumber = 2;
+        uint256 blockNumber = 66;
         blockTracker.recordL1Block(blockNumber, provider);
 
         bidderRegistry.OpenBid(bidID, 1 ether, bidder);
@@ -175,7 +175,7 @@ contract BidderRegistryTest is Test {
         bidderRegistry.prepay{value: 64 ether}();
 
         address provider = vm.addr(4);
-        uint256 blockNumber = 2;
+        uint256 blockNumber = 66;
         blockTracker.recordL1Block(blockNumber, provider);
         bytes32 bidID = keccak256("1234");
         bidderRegistry.OpenBid(bidID, 1 ether, bidder);
@@ -228,7 +228,7 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 2;
+        uint256 blockNumber = 66;
         blockTracker.recordL1Block(blockNumber, provider);
 
         bidderRegistry.OpenBid(bidID, 1 ether, bidder);
@@ -254,7 +254,7 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         uint256 balanceBefore = address(provider).balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 2;
+        uint256 blockNumber = 66;
         blockTracker.recordL1Block(blockNumber, provider);
 
         bidderRegistry.OpenBid(bidID, 2 ether, bidder);
@@ -284,7 +284,7 @@ contract BidderRegistryTest is Test {
         uint256 nextWindow = currentWindow + 1;
         uint256 balanceBefore = address(bidder).balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 2;
+        uint256 blockNumber = 66;
         blockTracker.recordL1Block(blockNumber, provider);
 
         bidderRegistry.OpenBid(bidID, 2 ether, bidder);

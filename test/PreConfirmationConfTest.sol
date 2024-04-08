@@ -640,7 +640,7 @@ contract TestPreConfCommitmentStore is Test {
             assert(commitmentUsed == false);
             bytes32 encryptedIndex = storeCommitment(
                 _testCommitmentAliceBob.bid,
-                _testCommitmentAliceBob.blockNumber,
+                66,
                 _testCommitmentAliceBob.txnHash,
                 _testCommitmentAliceBob.decayStartTimestamp,
                 _testCommitmentAliceBob.decayEndTimestamp,
@@ -652,12 +652,12 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
-            blockTracker.recordL1Block(_testCommitmentAliceBob.blockNumber, commiter);
+            blockTracker.recordL1Block(66, commiter);
             bytes32 index = openCommitment(
                 commiter,
                 encryptedIndex,
                 _testCommitmentAliceBob.bid,
-                _testCommitmentAliceBob.blockNumber,
+                66,
                 _testCommitmentAliceBob.txnHash,
                 _testCommitmentAliceBob.decayStartTimestamp,
                 _testCommitmentAliceBob.decayEndTimestamp,
@@ -678,8 +678,8 @@ contract TestPreConfCommitmentStore is Test {
             assert(bidderRegistry.lockedFunds(bidder, window) == 2 ether);
             assert(bidderRegistry.providerAmount(commiter) == 0 ether);
         }
-
     }
+    
     function _bytesToHexString(
         bytes memory _bytes
     ) public pure returns (string memory) {

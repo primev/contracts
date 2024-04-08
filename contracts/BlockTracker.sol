@@ -13,7 +13,7 @@ contract BlockTracker is Ownable {
     /// @dev Event emitted when a new window is created.
     event NewWindow(uint256 indexed window);
 
-    uint256 public currentWindow;
+    uint256 public currentWindow = 1;
     uint256 public blocksPerWindow = 64;
     uint256 public lastL1BlockNumber;
     address public lastL1BlockWinner;
