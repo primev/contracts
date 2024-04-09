@@ -73,7 +73,8 @@ contract OracleTest is Test {
             address(providerRegistry), // Provider Registry
             address(bidderRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this),
+            500
         );
 
         address ownerInstance = 0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3;

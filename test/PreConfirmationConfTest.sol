@@ -63,7 +63,8 @@ contract TestPreConfCommitmentStore is Test {
             address(providerRegistry), // Provider Registry
             address(bidderRegistry), // User Registry
             feeRecipient, // Oracle
-            address(this) // Owner
+            address(this),
+            500
         );
 
         bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
@@ -165,6 +166,53 @@ contract TestPreConfCommitmentStore is Test {
             signature,
             _testCommitmentAliceBob.commitmentSignature,
             _testCommitmentAliceBob.dispatchTimestamp - 500
+        );
+
+    }
+
+
+    function test_StoreCommitmentFailureDueToTimestampValidationWithNewWindow() public {
+        bytes32 bidHash = preConfCommitmentStore.getBidHash(
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp
+        );
+        (address bidder, uint256 bidderPk) = makeAddrAndKey("alice");
+        // Wallet memory kartik = vm.createWallet('test wallet');
+        (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.deal(bidder, 200000 ether);
+        vm.prank(bidder);
+        bidderRegistry.prepay{value: 1e18 wei}();
+
+        (bytes32 digest, address recoveredAddress, uint256 stake) =  preConfCommitmentStore.verifyBid(
+            _testCommitmentAliceBob.bid, 
+            _testCommitmentAliceBob.blockNumber, 
+            _testCommitmentAliceBob.decayStartTimestamp, 
+            _testCommitmentAliceBob.decayEndTimestamp, 
+            _testCommitmentAliceBob.txnHash, 
+            signature);
+        
+        assertEq(stake, 1e18 wei);
+        assertEq(bidder, recoveredAddress);
+        assertEq(digest, bidHash);
+
+        vm.prank(preConfCommitmentStore.owner());
+        preConfCommitmentStore.updateCommitmentDispatchWindow(200);
+
+        vm.expectRevert("Invalid dispatch timestamp, block.timestamp - dispatchTimestamp < COMMITMENT_DISPATCH_WINDOW");
+        preConfCommitmentStore.storeCommitment(
+            _testCommitmentAliceBob.bid,
+            _testCommitmentAliceBob.blockNumber,
+            _testCommitmentAliceBob.txnHash,
+            _testCommitmentAliceBob.decayStartTimestamp,
+            _testCommitmentAliceBob.decayEndTimestamp,
+            signature,
+            _testCommitmentAliceBob.commitmentSignature,
+            _testCommitmentAliceBob.dispatchTimestamp - 200
         );
 
     }

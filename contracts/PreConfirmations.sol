@@ -27,7 +27,7 @@ contract PreConfCommitmentStore is Ownable {
     bytes32 public constant EIP712_BID_TYPEHASH =
         keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)");
 
-    uint64 public constant COMMITMENT_DISPATCH_WINDOW = 500;
+    uint64 public COMMITMENT_DISPATCH_WINDOW = 500;
 
     /// @dev commitment counter
     uint256 public commitmentCount;
@@ -121,7 +121,8 @@ contract PreConfCommitmentStore is Ownable {
         address _providerRegistry,
         address _bidderRegistry,
         address _oracle, 
-        address _owner
+        address _owner,
+        uint64 _commitment_dispatch_window
     ) {
         oracle = _oracle;
         providerRegistry = IProviderRegistry(_providerRegistry);
@@ -144,6 +145,15 @@ contract PreConfCommitmentStore is Ownable {
                 keccak256("1")
             )
         );
+        COMMITMENT_DISPATCH_WINDOW = _commitment_dispatch_window;
+    }
+
+    /**
+     * @dev Updates the commitment dispatch window to a new value. This function can only be called by the contract owner.
+     * @param newDispatchWindow The new dispatch window value to be set.
+     */
+    function updateCommitmentDispatchWindow(uint64 newDispatchWindow) external onlyOwner {
+        COMMITMENT_DISPATCH_WINDOW = newDispatchWindow;
     }
 
     /**
@@ -291,6 +301,8 @@ contract PreConfCommitmentStore is Ownable {
         );
     }
 
+
+
     /**
      * @dev Store a commitment.
      * @param bid The bid amount.
@@ -322,6 +334,7 @@ contract PreConfCommitmentStore is Ownable {
 
         require(block.timestamp >= dispatchTimestamp, "Invalid dispatch timestamp, block.timestamp < dispatchTimestamp");
         require(block.timestamp - dispatchTimestamp < COMMITMENT_DISPATCH_WINDOW, "Invalid dispatch timestamp, block.timestamp - dispatchTimestamp < COMMITMENT_DISPATCH_WINDOW");
+        
         // This helps in avoiding stack too deep
         {
             bytes32 commitmentDigest = getPreConfHash(

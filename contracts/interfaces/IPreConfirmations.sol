@@ -74,6 +74,7 @@ interface IPreConfCommitmentStore {
 
     function getCommitmentsByBlockNumber(uint256 blockNumber) external view returns (bytes32[] memory);
 
+    function updateCommitmentDispatchWindow(uint64 newDispatchWindow) external;
 
     function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
 
