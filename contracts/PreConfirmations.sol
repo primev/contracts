@@ -27,7 +27,7 @@ contract PreConfCommitmentStore is Ownable {
     bytes32 public constant EIP712_BID_TYPEHASH =
         keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)");
 
-    uint64 public COMMITMENT_DISPATCH_WINDOW = 500;
+    uint64 public COMMITMENT_DISPATCH_WINDOW;
 
     /// @dev commitment counter
     uint256 public commitmentCount;
