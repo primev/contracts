@@ -27,6 +27,8 @@ contract PreConfCommitmentStore is Ownable {
     bytes32 public constant EIP712_BID_TYPEHASH =
         keccak256("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)");
 
+    uint64 public constant COMMITMENT_DISPATCH_WINDOW = 500;
+
     /// @dev commitment counter
     uint256 public commitmentCount;
 
@@ -75,7 +77,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes32 commitmentHash;
         bytes bidSignature;
         bytes commitmentSignature;
-        uint256 blockCommitedAt;
+        uint64 blockCommitedAt;
     }
 
     /// @dev Event to log successful verifications
@@ -296,6 +298,7 @@ contract PreConfCommitmentStore is Ownable {
      * @param txnHash The transaction hash.
      * @param bidSignature The signature of the bid.
      * @param commitmentSignature The signature of the commitment.
+     * @param dispatchTimestamp The timestamp at which the commitment is dispatched
      * @return commitmentIndex The index of the stored commitment
      */
     function storeCommitment(
@@ -305,7 +308,8 @@ contract PreConfCommitmentStore is Ownable {
         uint64 decayStartTimeStamp,
         uint64 decayEndTimeStamp,
         bytes calldata bidSignature,
-        bytes memory commitmentSignature
+        bytes memory commitmentSignature,
+        uint64 dispatchTimestamp
     ) public returns (bytes32 commitmentIndex) {
         (bytes32 bHash, address bidderAddress, uint256 stake) = verifyBid(
             bid,
@@ -315,6 +319,9 @@ contract PreConfCommitmentStore is Ownable {
             txnHash,
             bidSignature
         );
+
+        require(block.timestamp >= dispatchTimestamp, "Invalid dispatch timestamp, block.timestamp < dispatchTimestamp");
+        require(block.timestamp - dispatchTimestamp < COMMITMENT_DISPATCH_WINDOW, "Invalid dispatch timestamp, block.timestamp - dispatchTimestamp < COMMITMENT_DISPATCH_WINDOW");
         // This helps in avoiding stack too deep
         {
             bytes32 commitmentDigest = getPreConfHash(
@@ -345,7 +352,7 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentDigest,
                 bidSignature,
                 commitmentSignature,
-                block.number
+                dispatchTimestamp
             );
 
             commitmentIndex = getCommitmentIndex(newCommitment);
