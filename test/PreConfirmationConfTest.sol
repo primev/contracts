@@ -3,14 +3,13 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
-
 import {PreConfCommitmentStore} from "../contracts/PreConfirmations.sol";
 import "../contracts/ProviderRegistry.sol";
 import "../contracts/BidderRegistry.sol";
 import "../contracts/BlockTracker.sol";
 import "forge-std/console.sol";
-contract TestPreConfCommitmentStore is Test {
 
+contract TestPreConfCommitmentStore is Test {
     struct TestCommitment {
         uint64 bid;
         uint64 blockNumber;
@@ -43,10 +42,10 @@ contract TestPreConfCommitmentStore is Test {
             10,
             20,
             0xa0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100,
-            0x668206f9c4d620188852ee94940d37c4829b3d99fb702e10cd1804989662980f,
+            0x65618f8f9e46b8f0790c621ca2989cfe4c949594a4a3a81261baa682e8883840,
             hex"876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b",
-            hex"88194da2231873946f5c05b8dc447c430fa7356996617e07d01c4eabebca553044c7e2220c5699f3ad57ff474a1df14ad6f7a8eb9891f57932270f0157c984361b",
-            abi.encodePacked(keccak256("0xsecret"))
+            hex"bfea9167927707ae7586ed3bba8565999f8b7ad874b2dd4f175caf81084c0d0a17f9599daf5b3f2773757408aa4b44875c95df0f4150cfb295f95273e1fefdd01b",
+            bytes("0xsecret")
         );
 
         feePercent = 10;
@@ -59,7 +58,13 @@ contract TestPreConfCommitmentStore is Test {
             address(this)
         );
         blockTracker = new BlockTracker(address(this));
-        bidderRegistry = new BidderRegistry(minStake, feeRecipient, feePercent, address(this), address(blockTracker));
+        bidderRegistry = new BidderRegistry(
+            minStake,
+            feeRecipient,
+            feePercent,
+            address(this),
+            address(blockTracker)
+        );
 
         preConfCommitmentStore = new PreConfCommitmentStore(
             address(providerRegistry), // Provider Registry
@@ -69,7 +74,9 @@ contract TestPreConfCommitmentStore is Test {
             address(this) // Owner
         );
 
-        bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
+        bidderRegistry.setPreconfirmationsContract(
+            address(preConfCommitmentStore)
+        );
     }
 
     function test_Initialize() public {
@@ -86,9 +93,14 @@ contract TestPreConfCommitmentStore is Test {
 
     function test_storeEncryptedCommitment() public {
         // Step 1: Prepare the commitment information and signature
-        bytes32 commitmentDigest = keccak256(abi.encodePacked("commitment data"));
+        bytes32 commitmentDigest = keccak256(
+            abi.encodePacked("commitment data")
+        );
         (address committer, uint256 committerPk) = makeAddrAndKey("committer");
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(committerPk, commitmentDigest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            committerPk,
+            commitmentDigest
+        );
         bytes memory commitmentSignature = abi.encodePacked(r, s, v);
 
         // Optional: Ensure the committer has enough ETH if needed for the operation
@@ -96,18 +108,18 @@ contract TestPreConfCommitmentStore is Test {
         vm.prank(committer);
 
         // Step 2: Store the commitment
-        bytes32 commitmentIndex = preConfCommitmentStore.storeEncryptedCommitment(
-            commitmentDigest,
-            commitmentSignature
-        );
+        bytes32 commitmentIndex = preConfCommitmentStore
+            .storeEncryptedCommitment(commitmentDigest, commitmentSignature);
 
         // Step 3: Verify the results
         // a. Check that the commitment index is correctly generated and not zero
         assert(commitmentIndex != bytes32(0));
 
         // b. Retrieve the commitment by index and verify its properties
-        (PreConfCommitmentStore.EncrPreConfCommitment memory commitment) = 
-            preConfCommitmentStore.getEncryptedCommitment(commitmentIndex);
+        PreConfCommitmentStore.EncrPreConfCommitment
+            memory commitment = preConfCommitmentStore.getEncryptedCommitment(
+                commitmentIndex
+            );
 
         // c. Assertions to verify the stored commitment matches the input
         assertEq(commitment.commitmentUsed, false);
@@ -115,7 +127,6 @@ contract TestPreConfCommitmentStore is Test {
         assertEq(commitment.commitmentDigest, commitmentDigest);
         assertEq(commitment.commitmentSignature, commitmentSignature);
     }
-
 
     function test_UpdateOracle() public {
         preConfCommitmentStore.updateOracle(feeRecipient);
@@ -132,7 +143,10 @@ contract TestPreConfCommitmentStore is Test {
 
     function test_UpdateBidderRegistry() public {
         preConfCommitmentStore.updateBidderRegistry(feeRecipient);
-        assertEq(address(preConfCommitmentStore.bidderRegistry()), feeRecipient);
+        assertEq(
+            address(preConfCommitmentStore.bidderRegistry()),
+            feeRecipient
+        );
     }
 
     function test_GetBidHash() public {
@@ -143,10 +157,7 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.decayStartTimestamp,
             _testCommitmentAliceBob.decayEndTimestamp
         );
-        assertEq(
-            bidHash,
-            _testCommitmentAliceBob.bidDigest
-        );
+        assertEq(bidHash, _testCommitmentAliceBob.bidDigest);
     }
 
     function test_GetCommitmentDigest() public {
@@ -160,9 +171,9 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.decayEndTimestamp
         );
 
-        (uint8 v,bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(bidderPk, bidHash);
         bytes memory signature = abi.encodePacked(r, s, v);
-        bytes memory sharedSecretKey = abi.encodePacked(keccak256("0xsecret"));
+        bytes memory sharedSecretKey = bytes("0xsecret");
 
         bytes32 preConfHash = preConfCommitmentStore.getPreConfHash(
             _testCommitmentAliceBob.txnHash,
@@ -174,17 +185,13 @@ contract TestPreConfCommitmentStore is Test {
             _bytesToHexString(signature),
             _bytesToHexString(sharedSecretKey)
         );
-        assertEq(
-            preConfHash,
-            _testCommitmentAliceBob.commitmentDigest
-        );
+        assertEq(preConfHash, _testCommitmentAliceBob.commitmentDigest);
 
         (, uint256 providerPk) = makeAddrAndKey("bob");
-        ( v, r, s) = vm.sign(providerPk, preConfHash);
+        (v, r, s) = vm.sign(providerPk, preConfHash);
         signature = abi.encodePacked(r, s, v);
         console.logBytes(signature);
     }
-
 
     function _bytes32ToHexString(
         bytes32 _bytes32
@@ -256,7 +263,8 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.sharedSecretKey
         );
 
-        string memory commitmentTxnHash = preConfCommitmentStore.getTxnHashFromCommitment(index);
+        string memory commitmentTxnHash = preConfCommitmentStore
+            .getTxnHashFromCommitment(index);
         console.log(commitmentTxnHash);
         console.log(_testCommitmentAliceBob.txnHash);
         assertEq(commitmentTxnHash, _testCommitmentAliceBob.txnHash);
@@ -325,7 +333,8 @@ contract TestPreConfCommitmentStore is Test {
             _bytesToHexString(sharedSecretKey)
         );
 
-        bytes32 commitmentIndex = preConfCommitmentStore.storeEncryptedCommitment(commitmentHash, commitmentSignature);
+        bytes32 commitmentIndex = preConfCommitmentStore
+            .storeEncryptedCommitment(commitmentHash, commitmentSignature);
 
         return commitmentIndex;
     }
@@ -342,14 +351,6 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory commitmentSignature,
         bytes memory sharedSecretKey
     ) internal returns (bytes32) {
-        bytes32 bidHash = preConfCommitmentStore.getBidHash(
-            txnHash,
-            bid,
-            blockNumber,
-            decayStartTimestamp,
-            decayEndTimestamp
-        );
-
         vm.prank(msgSender);
         bytes32 commitmentIndex = preConfCommitmentStore.openCommitment(
             encryptedCommitmentIndex,
@@ -377,23 +378,25 @@ contract TestPreConfCommitmentStore is Test {
         bytes memory commitmentSignature,
         bytes memory sharedSecretKey
     ) public {
-        (PreConfCommitmentStore.PreConfCommitment memory commitment) = preConfCommitmentStore
-            .getCommitment(index);
+        PreConfCommitmentStore.PreConfCommitment
+            memory commitment = preConfCommitmentStore.getCommitment(index);
 
-        (, address commiterAddress) = preConfCommitmentStore.verifyPreConfCommitment(
-            txnHash,
-            bid,
-            blockNumber,
-            decayStartTimestamp,
-            decayEndTimestamp,
-            commitment.bidHash,
-            bidSignature,
-            commitmentSignature,
-            sharedSecretKey
-        );
+        (, address commiterAddress) = preConfCommitmentStore
+            .verifyPreConfCommitment(
+                txnHash,
+                bid,
+                blockNumber,
+                decayStartTimestamp,
+                decayEndTimestamp,
+                commitment.bidHash,
+                bidSignature,
+                commitmentSignature,
+                sharedSecretKey
+            );
 
-        bytes32[] memory commitments = preConfCommitmentStore.getCommitmentsByCommitter(commiterAddress);
-        
+        bytes32[] memory commitments = preConfCommitmentStore
+            .getCommitmentsByCommitter(commiterAddress);
+
         assert(commitments.length >= 1);
 
         assertEq(
@@ -450,12 +453,17 @@ contract TestPreConfCommitmentStore is Test {
             _testCommitmentAliceBob.sharedSecretKey
         );
         PreConfCommitmentStore.EncrPreConfCommitment
-            memory storedCommitment = preConfCommitmentStore.getEncryptedCommitment(
-                commitmentIndex
-            );
-        
-        assertEq(storedCommitment.commitmentDigest, _testCommitmentAliceBob.commitmentDigest);
-        assertEq(storedCommitment.commitmentSignature, _testCommitmentAliceBob.commitmentSignature);
+            memory storedCommitment = preConfCommitmentStore
+                .getEncryptedCommitment(commitmentIndex);
+
+        assertEq(
+            storedCommitment.commitmentDigest,
+            _testCommitmentAliceBob.commitmentDigest
+        );
+        assertEq(
+            storedCommitment.commitmentSignature,
+            _testCommitmentAliceBob.commitmentSignature
+        );
     }
 
     function test_InitiateSlash() public {
@@ -465,7 +473,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
             bidderRegistry.prepay{value: 2 ether}();
-            
+
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
                 _testCommitmentAliceBob.txnHash,
@@ -533,7 +541,7 @@ contract TestPreConfCommitmentStore is Test {
         }
         // commitmentHash value is internal to contract and not asserted
     }
-    
+
     function test_InitiateReward() public {
         // Assuming you have a stored commitment
         {
@@ -541,7 +549,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
             bidderRegistry.prepay{value: 2 ether}();
-            
+
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
                 _testCommitmentAliceBob.txnHash,
@@ -605,7 +613,6 @@ contract TestPreConfCommitmentStore is Test {
         }
     }
 
-
     function test_InitiateRewardFullyDecayed() public {
         // Assuming you have a stored commitment
         {
@@ -613,7 +620,7 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
             bidderRegistry.prepay{value: 2 ether}();
-            
+
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
                 _testCommitmentAliceBob.txnHash,
@@ -679,7 +686,7 @@ contract TestPreConfCommitmentStore is Test {
             assert(bidderRegistry.providerAmount(commiter) == 0 ether);
         }
     }
-    
+
     function _bytesToHexString(
         bytes memory _bytes
     ) public pure returns (string memory) {

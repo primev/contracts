@@ -19,7 +19,7 @@ contract PreConfCommitmentStore is Ownable {
     /// @dev EIP-712 Type Hash for preconfirmation commitment
     bytes32 public constant EIP712_COMMITMENT_TYPEHASH =
         keccak256(
-            "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,string bidHash,string signature)"
+            "PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,bytes32 bidHash,string signature,string sharedSecretKey)"
         );
 
     /// @dev EIP-712 Type Hash for preconfirmation bid
