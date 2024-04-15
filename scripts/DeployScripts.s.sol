@@ -51,7 +51,8 @@ contract DeployScript is Script, Create2Deployer {
 
         BlockTracker blockTracker = new BlockTracker{salt: salt}(msg.sender);
         console.log("BlockTracker deployed to:", address(blockTracker));
-
+        blockTracker.setBlocksPerWindow(10);
+        console.log("BlockTracker updated with blocksPerWindow:", 10);
         BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender, address(blockTracker));
         console.log("BidderRegistry deployed to:", address(bidderRegistry));
 
