@@ -445,6 +445,9 @@ contract PreConfCommitmentStore is Ownable {
             // Store commitment
             commitments[commitmentIndex] = newCommitment;
 
+            // Mark the encrypted commitment as used
+            encryptedCommitments[encryptedCommitmentIndex].commitmentUsed = true;
+
             // Push pointers to other mappings
             providerCommitments[commiterAddress].push(commitmentIndex);
             blockCommitments[blockNumber].push(commitmentIndex);
