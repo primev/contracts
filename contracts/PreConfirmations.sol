@@ -87,6 +87,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes sharedSecretKey;
     }
 
+    /// @dev Event to log successful commitment storage
     event CommitmentStored(
         bytes32 indexed commitmentIndex,
         address bidder,
@@ -104,6 +105,7 @@ contract PreConfCommitmentStore is Ownable {
         bytes sharedSecretKey
     );
 
+    /// @dev Struct for all the information around encrypted preconfirmations commitment
     struct EncrPreConfCommitment {
         bool commitmentUsed;
         address commiter;
@@ -112,6 +114,7 @@ contract PreConfCommitmentStore is Ownable {
         uint256 blockCommitedAt;
     }
 
+    /// @dev Event to log successful encrypted commitment storage
     event EncryptedCommitmentStored(
         bytes32 indexed commitmentIndex,
         address commiter,

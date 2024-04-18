@@ -8,10 +8,17 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract BlockTracker is Ownable {
     /// @dev Event emitted when a new L1 block is tracked.
-    event NewL1Block(uint256 indexed blockNumber, address indexed winner, uint256 indexed window);
+    event NewL1Block(
+        uint256 indexed blockNumber,
+        address indexed winner,
+        uint256 indexed window
+    );
 
     /// @dev Event emitted when a new window is created.
     event NewWindow(uint256 indexed window);
+
+    /// @dev Event emitted when the number of blocks per window is updated.
+    event NewBlocksPerWindow(uint256 blocksPerWindow);
 
     uint256 public currentWindow = 1;
     uint256 public blocksPerWindow = 64;
@@ -59,6 +66,8 @@ contract BlockTracker is Ownable {
      */
     function setBlocksPerWindow(uint256 _blocksPerWindow) external onlyOwner {
         blocksPerWindow = _blocksPerWindow;
+
+        emit NewBlocksPerWindow(blocksPerWindow);
     }
     /**
      * @dev Returns the current window number.
@@ -73,7 +82,10 @@ contract BlockTracker is Ownable {
      * @param _blockNumber The number of the new L1 block.
      * @param _winner The address of the winner of the new L1 block.
      */
-    function recordL1Block(uint256 _blockNumber, address _winner) external onlyOwner {
+    function recordL1Block(
+        uint256 _blockNumber,
+        address _winner
+    ) external onlyOwner {
         lastL1BlockNumber = _blockNumber;
         lastL1BlockWinner = _winner;
         recordBlockWinner(_blockNumber, _winner);
@@ -98,7 +110,9 @@ contract BlockTracker is Ownable {
     }
 
     // Function to get the winner of a specific block
-    function getBlockWinner(uint256 blockNumber) external view returns (address) {
+    function getBlockWinner(
+        uint256 blockNumber
+    ) external view returns (address) {
         return blockWinners[blockNumber];
     }
 

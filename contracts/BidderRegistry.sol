@@ -164,6 +164,19 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev Prepay for a specific window.
+     * @param window The window for which the prepay is being made.
+     */
+    function prepayAllowanceForSpecificWindow(uint256 window) external payable {
+        require(msg.value >= minAllowance, "Insufficient prepay");
+
+        bidderRegistered[msg.sender] = true;
+        lockedFunds[msg.sender][window] += msg.value;
+
+        emit BidderRegistered(msg.sender, lockedFunds[msg.sender][window], window);
+    }
+
+    /**
      * @dev Check the prepay of a bidder.
      * @param bidder The address of the bidder.
      * @return The prepayed amount for the bidder.
@@ -284,6 +297,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         feePercent = newFeePercent;
     }
 
+    /**
+     * @dev Withdraw funds to the fee recipient.
+     */
     function withdrawFeeRecipientAmount() external nonReentrant {
         uint256 amount = feeRecipientAmount;
         feeRecipientAmount = 0;
@@ -292,6 +308,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(successFee, "couldn't transfer to fee Recipient");
     }
 
+    /**
+     * @dev Withdraw funds to the provider.
+     * @param provider The address of the provider.
+     */
     function withdrawProviderAmount(
         address payable provider
     ) external nonReentrant {
@@ -303,6 +323,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(success, "couldn't transfer to provider");
     }
 
+    /**
+     * @dev Withdraw funds to the bidder.
+     * @param bidder The address of the bidder.
+     */
     function withdrawBidderAmountFromWindow(
         address payable bidder,
         uint256 window
@@ -327,6 +351,10 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         emit BidderWithdrawal(bidder, window, amount);
     }
 
+    /**
+     * @dev Withdraw protocol fee.
+     * @param bidder The address of the bidder.
+     */
     function withdrawProtocolFee(
         address payable bidder
     ) external onlyOwner nonReentrant {

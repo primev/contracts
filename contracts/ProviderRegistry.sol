@@ -210,6 +210,10 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
         require(success, "Couldn't transfer to bidder");
     }
 
+    /**
+     * @dev Withdraw staked amount for the provider.
+     * @param provider The address of the provider.
+     */
     function withdrawStakedAmount(
         address payable provider
     ) external nonReentrant {
