@@ -72,7 +72,7 @@ contract BlockTracker is Ownable {
      * @param blockNumber The block number.
      * @return The window number.
      */
-    function getWindowFromBlock(uint256 blockNumber) external view returns (uint256) {
+    function getWindowFromBlockNumber(uint256 blockNumber) external view returns (uint256) {
         return (blockNumber - 1) / blocksPerWindow + 1;
     }
 

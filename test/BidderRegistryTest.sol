@@ -225,9 +225,9 @@ contract BidderRegistryTest is Test {
 
     function test_withdrawFeeRecipientAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
-        vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
@@ -252,9 +252,9 @@ contract BidderRegistryTest is Test {
 
     function test_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
-        vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = address(provider).balance;
@@ -274,9 +274,9 @@ contract BidderRegistryTest is Test {
 
     function testFail_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
-        vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
         address provider = vm.addr(4);
         bidderRegistry.withdrawProviderAmount(payable(provider));
@@ -286,9 +286,9 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
-        vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
         uint256 balanceBefore = address(bidder).balance;
         bytes32 bidID = keccak256("1234");

@@ -269,8 +269,8 @@ contract OracleTest is Test {
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
 
         vm.deal(bidder, 200000 ether);
+        uint256 window = blockTracker.getWindowFromBlockNumber(blockNumber);
         vm.startPrank(bidder);
-        uint256 window = blockTracker.getWindowFromBlock(blockNumber);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window);
         vm.stopPrank();
 
@@ -316,8 +316,8 @@ contract OracleTest is Test {
         (address provider, uint256 providerPk) = makeAddrAndKey("kartik");
 
         vm.deal(bidder, 200000 ether);
-        vm.startPrank(bidder);
         uint256 window = blockTracker.getCurrentWindow();
+        vm.startPrank(bidder);
         bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window+1);
         vm.stopPrank();
 
@@ -341,8 +341,10 @@ contract OracleTest is Test {
             );
         }
 
+        vm.startPrank(0x6d503Fd50142C7C469C7c6B64794B55bfa6883f3);
         blockTracker.addBuilderAddress("test", provider);
         blockTracker.recordL1Block(blockNumber, "test");
+        vm.stopPrank();
 
         for (uint i = 0; i < commitments.length; i++) {
             vm.startPrank(provider);
