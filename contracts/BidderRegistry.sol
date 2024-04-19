@@ -48,7 +48,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     mapping(address => uint256) public providerAmount;
 
     /// @dev Event emitted when a bidder is registered with their prepayed amount
-    // event BidderRegistered(address indexed bidder, uint256 prepaidAmount);
     event BidderRegistered(
         address indexed bidder,
         uint256 prepaidAmount,
@@ -56,7 +55,21 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     );
 
     /// @dev Event emitted when funds are retrieved from a bidder's prepay
-    event FundsRetrieved(bytes32 indexed commitmentDigest, uint256 window, uint256 amount);
+    event FundsRetrieved(
+        bytes32 indexed commitmentDigest,
+        address indexed bidder,
+        uint256 window,
+        uint256 amount
+    );
+
+    /// @dev Event emitted when funds are retrieved from a bidder's prepay
+    event FundsRewarded(
+        bytes32 indexed commitmentDigest,
+        address indexed bidder,
+        address indexed provider,
+        uint256 window,
+        uint256 amount
+    );
 
     /// @dev Event emitted when a bidder withdraws their prepay
     event BidderWithdrawal(
@@ -77,7 +90,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * Should be removed from here in case the prepay function becomes more complex
      */
     receive() external payable {
-        prepay();
+        revert("Invalid call");
     }
 
     /**
@@ -140,27 +153,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      */
     function getFeeRecipientAmount() external view onlyOwner returns (uint256) {
         return feeRecipientAmount;
-    }
-
-    /**
-     * @dev Internal function for bidder registration and staking.
-     */
-    function prepay() public payable {
-        require(msg.value >= minAllowance, "Insufficient prepay");
-
-        bidderRegistered[msg.sender] = true;
-
-        uint256 currentWindow = blockTrackerContract.getCurrentWindow();
-        uint256 nextWindow = currentWindow + 1;
-
-        // Lock the funds for the next window
-        lockedFunds[msg.sender][nextWindow] += msg.value;
-
-        emit BidderRegistered(
-            msg.sender,
-            lockedFunds[msg.sender][nextWindow],
-            nextWindow
-        );
     }
 
     /**
@@ -229,7 +221,13 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         BidPayment[commitmentDigest].state = State.Withdrawn;
         BidPayment[commitmentDigest].bidAmt = 0;
 
-        emit FundsRetrieved(commitmentDigest, windowToSettle, decayedAmt);
+        emit FundsRewarded(
+            commitmentDigest,
+            bidState.bidder,
+            provider,
+            windowToSettle,
+            decayedAmt
+        );
     }
 
     /**
@@ -246,7 +244,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         BidPayment[bidID].state = State.Withdrawn;
         BidPayment[bidID].bidAmt = 0;
 
-        emit FundsRetrieved(bidID, window, amt);
+        emit FundsRetrieved(bidID, bidState.bidder, window, amt);
     }
 
     /**
@@ -258,11 +256,12 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     function OpenBid(
         bytes32 commitmentDigest,
         uint64 bid,
-        address bidder
+        address bidder,
+        uint64 blockNumber
     ) external onlyPreConfirmationEngine {
         BidState memory bidState = BidPayment[commitmentDigest];
         if (bidState.state == State.Undefined) {
-            uint256 currentWindow = blockTrackerContract.getCurrentWindow();
+            uint256 currentWindow = blockTrackerContract.getWindowFromBlockNumber(blockNumber);
             // @todo delete this, when oracle will do the calculation
             // bidder cannot bid more than allowed for the round
             uint256 numberOfRounds = blockTrackerContract.getBlocksPerWindow();

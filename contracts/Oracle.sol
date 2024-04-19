@@ -57,45 +57,26 @@ contract Oracle is Ownable {
     /// @dev Event emitted when a commitment is processed.
     event CommitmentProcessed(bytes32 commitmentHash, bool isSlash);
 
-    /**
-     * @dev Allows the owner to add a new builder address.
-     * @param builderName The name of the block builder as it appears on extra data.
-     * @param builderAddress The Ethereum address of the builder.
-     */
-    function addBuilderAddress(
-        string memory builderName,
-        address builderAddress
-    ) external onlyOwner {
-        blockBuilderNameToAddress[builderName] = builderAddress;
-    }
-
-    /**
-     * @dev Returns the builder's address corresponding to the given name.
-     * @param builderNameGrafiti The name (or graffiti) of the block builder.
-     */
-    function getBuilder(
-        string calldata builderNameGrafiti
-    ) external view returns (address) {
-        return blockBuilderNameToAddress[builderNameGrafiti];
-    }
-
     // Function to receive and process the block data (this would be automated in a real-world scenario)
     /**
      * @dev Processes a builder's commitment for a specific block number.
      * @param commitmentIndex The id of the commitment in the PreConfCommitmentStore.
      * @param blockNumber The block number to be processed.
-     * @param blockBuilderName The name of the block builder.
+     * @param builder The address of the builder.
      * @param isSlash Determines whether the commitment should be slashed or rewarded.
      */
     function processBuilderCommitmentForBlockNumber(
         bytes32 commitmentIndex,
         uint256 blockNumber,
-        string calldata blockBuilderName,
+        address builder,
         bool isSlash,
         uint256 residualBidPercentAfterDecay
     ) external onlyOwner {
-        // Check graffiti against registered builder IDs
-        address builder = blockBuilderNameToAddress[blockBuilderName];
+        address winner = blockTrackerContract.getBlockWinner(blockNumber);
+        require(
+            winner == builder,
+            "Builder is not the winner of the block"
+        );
         require(
             residualBidPercentAfterDecay <= 100,
             "Residual bid after decay cannot be greater than 100 percent"
@@ -115,16 +96,6 @@ contract Oracle is Ownable {
     }
 
     /**
-     * @dev unlocks funds to the bidders assosciated with BidIDs in the input array.
-     * @param bidIDs The array of BidIDs to unlock funds for.
-     */
-    function unlockFunds(uint256 window, bytes32[] memory bidIDs) external onlyOwner {
-        for (uint256 i = 0; i < bidIDs.length; i++) {
-            preConfContract.unlockBidFunds(window, bidIDs[i]);
-        }
-    }
-
-    /**
      * @dev Internal function to process a commitment, either slashing or rewarding based on the commitment's state.
      * @param commitmentIndex The id of the commitment to be processed.
      * @param isSlash Determines if the commitment should be slashed or rewarded.
@@ -134,17 +105,13 @@ contract Oracle is Ownable {
         bool isSlash,
         uint256 residualBidPercentAfterDecay
     ) private {
-        // processing commitment after window has been settled
-        uint256 windowToSettle = blockTrackerContract.getCurrentWindow() - 1;
         if (isSlash) {
             preConfContract.initiateSlash(
-                windowToSettle,
                 commitmentIndex,
                 residualBidPercentAfterDecay
             );
         } else {
             preConfContract.initiateReward(
-                windowToSettle,
                 commitmentIndex,
                 residualBidPercentAfterDecay
             );

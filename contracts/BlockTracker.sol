@@ -22,11 +22,12 @@ contract BlockTracker is Ownable {
 
     uint256 public currentWindow = 1;
     uint256 public blocksPerWindow = 64;
-    uint256 public lastL1BlockNumber;
-    address public lastL1BlockWinner;
 
     // Mapping from block number to the winner's address
     mapping(uint256 => address) public blockWinners;
+
+     /// @dev Maps builder names to their respective Ethereum addresses.
+    mapping(string => address) public blockBuilderNameToAddress;
 
     /**
      * @dev Initializes the BlockTracker contract with the specified owner.
@@ -37,19 +38,42 @@ contract BlockTracker is Ownable {
     }
 
     /**
-     * @dev Returns the number of the last L1 block recorded.
-     * @return The number of the last L1 block recorded.
+     * @dev Retrieves the current window number.
+     * @return The current window number.
      */
-    function getLastL1BlockNumber() external view returns (uint256) {
-        return lastL1BlockNumber;
+    function getCurrentWindow() external view returns (uint256) {
+        return currentWindow;
     }
 
     /**
-     * @dev Returns the winner of the last L1 block recorded.
-     * @return The address of the winner of the last L1 block recorded.
+     * @dev Allows the owner to add a new builder address.
+     * @param builderName The name of the block builder as it appears on extra data.
+     * @param builderAddress The Ethereum address of the builder.
      */
-    function getLastL1BlockWinner() external view returns (address) {
-        return lastL1BlockWinner;
+    function addBuilderAddress(
+        string memory builderName,
+        address builderAddress
+    ) external onlyOwner {
+        blockBuilderNameToAddress[builderName] = builderAddress;
+    }
+
+    /**
+     * @dev Returns the builder's address corresponding to the given name.
+     * @param builderNameGrafiti The name (or graffiti) of the block builder.
+     */
+    function getBuilder(
+        string calldata builderNameGrafiti
+    ) external view returns (address) {
+        return blockBuilderNameToAddress[builderNameGrafiti];
+    }
+
+    /**
+     * @dev Returns the window number corresponding to a given block number.
+     * @param blockNumber The block number.
+     * @return The window number.
+     */
+    function getWindowFromBlock(uint256 blockNumber) external view returns (uint256) {
+        return (blockNumber - 1) / blocksPerWindow + 1;
     }
 
     /**
@@ -69,25 +93,17 @@ contract BlockTracker is Ownable {
 
         emit NewBlocksPerWindow(blocksPerWindow);
     }
-    /**
-     * @dev Returns the current window number.
-     * @return The current window number.
-     */
-    function getCurrentWindow() external view returns (uint256) {
-        return currentWindow;
-    }
 
     /**
      * @dev Records a new L1 block and its winner.
      * @param _blockNumber The number of the new L1 block.
-     * @param _winner The address of the winner of the new L1 block.
+     * @param _winnerGraffiti The graffiti of the winner of the new L1 block.
      */
     function recordL1Block(
         uint256 _blockNumber,
-        address _winner
+        string calldata _winnerGraffiti
     ) external onlyOwner {
-        lastL1BlockNumber = _blockNumber;
-        lastL1BlockWinner = _winner;
+        address _winner = blockBuilderNameToAddress[_winnerGraffiti];
         recordBlockWinner(_blockNumber, _winner);
         uint256 newWindow = (_blockNumber - 1) / blocksPerWindow + 1;
         if (newWindow > currentWindow) {

@@ -455,7 +455,7 @@ contract PreConfCommitmentStore is Ownable {
             providerCommitments[commiterAddress].push(commitmentIndex);
             blockCommitments[blockNumber].push(commitmentIndex);
 
-            bidderRegistry.OpenBid(commitmentDigest, bid, bidderAddress);
+            bidderRegistry.OpenBid(commitmentDigest, bid, bidderAddress, blockNumber);
 
             emit CommitmentStored(
                 commitmentIndex,
@@ -584,7 +584,6 @@ contract PreConfCommitmentStore is Ownable {
      * @param commitmentIndex The hash of the commitment to be slashed.
      */
     function initiateSlash(
-        uint256 windowToSettle,
         bytes32 commitmentIndex,
         uint256 residualBidPercentAfterDecay
     ) public onlyOracle {
@@ -593,6 +592,8 @@ contract PreConfCommitmentStore is Ownable {
             !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
+
+       uint256 windowToSettle = blockTracker.getWindowFromBlockNumber(commitment.blockNumber);
 
         // Mark this commitment as used to prevent replays
         commitments[commitmentIndex].commitmentUsed = true;
@@ -609,19 +610,10 @@ contract PreConfCommitmentStore is Ownable {
     }
 
     /**
-     * @dev Initiate a return of funds for a bid that was not slashed.
-     * @param commitmentDigest The hash of the bid to be unlocked.
-     */
-    function unlockBidFunds(uint256 windowToSettle,bytes32 commitmentDigest) public onlyOracle {
-        bidderRegistry.unlockFunds(windowToSettle, commitmentDigest);
-    }
-
-    /**
      * @dev Initiate a reward for a commitment.
      * @param commitmentIndex The hash of the commitment to be rewarded.
      */
     function initiateReward(
-        uint256 windowToSettle,
         bytes32 commitmentIndex,
         uint256 residualBidPercentAfterDecay
     ) public onlyOracle {
@@ -630,6 +622,8 @@ contract PreConfCommitmentStore is Ownable {
             !commitments[commitmentIndex].commitmentUsed,
             "Commitment already used"
         );
+
+       uint256 windowToSettle = blockTracker.getWindowFromBlockNumber(commitment.blockNumber);
 
         // Mark this commitment as used to prevent replays
         commitments[commitmentIndex].commitmentUsed = true;
