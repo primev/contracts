@@ -41,7 +41,7 @@ contract BidderRegistryTest is Test {
     function testFail_BidderStakeAndRegisterMinStake() public {
         vm.prank(bidder);
         vm.expectRevert(bytes(""));
-        bidderRegistry.prepay{value: 1 wei}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 wei}(2);
     }
 
     function test_BidderStakeAndRegister() public {
@@ -53,7 +53,7 @@ contract BidderRegistryTest is Test {
 
         emit BidderRegistered(bidder, 1 ether, nextWindow);
 
-        bidderRegistry.prepay{value: 1 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 ether}(nextWindow);
 
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
@@ -69,7 +69,7 @@ contract BidderRegistryTest is Test {
 
         emit BidderRegistered(bidder, 2 ether, nextWindow);
 
-        bidderRegistry.prepay{value: 1 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 ether}(nextWindow);
 
         uint256 bidderStakeStored2 = bidderRegistry.getAllowance(bidder, nextWindow);
         assertEq(bidderStakeStored2, 2 ether);
@@ -78,9 +78,9 @@ contract BidderRegistryTest is Test {
 
     function testFail_BidderStakeAndRegisterAlreadyRegistered() public {
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2e18 wei}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2e18 wei}(2);
         vm.expectRevert(bytes(""));
-        bidderRegistry.prepay{value: 1 wei}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 wei}(2);
     }
 
     function testFail_receive() public {
@@ -144,12 +144,13 @@ contract BidderRegistryTest is Test {
         uint256 nextWindow = currentWindow + 1;
 
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 64 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
         address provider = vm.addr(4);
-        uint256 blockNumber = 66;
-        blockTracker.recordL1Block(blockNumber, provider);
+        uint64 blockNumber = 66;
+        blockTracker.addBuilderAddress("test", provider);
+        blockTracker.recordL1Block(blockNumber, "test");
 
-        bidderRegistry.OpenBid(bidID, 1 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 1 ether, bidder, blockNumber);
 
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
         uint256 providerAmount = bidderRegistry.providerAmount(provider);
@@ -172,13 +173,14 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 64 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
 
         address provider = vm.addr(4);
-        uint256 blockNumber = 66;
-        blockTracker.recordL1Block(blockNumber, provider);
+        uint64 blockNumber = 66;
+        blockTracker.addBuilderAddress("test", provider);
+        blockTracker.recordL1Block(blockNumber, "test");
         bytes32 bidID = keccak256("1234");
-        bidderRegistry.OpenBid(bidID, 1 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 1 ether, bidder, blockNumber);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
 
         uint256 feerecipientValueAfter = bidderRegistry.feeRecipientAmount();
@@ -194,11 +196,12 @@ contract BidderRegistryTest is Test {
         vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
-        bidderRegistry.prepay{value: 2 ether}();
+        uint64 blockNumber = 66;
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(nextWindow);
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
         bytes32 bidID = keccak256("1234");
-        bidderRegistry.OpenBid(bidID, 1 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 1 ether, bidder, blockNumber);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
     }
 
@@ -209,29 +212,31 @@ contract BidderRegistryTest is Test {
         vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
-        bidderRegistry.prepay{value: 2 ether}();
+        uint64 blockNumber = 66;
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(nextWindow);
 
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
         vm.prank(address(this));
         bytes32 bidID = keccak256("1234");
-        bidderRegistry.OpenBid(bidID, 3 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 3 ether, bidder, blockNumber);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
     }
 
     function test_withdrawFeeRecipientAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
-        vm.prank(bidder);
-        bidderRegistry.prepay{value: 64 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 66;
-        blockTracker.recordL1Block(blockNumber, provider);
+        uint64 blockNumber = 66;
+        blockTracker.addBuilderAddress("test", provider);
+        blockTracker.recordL1Block(blockNumber, "test");
 
-        bidderRegistry.OpenBid(bidID, 1 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 1 ether, bidder, blockNumber);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider),100);
         bidderRegistry.withdrawFeeRecipientAmount();
         uint256 balanceAfter = feeRecipient.balance;
@@ -247,17 +252,18 @@ contract BidderRegistryTest is Test {
 
     function test_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
-        vm.prank(bidder);
-        bidderRegistry.prepay{value: 128 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = address(provider).balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 66;
-        blockTracker.recordL1Block(blockNumber, provider);
+        uint64 blockNumber = 66;
+        blockTracker.addBuilderAddress("test", provider);
+        blockTracker.recordL1Block(blockNumber, "test");
 
-        bidderRegistry.OpenBid(bidID, 2 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 2 ether, bidder, blockNumber);
         
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
         bidderRegistry.withdrawProviderAmount(payable(provider));
@@ -268,8 +274,10 @@ contract BidderRegistryTest is Test {
 
     function testFail_withdrawProviderAmount() public {
         bidderRegistry.setPreconfirmationsContract(address(this));
+        uint256 currentWindow = blockTracker.getCurrentWindow();
+        uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 5 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
         address provider = vm.addr(4);
         bidderRegistry.withdrawProviderAmount(payable(provider));
     }
@@ -278,16 +286,17 @@ contract BidderRegistryTest is Test {
         address provider = vm.addr(4);
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
-        vm.prank(bidder);
-        bidderRegistry.prepay{value: 128 ether}();
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
+        vm.prank(bidder);
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
         uint256 balanceBefore = address(bidder).balance;
         bytes32 bidID = keccak256("1234");
-        uint256 blockNumber = 66;
-        blockTracker.recordL1Block(blockNumber, provider);
+        uint64 blockNumber = 66;
+        blockTracker.addBuilderAddress("test", provider);
+        blockTracker.recordL1Block(blockNumber, "test");
 
-        bidderRegistry.OpenBid(bidID, 2 ether, bidder);
+        bidderRegistry.OpenBid(bidID, 2 ether, bidder, blockNumber);
         bidderRegistry.retrieveFunds(nextWindow, bidID, payable(provider), 100);
         vm.prank(bidderRegistry.owner());
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
@@ -300,7 +309,9 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 5 ether}();
+        uint256 currentWindow = blockTracker.getCurrentWindow();
+        uint256 nextWindow = currentWindow + 1;
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
         vm.prank(bidderRegistry.owner());
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
@@ -309,7 +320,9 @@ contract BidderRegistryTest is Test {
         bidderRegistry.setPreconfirmationsContract(address(this));
         bidderRegistry.setNewFeeRecipient(address(0));
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 5 ether}();
+        uint256 currentWindow = blockTracker.getCurrentWindow();
+        uint256 nextWindow = currentWindow + 1;
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
 }

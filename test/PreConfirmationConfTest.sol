@@ -209,7 +209,7 @@ contract TestPreConfCommitmentStore is Test {
         (address bidder, ) = makeAddrAndKey("alice");
         vm.deal(bidder, 5 ether);
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2 ether}();
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(2);
 
         // Step 1: Verify that the commitment has not been used before
         verifyCommitmentNotUsed(
@@ -234,7 +234,8 @@ contract TestPreConfCommitmentStore is Test {
         );
 
         // Step 3: Move to the next window
-        blockTracker.recordL1Block(2, address(this));
+        blockTracker.addBuilderAddress("test", address(this));
+        blockTracker.recordL1Block(2, "test");
 
         // Step 4: Open the commitment
         bytes32 index = openCommitment(
@@ -431,7 +432,9 @@ contract TestPreConfCommitmentStore is Test {
         (address bidder, ) = makeAddrAndKey("alice");
         vm.deal(bidder, 5 ether);
         vm.prank(bidder);
-        bidderRegistry.prepay{value: 2 ether}();
+        uint256 window = blockTracker.getWindowFromBlockNumber(_testCommitmentAliceBob.blockNumber);
+        vm.prank(bidder);
+        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(window);
         // Step 1: Verify that the commitment has not been used before
         verifyCommitmentNotUsed(
             _testCommitmentAliceBob.txnHash,
@@ -472,7 +475,8 @@ contract TestPreConfCommitmentStore is Test {
             (address bidder, ) = makeAddrAndKey("alice");
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
-            bidderRegistry.prepay{value: 2 ether}();
+            uint256 prepayWindow = blockTracker.getWindowFromBlockNumber(_testCommitmentAliceBob.blockNumber);
+            bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(prepayWindow);
 
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
@@ -517,7 +521,8 @@ contract TestPreConfCommitmentStore is Test {
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
             uint256 blockNumber = 2;
-            blockTracker.recordL1Block(blockNumber, commiter);
+            blockTracker.addBuilderAddress("test", commiter);
+            blockTracker.recordL1Block(blockNumber, "test");
             bytes32 index = openCommitment(
                 commiter,
                 encryptedIndex,
@@ -530,9 +535,8 @@ contract TestPreConfCommitmentStore is Test {
                 _testCommitmentAliceBob.commitmentSignature,
                 _testCommitmentAliceBob.sharedSecretKey
             );
-            uint256 window = blockTracker.getCurrentWindow();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initiateSlash(window, index, 100);
+            preConfCommitmentStore.initiateSlash(index, 100);
 
             (commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
@@ -548,7 +552,8 @@ contract TestPreConfCommitmentStore is Test {
             (address bidder, ) = makeAddrAndKey("alice");
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
-            bidderRegistry.prepay{value: 2 ether}();
+            uint256 prepayWindow = blockTracker.getWindowFromBlockNumber(_testCommitmentAliceBob.blockNumber);
+            bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(prepayWindow);
 
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
@@ -588,7 +593,8 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
-            blockTracker.recordL1Block(_testCommitmentAliceBob.blockNumber, commiter);
+            blockTracker.addBuilderAddress("test", commiter);
+            blockTracker.recordL1Block(_testCommitmentAliceBob.blockNumber, "test");
             bytes32 index = openCommitment(
                 commiter,
                 encryptedIndex,
@@ -601,9 +607,8 @@ contract TestPreConfCommitmentStore is Test {
                 _testCommitmentAliceBob.commitmentSignature,
                 _testCommitmentAliceBob.sharedSecretKey
             );
-            uint256 window = blockTracker.getCurrentWindow();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initiateReward(window, index, 100);
+            preConfCommitmentStore.initiateReward(index, 100);
 
             (commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);
@@ -617,9 +622,11 @@ contract TestPreConfCommitmentStore is Test {
         // Assuming you have a stored commitment
         {
             (address bidder, ) = makeAddrAndKey("alice");
+            uint64 blockNumber = 66;
+            uint256 prepayWindow = blockTracker.getWindowFromBlockNumber(blockNumber);
             vm.deal(bidder, 5 ether);
             vm.prank(bidder);
-            bidderRegistry.prepay{value: 2 ether}();
+            bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(prepayWindow);
 
             // Step 1: Verify that the commitment has not been used before
             bytes32 bidHash = verifyCommitmentNotUsed(
@@ -647,7 +654,7 @@ contract TestPreConfCommitmentStore is Test {
             assert(commitmentUsed == false);
             bytes32 encryptedIndex = storeCommitment(
                 _testCommitmentAliceBob.bid,
-                66,
+                blockNumber,
                 _testCommitmentAliceBob.txnHash,
                 _testCommitmentAliceBob.decayStartTimestamp,
                 _testCommitmentAliceBob.decayEndTimestamp,
@@ -659,12 +666,13 @@ contract TestPreConfCommitmentStore is Test {
             vm.deal(commiter, 5 ether);
             vm.prank(commiter);
             providerRegistry.registerAndStake{value: 4 ether}();
-            blockTracker.recordL1Block(66, commiter);
+            blockTracker.addBuilderAddress("test", commiter);
+            blockTracker.recordL1Block(blockNumber, "test");
             bytes32 index = openCommitment(
                 commiter,
                 encryptedIndex,
                 _testCommitmentAliceBob.bid,
-                66,
+                blockNumber,
                 _testCommitmentAliceBob.txnHash,
                 _testCommitmentAliceBob.decayStartTimestamp,
                 _testCommitmentAliceBob.decayEndTimestamp,
@@ -674,7 +682,7 @@ contract TestPreConfCommitmentStore is Test {
             );
             uint256 window = blockTracker.getCurrentWindow();
             vm.prank(feeRecipient);
-            preConfCommitmentStore.initiateReward(window, index, 0);
+            preConfCommitmentStore.initiateReward(index, 0);
 
             (commitmentUsed, , , , , , , , , , , , , ) = preConfCommitmentStore
                 .commitments(index);

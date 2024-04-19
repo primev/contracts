@@ -47,8 +47,6 @@ contract ProviderRegistry is IProviderRegistry, Ownable, ReentrancyGuard {
     /// @dev Event for slashing funds
     event FundsSlashed(address indexed provider, uint256 amount);
 
-    /// @dev Event for rewarding funds
-    event FundsRewarded(address indexed provider, uint256 amount);
 
     /**
      * @dev Fallback function to revert all calls, ensuring no unintended interactions.

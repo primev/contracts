@@ -90,9 +90,9 @@ interface IPreConfCommitmentStore {
 
     function getEncryptedCommitment(bytes32 commitmentIndex) external view returns (EncrPreConfCommitment memory);
     
-    function initiateSlash(uint256 windowToSettle, bytes32 commitmentIndex, uint256 residualDecayedBid) external;
+    function initiateSlash(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
 
-    function initiateReward(uint256 windowToSettle, bytes32 commitmentIndex, uint256 residualDecayedBid) external;
+    function initiateReward(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
     
     function unlockBidFunds(uint256 windowToSettle, bytes32 commitmentDigest) external;
 
