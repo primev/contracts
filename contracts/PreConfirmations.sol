@@ -439,7 +439,7 @@ contract PreConfCommitmentStore is Ownable {
                 commitmentDigest,
                 bidSignature,
                 commitmentSignature,
-                block.number,
+                encryptedCommitment.blockCommitedAt,
                 sharedSecretKey
             );
 
