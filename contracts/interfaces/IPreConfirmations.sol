@@ -25,7 +25,13 @@ interface IPreConfCommitmentStore {
         uint256 blockCommitedAt;
     }
 
-
+    struct EncrPreConfCommitment {
+        bool commitmentUsed;
+        address commiter;
+        bytes32 commitmentDigest;
+        bytes commitmentSignature;
+        uint256 blockCommitedAt;
+    }
 
     event SignatureVerified(
         address indexed signer,
@@ -61,12 +67,19 @@ interface IPreConfCommitmentStore {
         bytes calldata bidSignature
     ) external view returns (bytes32 messageDigest, address recoveredAddress, uint256 stake);
 
-    function storeCommitment(
+    function openCommitment(
+        bytes32 encryptedCommitmentIndex,
         uint64 bid,
         uint64 blockNumber,
         string memory txnHash,
         string memory commitmentHash,
         bytes calldata bidSignature,
+        bytes memory commitmentSignature,
+        bytes memory sharedSecretKey
+    ) external returns (uint256);
+
+    function storeEncryptedCommitment(
+        bytes32 commitmentDigest,
         bytes memory commitmentSignature
     ) external returns (uint256);
 
@@ -75,11 +88,13 @@ interface IPreConfCommitmentStore {
 
     function getCommitment(bytes32 commitmentIndex) external view returns (PreConfCommitment memory);
 
+    function getEncryptedCommitment(bytes32 commitmentIndex) external view returns (EncrPreConfCommitment memory);
+    
     function initiateSlash(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
 
     function initiateReward(bytes32 commitmentIndex, uint256 residualDecayedBid) external;
     
-    function unlockBidFunds(bytes32 commitmentDigest) external;
+    function unlockBidFunds(uint256 windowToSettle, bytes32 commitmentDigest) external;
 
     function updateOracle(address newOracle) external;
 

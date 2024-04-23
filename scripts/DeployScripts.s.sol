@@ -6,6 +6,7 @@ import "contracts/ProviderRegistry.sol";
 import "contracts/PreConfirmations.sol";
 import "contracts/Oracle.sol";
 import "contracts/Whitelist.sol";
+import "contracts/BlockTracker.sol";
 
 // Deploy scripts should inherit this contract if they deploy using create2 deterministic addrs.
 contract Create2Deployer {
@@ -48,13 +49,17 @@ contract DeployScript is Script, Create2Deployer {
         // Forge deploy with salt uses create2 proxy from https://github.com/primevprotocol/deterministic-deployment-proxy
         bytes32 salt = 0x8989000000000000000000000000000000000000000000000000000000000000;
 
-        BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
+        BlockTracker blockTracker = new BlockTracker{salt: salt}(msg.sender);
+        console.log("BlockTracker deployed to:", address(blockTracker));
+        blockTracker.setBlocksPerWindow(10);
+        console.log("BlockTracker updated with blocksPerWindow:", 10);
+        BidderRegistry bidderRegistry = new BidderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender, address(blockTracker));
         console.log("BidderRegistry deployed to:", address(bidderRegistry));
 
         ProviderRegistry providerRegistry = new ProviderRegistry{salt: salt}(minStake, feeRecipient, feePercent, msg.sender);
         console.log("ProviderRegistry deployed to:", address(providerRegistry));
 
-        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(bidderRegistry), feeRecipient, msg.sender);
+        PreConfCommitmentStore preConfCommitmentStore = new PreConfCommitmentStore{salt: salt}(address(providerRegistry), address(bidderRegistry), address(blockTracker), feeRecipient, msg.sender);
         console.log("PreConfCommitmentStore deployed to:", address(preConfCommitmentStore));
 
         providerRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
@@ -63,7 +68,7 @@ contract DeployScript is Script, Create2Deployer {
         bidderRegistry.setPreconfirmationsContract(address(preConfCommitmentStore));
         console.log("BidderRegistry updated with PreConfCommitmentStore address:", address(preConfCommitmentStore));
 
-        Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), nextRequestedBlockNumber, msg.sender);
+        Oracle oracle = new Oracle{salt: salt}(address(preConfCommitmentStore), address(blockTracker), msg.sender);
         console.log("Oracle deployed to:", address(oracle));
 
         preConfCommitmentStore.updateOracle(address(oracle));
