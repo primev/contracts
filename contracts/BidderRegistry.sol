@@ -18,7 +18,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     uint16 public feePercent;
 
     /// @dev Minimum deposit required for registration
-    uint256 public minAllowance;
+    uint256 public minDeposit;
 
     /// @dev Amount assigned to feeRecipient
     uint256 public feeRecipientAmount;
@@ -95,19 +95,19 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @dev Constructor to initialize the contract with a minimum deposit requirement.
-     * @param _minAllowance The minimum deposit required for bidder registration.
+     * @param _minDeposit The minimum deposit required for bidder registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
      */
     constructor(
-        uint256 _minAllowance,
+        uint256 _minDeposit,
         address _feeRecipient,
         uint16 _feePercent,
         address _owner,
         address _blockTracker
     ) {
-        minAllowance = _minAllowance;
+        minDeposit = _minDeposit;
         feeRecipient = _feeRecipient;
         feePercent = _feePercent;
         blockTrackerContract = IBlockTracker(_blockTracker);
@@ -160,7 +160,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param window The window for which the deposit is being made.
      */
     function depositForSpecificWindow(uint256 window) external payable {
-        require(msg.value >= minAllowance, "Insufficient deposit");
+        require(msg.value >= minDeposit, "Insufficient deposit");
 
         bidderRegistered[msg.sender] = true;
         lockedFunds[msg.sender][window] += msg.value;
@@ -173,7 +173,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
      * @param bidder The address of the bidder.
      * @return The deposited amount for the bidder.
      */
-    function getAllowance(
+    function getDeposit(
         address bidder,
         uint256 window
     ) external view returns (uint256) {

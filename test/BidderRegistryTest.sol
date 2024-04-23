@@ -31,7 +31,7 @@ contract BidderRegistryTest is Test {
     }
 
     function test_VerifyInitialContractState() public {
-        assertEq(bidderRegistry.minAllowance(), 1e18 wei);
+        assertEq(bidderRegistry.minDeposit(), 1e18 wei);
         assertEq(bidderRegistry.feeRecipient(), feeRecipient);
         assertEq(bidderRegistry.feePercent(), feePercent);
         assertEq(bidderRegistry.preConfirmationsContract(), address(0));
@@ -58,7 +58,7 @@ contract BidderRegistryTest is Test {
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
 
-        uint256 bidderStakeStored = bidderRegistry.getAllowance(bidder, nextWindow);
+        uint256 bidderStakeStored = bidderRegistry.getDeposit(bidder, nextWindow);
         assertEq(bidderStakeStored, 1 ether);
 
         // For the second deposit, calculate the new next window
@@ -71,7 +71,7 @@ contract BidderRegistryTest is Test {
 
         bidderRegistry.depositForSpecificWindow{value: 1 ether}(nextWindow);
 
-        uint256 bidderStakeStored2 = bidderRegistry.getAllowance(bidder, nextWindow);
+        uint256 bidderStakeStored2 = bidderRegistry.getDeposit(bidder, nextWindow);
         assertEq(bidderStakeStored2, 2 ether);
 
     }

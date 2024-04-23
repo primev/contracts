@@ -28,7 +28,7 @@ interface IBidderRegistry {
 
     function OpenBid(bytes32 commitmentDigest, uint64 bid, address bidder, uint64 blockNumber) external;
 
-    function getAllowance(address bidder, uint256 window) external view returns (uint256);
+    function getDeposit(address bidder, uint256 window) external view returns (uint256);
 
     function depositForSpecificWindow(uint256 window) external payable;
 
