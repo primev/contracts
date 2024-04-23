@@ -17,7 +17,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Fee percent that would be taken by protocol when provider is slashed
     uint16 public feePercent;
 
-    /// @dev Minimum prepay required for registration
+    /// @dev Minimum deposit required for registration
     uint256 public minAllowance;
 
     /// @dev Amount assigned to feeRecipient
@@ -47,14 +47,14 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     /// @dev Amount assigned to bidders
     mapping(address => uint256) public providerAmount;
 
-    /// @dev Event emitted when a bidder is registered with their prepayed amount
+    /// @dev Event emitted when a bidder is registered with their deposited amount
     event BidderRegistered(
         address indexed bidder,
-        uint256 prepaidAmount,
+        uint256 depositedAmount,
         uint256 windowNumber
     );
 
-    /// @dev Event emitted when funds are retrieved from a bidder's prepay
+    /// @dev Event emitted when funds are retrieved from a bidder's deposit
     event FundsRetrieved(
         bytes32 indexed commitmentDigest,
         address indexed bidder,
@@ -62,7 +62,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         uint256 amount
     );
 
-    /// @dev Event emitted when funds are retrieved from a bidder's prepay
+    /// @dev Event emitted when funds are retrieved from a bidder's deposit
     event FundsRewarded(
         bytes32 indexed commitmentDigest,
         address indexed bidder,
@@ -71,7 +71,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         uint256 amount
     );
 
-    /// @dev Event emitted when a bidder withdraws their prepay
+    /// @dev Event emitted when a bidder withdraws their deposit
     event BidderWithdrawal(
         address indexed bidder,
         uint256 window,
@@ -86,16 +86,16 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Receive function registers bidders and takes their prepay
-     * Should be removed from here in case the prepay function becomes more complex
+     * @dev Receive function registers bidders and takes their deposit
+     * Should be removed from here in case the deposit function becomes more complex
      */
     receive() external payable {
         revert("Invalid call");
     }
 
     /**
-     * @dev Constructor to initialize the contract with a minimum prepay requirement.
-     * @param _minAllowance The minimum prepay required for bidder registration.
+     * @dev Constructor to initialize the contract with a minimum deposit requirement.
+     * @param _minAllowance The minimum deposit required for bidder registration.
      * @param _feeRecipient The address that receives fee
      * @param _feePercent The fee percentage for protocol
      * @param _owner Owner of the contract, explicitly needed since contract is deployed w/ create2 factory.
@@ -156,11 +156,11 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Prepay for a specific window.
-     * @param window The window for which the prepay is being made.
+     * @dev Deposit for a specific window.
+     * @param window The window for which the deposit is being made.
      */
-    function prepayAllowanceForSpecificWindow(uint256 window) external payable {
-        require(msg.value >= minAllowance, "Insufficient prepay");
+    function depositForSpecificWindow(uint256 window) external payable {
+        require(msg.value >= minAllowance, "Insufficient deposit");
 
         bidderRegistered[msg.sender] = true;
         lockedFunds[msg.sender][window] += msg.value;
@@ -169,9 +169,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Check the prepay of a bidder.
+     * @dev Check the deposit of a bidder.
      * @param bidder The address of the bidder.
-     * @return The prepayed amount for the bidder.
+     * @return The deposited amount for the bidder.
      */
     function getAllowance(
         address bidder,
@@ -181,9 +181,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Retrieve funds from a bidder's prepay (only callable by the pre-confirmations contract).
+     * @dev Retrieve funds from a bidder's deposit (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
-     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and prepayment
+     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and deposit
      * @param provider The address to transfer the retrieved funds to.
      */
     function retrieveFunds(
@@ -231,9 +231,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Return funds to a bidder's prepay (only callable by the pre-confirmations contract).
+     * @dev Return funds to a bidder's deposit (only callable by the pre-confirmations contract).
      * @dev reenterancy not necessary but still putting here for precaution
-     * @param bidID is the Bid ID that allows us to identify the bid, and prepayment
+     * @param bidID is the Bid ID that allows us to identify the bid, and deposit
      */
     function unlockFunds(uint256 window, bytes32 bidID) external nonReentrant onlyPreConfirmationEngine() {
         BidState memory bidState = BidPayment[bidID];
@@ -249,7 +249,7 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
 
     /**
      * @dev Open a bid (only callable by the pre-confirmations contract).
-     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and prepayment
+     * @param commitmentDigest is the Bid ID that allows us to identify the bid, and deposit
      * @param bid The bid amount.
      * @param bidder The address of the bidder.
      */
@@ -335,9 +335,9 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
             "only bidder can withdraw funds from window"
         );
         uint256 currentWindow = blockTrackerContract.getCurrentWindow();
-        // withdraw is enabled only is closed and settled
+        // withdraw is enabled only when closed and settled
         require(
-            window + 1 < currentWindow,
+            window < currentWindow,
             "funds can only be withdrawn after the window is settled"
         );
         uint256 amount = lockedFunds[bidder][window];
@@ -362,6 +362,6 @@ contract BidderRegistry is IBidderRegistry, Ownable, ReentrancyGuard {
         require(_protocolFeeAmount > 0, "insufficient protocol fee amount");
 
         (bool success, ) = bidder.call{value: _protocolFeeAmount}("");
-        require(success, "couldn't transfer prepay to bidder");
+        require(success, "couldn't transfer deposit to bidder");
     }
 }

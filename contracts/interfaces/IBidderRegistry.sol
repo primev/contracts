@@ -30,7 +30,7 @@ interface IBidderRegistry {
 
     function getAllowance(address bidder, uint256 window) external view returns (uint256);
 
-    function prepayAllowanceForSpecificWindow(uint256 window) external payable;
+    function depositForSpecificWindow(uint256 window) external payable;
 
     function retrieveFunds(
         uint256 windowToSettle,

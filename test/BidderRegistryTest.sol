@@ -41,7 +41,7 @@ contract BidderRegistryTest is Test {
     function testFail_BidderStakeAndRegisterMinStake() public {
         vm.prank(bidder);
         vm.expectRevert(bytes(""));
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 wei}(2);
+        bidderRegistry.depositForSpecificWindow{value: 1 wei}(2);
     }
 
     function test_BidderStakeAndRegister() public {
@@ -53,7 +53,7 @@ contract BidderRegistryTest is Test {
 
         emit BidderRegistered(bidder, 1 ether, nextWindow);
 
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 1 ether}(nextWindow);
 
         bool isBidderRegistered = bidderRegistry.bidderRegistered(bidder);
         assertEq(isBidderRegistered, true);
@@ -61,7 +61,7 @@ contract BidderRegistryTest is Test {
         uint256 bidderStakeStored = bidderRegistry.getAllowance(bidder, nextWindow);
         assertEq(bidderStakeStored, 1 ether);
 
-        // For the second prepay, calculate the new next window
+        // For the second deposit, calculate the new next window
         currentWindow = blockTracker.getCurrentWindow();
         nextWindow = currentWindow + 1;
 
@@ -69,7 +69,7 @@ contract BidderRegistryTest is Test {
 
         emit BidderRegistered(bidder, 2 ether, nextWindow);
 
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 1 ether}(nextWindow);
 
         uint256 bidderStakeStored2 = bidderRegistry.getAllowance(bidder, nextWindow);
         assertEq(bidderStakeStored2, 2 ether);
@@ -78,9 +78,9 @@ contract BidderRegistryTest is Test {
 
     function testFail_BidderStakeAndRegisterAlreadyRegistered() public {
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2e18 wei}(2);
+        bidderRegistry.depositForSpecificWindow{value: 2e18 wei}(2);
         vm.expectRevert(bytes(""));
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 1 wei}(2);
+        bidderRegistry.depositForSpecificWindow{value: 1 wei}(2);
     }
 
     function testFail_receive() public {
@@ -144,7 +144,7 @@ contract BidderRegistryTest is Test {
         uint256 nextWindow = currentWindow + 1;
 
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 64 ether}(nextWindow);
         address provider = vm.addr(4);
         uint64 blockNumber = 66;
         blockTracker.addBuilderAddress("test", provider);
@@ -173,7 +173,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 64 ether}(nextWindow);
 
         address provider = vm.addr(4);
         uint64 blockNumber = 66;
@@ -197,7 +197,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         uint64 blockNumber = 66;
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 2 ether}(nextWindow);
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
         bytes32 bidID = keccak256("1234");
@@ -213,7 +213,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         uint64 blockNumber = 66;
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 2 ether}(nextWindow);
 
         address provider = vm.addr(4);
         vm.expectRevert(bytes(""));
@@ -228,7 +228,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 64 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 64 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = feeRecipient.balance;
         bytes32 bidID = keccak256("1234");
@@ -255,7 +255,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 128 ether}(nextWindow);
         address provider = vm.addr(4);
         uint256 balanceBefore = address(provider).balance;
         bytes32 bidID = keccak256("1234");
@@ -277,7 +277,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 5 ether}(nextWindow);
         address provider = vm.addr(4);
         bidderRegistry.withdrawProviderAmount(payable(provider));
     }
@@ -289,7 +289,7 @@ contract BidderRegistryTest is Test {
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
         vm.prank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 128 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 128 ether}(nextWindow);
         uint256 balanceBefore = address(bidder).balance;
         bytes32 bidID = keccak256("1234");
         uint64 blockNumber = 66;
@@ -311,7 +311,7 @@ contract BidderRegistryTest is Test {
         vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 5 ether}(nextWindow);
         vm.prank(bidderRegistry.owner());
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
@@ -322,7 +322,7 @@ contract BidderRegistryTest is Test {
         vm.prank(bidder);
         uint256 currentWindow = blockTracker.getCurrentWindow();
         uint256 nextWindow = currentWindow + 1;
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 5 ether}(nextWindow);
+        bidderRegistry.depositForSpecificWindow{value: 5 ether}(nextWindow);
         bidderRegistry.withdrawProtocolFee(payable(address(bidder)));
     }
 }

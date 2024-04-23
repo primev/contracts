@@ -83,7 +83,7 @@ contract OracleTest is Test {
         vm.deal(ownerInstance, 5 ether);
         vm.startPrank(ownerInstance);
         uint256 window = blockTracker.getCurrentWindow();
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 2 ether}(window+1);
+        bidderRegistry.depositForSpecificWindow{value: 2 ether}(window+1);
         
         oracle = new Oracle(address(preConfCommitmentStore), address(blockTracker), ownerInstance);
         vm.stopPrank();
@@ -170,7 +170,7 @@ contract OracleTest is Test {
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
         uint256 window = blockTracker.getCurrentWindow();
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window+1);
+        bidderRegistry.depositForSpecificWindow{value: 250 ether}(window+1);
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
@@ -199,7 +199,7 @@ contract OracleTest is Test {
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
         uint256 window = blockTracker.getCurrentWindow();
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window+1);
+        bidderRegistry.depositForSpecificWindow{value: 250 ether}(window+1);
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
@@ -232,7 +232,7 @@ contract OracleTest is Test {
         vm.deal(bidder, 200000 ether);
         vm.startPrank(bidder);
         uint256 window = blockTracker.getCurrentWindow();
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window+1);
+        bidderRegistry.depositForSpecificWindow{value: 250 ether}(window+1);
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
@@ -271,7 +271,7 @@ contract OracleTest is Test {
         vm.deal(bidder, 200000 ether);
         uint256 window = blockTracker.getWindowFromBlockNumber(blockNumber);
         vm.startPrank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window);
+        bidderRegistry.depositForSpecificWindow{value: 250 ether}(window);
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
@@ -318,7 +318,7 @@ contract OracleTest is Test {
         vm.deal(bidder, 200000 ether);
         uint256 window = blockTracker.getCurrentWindow();
         vm.startPrank(bidder);
-        bidderRegistry.prepayAllowanceForSpecificWindow{value: 250 ether}(window+1);
+        bidderRegistry.depositForSpecificWindow{value: 250 ether}(window+1);
         vm.stopPrank();
 
         vm.deal(provider, 200000 ether);
